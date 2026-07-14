@@ -62,10 +62,29 @@ sys.exit(1)
 PY
 }
 
+run_migrations() {
+  echo "[entrypoint] Aplicando migrations Alembic..."
+  alembic upgrade head
+  echo "[entrypoint] Migrations OK."
+}
+
+run_seed() {
+  echo "[entrypoint] Executando seed idempotente..."
+  python -m scripts.seed
+  echo "[entrypoint] Seed OK."
+}
+
 case "${ROLE}" in
   web)
     wait_for_db
     wait_for_redis
+    # Easypanel / single-service: cria tabelas e admin no boot (idempotente).
+    if [[ "${AUTO_MIGRATE:-true}" == "true" ]]; then
+      run_migrations
+    fi
+    if [[ "${AUTO_SEED:-true}" == "true" ]]; then
+      run_seed
+    fi
     WORKERS="${WEB_CONCURRENCY:-2}"
     TRUSTED="${TRUSTED_PROXY_IPS:-nginx}"
     echo "[entrypoint] Iniciando web (gunicorn + uvicorn) workers=${WORKERS}"
@@ -94,13 +113,13 @@ case "${ROLE}" in
     ;;
   migrate)
     wait_for_db
-    echo "[entrypoint] Aplicando migrations Alembic..."
-    exec alembic upgrade head
+    run_migrations
+    exit 0
     ;;
   seed)
     wait_for_db
-    echo "[entrypoint] Executando seed idempotente..."
-    exec python -m scripts.seed
+    run_seed
+    exit 0
     ;;
   *)
     exec "$@"
