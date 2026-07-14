@@ -23,7 +23,10 @@ x-app-image: &app-image
 services:
 
   db:
-    image: postgres:16-alpine
+    build:
+      context: ./docker/postgres
+      dockerfile: Dockerfile
+    image: erp-locadora-db:${IMAGE_TAG:-latest}
     container_name: erp_db
     restart: unless-stopped
     environment:
@@ -35,15 +38,14 @@ services:
       APP_DB_NAME: ${POSTGRES_DB:-erp}
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./docker/postgres/init-app-role.sh:/docker-entrypoint-initdb.d/00-init-app-role.sh:ro
     expose:
       - "5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
-      interval: 10s
+      interval: 5s
       timeout: 5s
-      retries: 12
-      start_period: 20s
+      retries: 30
+      start_period: 40s
     logging: *default-logging
     networks:
       - erp_net

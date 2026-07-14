@@ -17,14 +17,25 @@ import time
 
 host = os.getenv("POSTGRES_HOST", "db")
 port = int(os.getenv("POSTGRES_PORT", "5432"))
-for attempt in range(60):
+last_err = "desconhecido"
+for attempt in range(90):
     try:
         with socket.create_connection((host, port), timeout=2):
             print("[entrypoint] PostgreSQL disponível.")
             sys.exit(0)
-    except OSError:
+    except OSError as exc:
+        last_err = str(exc)
         time.sleep(1)
-print("[entrypoint] Timeout aguardando PostgreSQL.", file=sys.stderr)
+try:
+    infos = socket.getaddrinfo(host, port, type=socket.SOCK_STREAM)
+    resolved = ", ".join(sorted({i[4][0] for i in infos}))
+except OSError as exc:
+    resolved = f"DNS falhou: {exc}"
+print(
+    f"[entrypoint] Timeout aguardando PostgreSQL ({host}:{port}). "
+    f"resolvido={resolved} ultimo_erro={last_err}",
+    file=sys.stderr,
+)
 sys.exit(1)
 PY
 }
