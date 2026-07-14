@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Dados da Empresa{% endblock %}
+{% block content %}
+<div class="card" style="max-width: 780px;">
+  <h2 class="card-title">Dados da Empresa</h2>
+  {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+
+  <form method="post" action="/configuracoes/empresa">
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Identificador (slug)</label>
+        <input class="form-input" value="{{ tenant.slug }}" disabled>
+      </div>
+      <div class="form-group">
+        <label class="form-label">CNPJ</label>
+        <input class="form-input" value="{{ tenant.cnpj or '-' }}" disabled>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="legal_name">Razão Social</label>
+        <input class="form-input" id="legal_name" name="legal_name"
+               value="{{ tenant.legal_name }}" {{ '' if can_edit else 'disabled' }} required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="trade_name">Nome Fantasia</label>
+        <input class="form-input" id="trade_name" name="trade_name"
+               value="{{ tenant.trade_name or '' }}" {{ '' if can_edit else 'disabled' }}>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="email">E-mail</label>
+        <input class="form-input" type="email" id="email" name="email"
+               value="{{ tenant.email or '' }}" {{ '' if can_edit else 'disabled' }}>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="phone">Telefone</label>
+        <input class="form-input" id="phone" name="phone"
+               value="{{ tenant.phone or '' }}" {{ '' if can_edit else 'disabled' }}>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Plano</label>
+        <input class="form-input" value="{{ tenant.plan }}" disabled>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Situação</label>
+        <input class="form-input" value="{{ tenant.status.value }}" disabled>
+      </div>
+    </div>
+    {% if can_edit %}
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Salvar alterações</button>
+    </div>
+    {% endif %}
+  </form>
+</div>
+{% endblock %}

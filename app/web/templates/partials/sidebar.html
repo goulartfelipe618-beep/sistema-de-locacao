@@ -1,0 +1,64 @@
+<aside class="sidebar"
+       x-data
+       x-init="
+         $el.querySelectorAll('[data-nav-group]').forEach((group) => {
+           if (group.querySelector('.nav-sub-link.is-active')) {
+             group.__x.$data.open = true;
+           }
+         });
+       ">
+  <div class="brand">
+    <span class="brand-mark">ERP</span>
+    <span class="brand-name">Locadora</span>
+  </div>
+  <nav class="nav">
+    {% for section in menu %}
+      {% if section.items %}
+        {% set ns = namespace(active=false) %}
+        {% for item in section.items %}
+          {% if item.enabled and item.url and (current_path == item.url or current_path.startswith(item.url + '/')) %}
+            {% set ns.active = true %}
+          {% endif %}
+        {% endfor %}
+        <div class="nav-group" data-nav-group x-data="{ open: {{ 'true' if ns.active else 'false' }} }">
+          <button type="button" class="nav-group-toggle"
+                  @click="open = !open"
+                  :aria-expanded="open ? 'true' : 'false'">
+            <span class="nav-ico">{{ section.label[:1] }}</span>
+            <span class="nav-label">{{ section.label }}</span>
+            <span class="nav-caret" :class="open ? 'is-open' : ''">›</span>
+          </button>
+          <ul class="nav-sub" x-show="open" x-cloak>
+            {% for item in section.items %}
+              <li>
+                {% if item.enabled %}
+                  <a href="{{ item.url }}"
+                     class="nav-sub-link {% if item.url and (current_path == item.url or current_path.startswith(item.url + '/')) %}is-active{% endif %}">
+                    {{ item.label }}
+                  </a>
+                {% else %}
+                  <span class="nav-sub-link is-disabled" title="Em breve">{{ item.label }}</span>
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% else %}
+        <div class="nav-group">
+          {% if section.enabled %}
+            <a href="{{ section.url }}"
+               class="nav-group-link {% if current_path == section.url %}is-active{% endif %}">
+              <span class="nav-ico">{{ section.label[:1] }}</span>
+              <span class="nav-label">{{ section.label }}</span>
+            </a>
+          {% else %}
+            <span class="nav-group-link is-disabled" title="Em breve">
+              <span class="nav-ico">{{ section.label[:1] }}</span>
+              <span class="nav-label">{{ section.label }}</span>
+            </span>
+          {% endif %}
+        </div>
+      {% endif %}
+    {% endfor %}
+  </nav>
+</aside>

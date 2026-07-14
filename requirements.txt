@@ -1,0 +1,47 @@
+# ==========================================================================
+# ERP de Locação de Veículos - Dependências de Produção
+# Stack: Python + FastAPI + SQLAlchemy + Alembic + PostgreSQL + Redis + Celery
+# ==========================================================================
+
+# --- Web framework / ASGI ---
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+gunicorn==23.0.0
+
+# --- Templates / Formulários / Estáticos ---
+jinja2==3.1.5
+python-multipart==0.0.20
+itsdangerous==2.2.0
+aiofiles==24.1.0
+
+# --- Validação / Configuração ---
+pydantic==2.10.4
+pydantic-settings==2.7.1
+email-validator==2.2.0
+
+# --- Banco de dados / ORM / Migrations ---
+sqlalchemy[asyncio]==2.0.36
+alembic==1.14.0
+asyncpg==0.30.0
+psycopg[binary]==3.2.3
+greenlet==3.1.1
+
+# --- Cache / Broker ---
+redis==5.2.1
+
+# --- Filas / Agendamento ---
+celery==5.4.0
+
+# --- Segurança / Autenticação ---
+bcrypt==4.2.1
+pyjwt==2.10.1
+
+# --- Armazenamento de arquivos (Cloudflare R2 - S3 compatível) ---
+boto3==1.35.90
+
+# --- HTTP client (integrações e testes) ---
+httpx==0.28.1
+
+# --- Utilitários ---
+python-dateutil==2.9.0.post0
+tenacity==9.0.0

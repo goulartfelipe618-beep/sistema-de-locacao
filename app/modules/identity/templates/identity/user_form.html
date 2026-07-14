@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width: 780px;">
+  <h2 class="card-title">{{ title }}</h2>
+  {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+
+  <form method="post" action="/configuracoes/usuarios/novo" autocomplete="off">
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label" for="full_name">Nome completo</label>
+        <input class="form-input" id="full_name" name="full_name"
+               value="{{ form.full_name if form else '' }}" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="email">E-mail</label>
+        <input class="form-input" type="email" id="email" name="email"
+               value="{{ form.email if form else '' }}" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="password">Senha</label>
+        <input class="form-input" type="password" id="password" name="password" required>
+        <span class="form-help">Mínimo de 8 caracteres.</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Situação</label>
+        <label class="form-check">
+          <input type="checkbox" name="is_active" value="true" checked> Usuário ativo
+        </label>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Papéis (RBAC)</label>
+        <div class="multi-list">
+          {% for role in roles %}
+          <label class="form-check">
+            <input type="checkbox" name="role_ids" value="{{ role.id }}"> {{ role.name }}
+          </label>
+          {% else %}
+          <span class="form-help">Nenhum papel cadastrado.</span>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Filiais de acesso</label>
+        <div class="multi-list">
+          {% for filial in filiais %}
+          <label class="form-check">
+            <input type="checkbox" name="filial_ids" value="{{ filial.id }}"> {{ filial.code }} — {{ filial.name }}
+          </label>
+          {% else %}
+          <span class="form-help">Nenhuma filial cadastrada.</span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Salvar</button>
+      <a href="/configuracoes/usuarios" class="btn">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

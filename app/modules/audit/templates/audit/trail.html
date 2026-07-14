@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Trilha de Auditoria{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <form method="get" action="/auditoria/trilha" style="display:flex; gap:8px;">
+      <select class="form-select" name="action" onchange="this.form.submit()">
+        <option value="">Todas as ações</option>
+        {% for opt in ['login', 'login_failed', 'logout', 'create', 'update', 'delete', 'access_denied'] %}
+        <option value="{{ opt }}" {{ 'selected' if action == opt else '' }}>{{ opt }}</option>
+        {% endfor %}
+      </select>
+      <noscript><button class="btn" type="submit">Filtrar</button></noscript>
+    </form>
+    <span class="form-help">{{ page_result.total }} evento(s)</span>
+  </div>
+
+  {% if page_result.items %}
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Data/Hora</th>
+        <th>Ação</th>
+        <th>Entidade</th>
+        <th>Descrição</th>
+        <th>Origem (IP)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in page_result.items %}
+      <tr>
+        <td>{{ log.created_at|datetime }}</td>
+        <td><span class="badge badge-muted">{{ log.action }}</span></td>
+        <td>{{ log.entity or '-' }}</td>
+        <td>{{ log.description or '-' }}</td>
+        <td>{{ log.ip_address or '-' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="pagination">
+    {% if page_result.has_prev %}
+      <a class="btn btn-sm" href="?action={{ action }}&page={{ page_result.page - 1 }}">Anterior</a>
+    {% endif %}
+    <span>Página {{ page_result.page }} de {{ page_result.pages }}</span>
+    {% if page_result.has_next %}
+      <a class="btn btn-sm" href="?action={{ action }}&page={{ page_result.page + 1 }}">Próxima</a>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="empty-state">Nenhum evento de auditoria registrado.</div>
+  {% endif %}
+</div>
+{% endblock %}

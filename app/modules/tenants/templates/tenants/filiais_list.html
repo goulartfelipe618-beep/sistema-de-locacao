@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Filiais / Unidades{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <span class="form-help">{{ page_result.total }} filial(is) cadastrada(s)</span>
+    {% if current_user.is_superuser or 'configuracoes.filial.criar' in current_user.permissions %}
+    <a class="btn btn-primary" href="/configuracoes/filiais/nova">+ Nova Filial</a>
+    {% endif %}
+  </div>
+
+  {% if page_result.items %}
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Código</th>
+        <th>Nome</th>
+        <th>Cidade/UF</th>
+        <th>Matriz</th>
+        <th>Situação</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for filial in page_result.items %}
+      <tr>
+        <td><code>{{ filial.code }}</code></td>
+        <td>{{ filial.name }}</td>
+        <td>{{ filial.city or '-' }}{% if filial.state %}/{{ filial.state }}{% endif %}</td>
+        <td>{% if filial.is_headquarters %}<span class="badge badge-success">Matriz</span>{% else %}-{% endif %}</td>
+        <td>
+          {% if filial.status.value == 'active' %}
+            <span class="badge badge-success">Ativa</span>
+          {% else %}
+            <span class="badge badge-muted">Inativa</span>
+          {% endif %}
+        </td>
+        <td class="num">
+          {% if current_user.is_superuser or 'configuracoes.filial.editar' in current_user.permissions %}
+          <a class="btn btn-sm" href="/configuracoes/filiais/{{ filial.id }}/editar">Editar</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="pagination">
+    {% if page_result.has_prev %}
+      <a class="btn btn-sm" href="?page={{ page_result.page - 1 }}">Anterior</a>
+    {% endif %}
+    <span>Página {{ page_result.page }} de {{ page_result.pages }}</span>
+    {% if page_result.has_next %}
+      <a class="btn btn-sm" href="?page={{ page_result.page + 1 }}">Próxima</a>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="empty-state">Nenhuma filial cadastrada.</div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,40 @@
+[project]
+name = "locadora-erp"
+version = "0.1.0"
+description = "ERP SaaS Multiempresa para Locadoras de Veículos - Sistema Administrativo Interno"
+requires-python = ">=3.12"
+readme = "README.md"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["app", "tests"]
+exclude = ["alembic/versions"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "C4", "SIM", "TID"]
+# B008: chamadas em defaults são idiomáticas no FastAPI (Depends/Form/Query).
+# N805/N811: padrões consagrados (declared_attr `cls`, alias `UUID as PgUUID`).
+ignore = ["B008", "N805", "N811"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.mypy]
+python_version = "3.12"
+plugins = ["pydantic.mypy"]
+warn_unused_ignores = true
+warn_redundant_casts = true
+disallow_untyped_defs = false
+ignore_missing_imports = true
+exclude = ["alembic/"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.coverage.run]
+source = ["app"]
+omit = ["app/workers/*", "*/tasks.py"]

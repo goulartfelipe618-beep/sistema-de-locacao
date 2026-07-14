@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>{% block title %}{{ title|default('Painel') }}{% endblock %} · {{ app_name }}</title>
+  <link rel="stylesheet" href="/static/css/app.css">
+  <script src="/static/js/htmx.min.js" defer></script>
+  <script src="/static/js/alpine.min.js" defer></script>
+  <script src="/static/js/app.js" defer></script>
+</head>
+<body>
+  <div class="layout">
+    {% include "partials/sidebar.html" %}
+    <div class="main">
+      {% include "partials/navbar.html" %}
+      <main class="content">
+        {% block breadcrumb %}
+        <div class="breadcrumb">
+          <span>Início</span>
+          <span class="sep">/</span>
+          <strong>{{ title|default('Painel') }}</strong>
+        </div>
+        {% endblock %}
+        {% if flash %}
+        <div class="alert alert-{{ flash.type|default('info') }}">{{ flash.message }}</div>
+        {% endif %}
+        {% block content %}{% endblock %}
+      </main>
+      <footer class="app-footer">
+        <span>{{ app_name }} · Ambiente: {{ environment }}</span>
+        {% if current_user %}<span>Usuário: {{ current_user.full_name }}</span>{% endif %}
+      </footer>
+    </div>
+  </div>
+</body>
+</html>

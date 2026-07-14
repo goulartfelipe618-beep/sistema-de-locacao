@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>Acesso ao Sistema · {{ app_name }}</title>
+  <link rel="stylesheet" href="/static/css/app.css">
+  <script src="/static/js/app.js" defer></script>
+</head>
+<body>
+  <div class="login-wrap">
+    <div class="login-box">
+      <div class="login-header">
+        <span class="brand-mark">ERP</span>
+        <h1 class="login-title">Sistema de Locação</h1>
+        <div class="login-sub">Painel Administrativo</div>
+      </div>
+      <div class="login-body">
+        {% if flash %}
+        <div class="alert alert-{{ flash.type|default('danger') }}">{{ flash.message }}</div>
+        {% endif %}
+        {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+        {% endif %}
+        <form method="post" action="/login" autocomplete="off">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <div class="form-group">
+            <label class="form-label" for="email">E-mail</label>
+            <input class="form-input" type="email" id="email" name="email"
+                   value="{{ email }}" required autofocus>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="password">Senha</label>
+            <input class="form-input" type="password" id="password" name="password" required>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" style="width:100%">Entrar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

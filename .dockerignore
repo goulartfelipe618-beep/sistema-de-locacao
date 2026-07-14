@@ -1,0 +1,40 @@
+# Controle de versão
+.git
+.gitignore
+.gitattributes
+
+# Segredos e ambiente local
+.env
+*.env.local
+
+# Ambientes e caches Python (não entram na imagem)
+.venv
+venv
+env
+__pycache__
+*.py[cod]
+*.egg-info
+.eggs
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.coverage
+htmlcov
+
+# IDE / SO
+.idea
+.vscode
+.DS_Store
+Thumbs.db
+
+# Dados persistentes locais (volumes Docker na VPS)
+pgdata
+data
+logs
+*.log
+backups
+
+# Documentação e testes não são necessários em runtime
+README.md
+tests
+docs

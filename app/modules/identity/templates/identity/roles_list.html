@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Papéis e Permissões{% endblock %}
+{% block content %}
+<div class="card">
+  <h2 class="card-title">Papéis (RBAC)</h2>
+  {% if roles %}
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Papel</th>
+        <th>Identificador</th>
+        <th>Descrição</th>
+        <th>Tipo</th>
+        <th class="num">Permissões</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for role in roles %}
+      <tr>
+        <td>{{ role.name }}</td>
+        <td><code>{{ role.slug }}</code></td>
+        <td>{{ role.description or '-' }}</td>
+        <td>
+          {% if role.is_system %}
+            <span class="badge badge-muted">Sistema</span>
+          {% else %}
+            <span class="badge badge-success">Personalizado</span>
+          {% endif %}
+        </td>
+        <td class="num">{{ role_perms[role.id] }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">Nenhum papel cadastrado.</div>
+  {% endif %}
+</div>
+{% endblock %}
