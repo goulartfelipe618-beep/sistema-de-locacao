@@ -179,7 +179,14 @@ async def _seed_admin(tenant_id, filial_id) -> None:
             await uow.session.flush()
             logger.info("Usuário administrador criado: %s", ADMIN_EMAIL)
         else:
-            logger.info("Usuário administrador já existente: %s", ADMIN_EMAIL)
+            # Re-seed em produção (Easypanel): alinha senha/nome com o .env atual.
+            user.full_name = ADMIN_NAME
+            user.hashed_password = hash_password(ADMIN_PASSWORD)
+            user.is_active = True
+            user.is_superuser = True
+            user.failed_login_attempts = 0
+            user.locked_until = None
+            logger.info("Usuário administrador atualizado: %s", ADMIN_EMAIL)
 
         admin_role = await role_repo.get_by_slug(tenant_id, "admin-empresa")
         existing_roles = set(await user_repo.get_role_ids(user.id))
