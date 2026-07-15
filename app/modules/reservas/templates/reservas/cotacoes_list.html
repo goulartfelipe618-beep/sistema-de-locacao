@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <form method="get" action="/reservas/cotacoes" style="display:flex;gap:8px;margin:0;flex-wrap:wrap">
+      <input class="form-input" type="search" name="q" value="{{ q }}" placeholder="Número...">
+      <select class="form-input" name="status">
+        <option value="">Todos status</option>
+        {% for s in ['aberta','convertida','expirada','cancelada'] %}
+        <option value="{{ s }}" {% if status == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-sm" type="submit">Buscar</button>
+    </form>
+    {% if current_user.is_superuser or 'reservas.cotacao.criar' in current_user.permissions %}
+    <a class="btn btn-primary" href="/reservas/cotacoes/novo">+ Nova Cotação</a>
+    {% endif %}
+  </div>
+  {% if page_result.items %}
+  <table class="table">
+    <thead><tr><th>Número</th><th>Cliente</th><th>Categoria</th><th>Retirada</th><th>Validade</th><th>Status</th><th>Total</th><th></th></tr></thead>
+    <tbody>
+    {% for c in page_result.items %}
+    <tr>
+      <td><strong>{{ c.numero }}</strong></td>
+      <td>{% if c.cliente_id %}{{ cliente_nomes.get(c.cliente_id|string, c.cliente_id) }}{% else %}—{% endif %}</td>
+      <td>{{ categoria_nomes.get(c.categoria_id|string, c.categoria_id) }}</td>
+      <td>{{ c.retirada_em|datetime }}</td>
+      <td>{{ c.validade_em|datetime }}</td>
+      <td><span class="badge {% if c.status.value == 'aberta' %}badge-warning{% elif c.status.value == 'convertida' %}badge-success{% else %}badge-danger{% endif %}">{{ c.status.value }}</span></td>
+      <td class="num">{{ c.valor_total|currency }}</td>
+      <td class="num">
+        {% if c.status.value == 'aberta' and (current_user.is_superuser or 'reservas.cotacao.editar' in current_user.permissions) %}
+        <details>
+          <summary class="btn btn-sm">Converter</summary>
+          <form method="post" action="/reservas/cotacoes/{{ c.id }}/converter" style="margin-top:8px;padding:8px;border:1px solid var(--border)">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <div class="form-group"><label>Cliente</label>
+              <select class="form-input" name="cliente_id" required>
+                <option value="">Selecionar</option>
+                {% for cl in clientes %}<option value="{{ cl.id }}" {% if c.cliente_id == cl.id %}selected{% endif %}>{{ cl.nome }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="form-group"><label>Forma pagamento</label><input class="form-input" name="forma_pagamento_prevista"></div>
+            <button class="btn btn-primary btn-sm" type="submit">Converter em reserva</button>
+          </form>
+        </details>
+        {% elif c.converted_reserva_id %}<a class="btn btn-sm" href="/reservas/{{ c.converted_reserva_id }}">Ver reserva</a>{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhuma cotação.</div>{% endif %}
+</div>
+{% endblock %}

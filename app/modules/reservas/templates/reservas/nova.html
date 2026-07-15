@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:1100px">
+  <h2 class="card-title">{{ title }}</h2>
+  {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+
+  <form method="post" action="/reservas/nova" id="form-reserva">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+    <h3>1. Período e filiais</h3>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Filial retirada</label>
+        <select class="form-input" name="filial_retirada_id" required>
+          <option value="">Selecionar</option>
+          {% for f in filiais %}<option value="{{ f.id }}" {% if form.filial_retirada_id == f.id|string %}selected{% endif %}>{{ f.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Filial devolução</label>
+        <select class="form-input" name="filial_devolucao_id" required>
+          <option value="">Selecionar</option>
+          {% for f in filiais %}<option value="{{ f.id }}" {% if form.filial_devolucao_id == f.id|string %}selected{% endif %}>{{ f.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Retirada</label><input class="form-input" type="datetime-local" name="retirada_em" required value="{{ form.retirada_em }}"></div>
+      <div class="form-group"><label class="form-label">Devolução</label><input class="form-input" type="datetime-local" name="devolucao_em" required value="{{ form.devolucao_em }}"></div>
+      <div class="form-group"><label class="form-label">Origem</label>
+        <select class="form-input" name="origem">
+          {% for o in ['balcao','website','app','parceiro','telefone'] %}
+          <option value="{{ o }}" {% if form.origem == o or (not form.origem and o == 'balcao') %}selected{% endif %}>{{ o }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="form-actions" style="margin:8px 0">
+      <a class="btn btn-sm" href="?filial_retirada_id={{ form.filial_retirada_id }}&filial_devolucao_id={{ form.filial_devolucao_id }}&retirada_em={{ form.retirada_em }}&devolucao_em={{ form.devolucao_em }}&consultar=1">Consultar disponibilidade</a>
+    </div>
+
+    {% if disponibilidade %}
+    <h3>2. Disponibilidade</h3>
+    <table class="table">
+      <thead><tr><th>Categoria</th><th>Frota</th><th>Ocupados</th><th>Livres</th><th>Veículos</th></tr></thead>
+      <tbody>
+      {% for cat in disponibilidade %}
+      <tr>
+        <td><strong>{{ cat.nome }}</strong></td>
+        <td class="num">{{ cat.total_frota }}</td>
+        <td class="num">{{ cat.ocupados }}</td>
+        <td class="num">{{ cat.livres }}</td>
+        <td>
+          {% for v in cat.veiculos %}
+          <span class="badge {% if v.disponivel %}badge-success{% else %}badge-danger{% endif %}" style="margin:2px">{{ v.placa }}</span>
+          {% endfor %}
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+
+    <h3>3. Categoria e veículo</h3>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Categoria</label>
+        <select class="form-input" name="categoria_id" required>
+          <option value="">Selecionar</option>
+          {% for c in categorias %}<option value="{{ c.id }}" {% if form.categoria_id == c.id|string %}selected{% endif %}>{{ c.nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Veículo (opcional)</label>
+        <select class="form-input" name="veiculo_id">
+          <option value="">Por categoria</option>
+          {% for v in veiculos %}<option value="{{ v.id }}" {% if form.veiculo_id == v.id|string %}selected{% endif %}>{{ v.placa }} — {{ categoria_nomes.get(v.categoria_id|string, '') }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <h3>4. Cliente e motoristas</h3>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Cliente</label>
+        <select class="form-input" name="cliente_id" required>
+          <option value="">Selecionar</option>
+          {% for c in clientes %}<option value="{{ c.id }}" {% if form.cliente_id == c.id|string %}selected{% endif %}>{{ c.nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Parceiro (opcional)</label>
+        <select class="form-input" name="parceiro_id">
+          <option value="">—</option>
+          {% for p in parceiros %}<option value="{{ p.id }}" {% if form.parceiro_id == p.id|string %}selected{% endif %}>{{ p.nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Motoristas</label>
+        <select class="form-input" name="motorista_ids" multiple size="4">
+          {% for m in motoristas %}<option value="{{ m.id }}" {% if m.id|string in form.motorista_ids %}selected{% endif %}>{{ m.nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Motorista principal</label>
+        <select class="form-input" name="motorista_principal">
+          <option value="">Primeiro selecionado</option>
+          {% for m in motoristas %}<option value="{{ m.id }}" {% if form.motorista_principal == m.id|string %}selected{% endif %}>{{ m.nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Endereço entrega</label><input class="form-input" name="endereco_entrega" value="{{ form.endereco_entrega }}"></div>
+    </div>
+
+    <h3>5. Opcionais</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+      <div>
+        <h4>Proteções</h4>
+        {% for p in protecoes %}
+        <label style="display:block"><input type="checkbox" name="protecao_ids" value="{{ p.id }}" {% if p.id|string in form.protecao_ids %}checked{% endif %}> {{ p.nome }} ({{ p.valor_diaria|currency }}/dia)</label>
+        {% endfor %}
+      </div>
+      <div>
+        <h4>Taxas</h4>
+        {% for t in taxas_opcionais %}
+        {% if t.aplicacao.value == 'opcional' %}
+        <label style="display:block"><input type="checkbox" name="taxa_ids" value="{{ t.id }}" {% if t.id|string in form.taxa_ids %}checked{% endif %}> {{ t.nome }}</label>
+        {% endif %}
+        {% endfor %}
+      </div>
+      <div>
+        <h4>Acessórios</h4>
+        {% for a in acessorios %}
+        <label style="display:block;margin-bottom:4px">
+          <input type="checkbox" name="acessorio_ids" value="{{ a.id }}" {% if a.id|string in form.acessorio_ids %}checked{% endif %}> {{ a.nome }}
+          <input type="number" name="acessorio_qtds" min="1" value="1" style="width:50px;margin-left:4px">
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <h3>6. Pagamento e política</h3>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Forma de pagamento</label>
+        <input class="form-input" name="forma_pagamento_prevista" value="{{ form.forma_pagamento_prevista }}" placeholder="Cartão, PIX, faturado...">
+      </div>
+      <div class="form-group"><label class="form-label">Política cancelamento</label>
+        <select class="form-input" name="politica_cancelamento_id">
+          <option value="">Sugerida pelo tarifário</option>
+          {% for p in politicas %}<option value="{{ p.id }}" {% if form.politica_cancelamento_id == p.id|string %}selected{% endif %}>{{ p.nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Desconto (R$)</label><input class="form-input" name="desconto" value="{{ form.desconto or '0' }}"></div>
+      <div class="form-group" style="grid-column:1/-1"><label class="form-label">Observações</label><textarea class="form-input" name="observacoes" rows="2">{{ form.observacoes }}</textarea></div>
+    </div>
+
+    <h3>7. Confirmar</h3>
+    <div id="preco-box" style="margin-bottom:16px">
+      <button class="btn btn-sm" type="button" id="btn-calcular-preco">Recalcular preço</button>
+      <div id="preco-resultado"></div>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Criar reserva (pendente)</button>
+      <a class="btn" href="/reservas">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+<script>
+document.getElementById('btn-calcular-preco')?.addEventListener('click', async function() {
+  const form = document.getElementById('form-reserva');
+  const fd = new FormData(form);
+  const resp = await fetch('/reservas/nova/preco', { method: 'POST', body: fd });
+  document.getElementById('preco-resultado').innerHTML = await resp.text();
+});
+</script>
+{% endblock %}

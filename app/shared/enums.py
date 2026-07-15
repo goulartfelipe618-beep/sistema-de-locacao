@@ -239,6 +239,95 @@ class PneuStatus(str, enum.Enum):
     DESCARTADO = "descartado"
 
 
+class TarifarioCanal(str, enum.Enum):
+    """Canal de venda da tabela de tarifas."""
+
+    BALCAO = "balcao"
+    SITE = "site"
+    APP = "app"
+    PARCEIRO = "parceiro"
+    TELEFONE = "telefone"
+    TODOS = "todos"
+
+
+class TemporadaAjusteTipo(str, enum.Enum):
+    """Como a temporada ajusta o preço base."""
+
+    PERCENTUAL = "percentual"
+    VALOR_FIXO = "valor_fixo"
+    TABELA_ALTERNATIVA = "tabela_alternativa"
+
+
+class TaxaCalculoTipo(str, enum.Enum):
+    """Forma de cálculo da taxa/encargo."""
+
+    FIXO = "fixo"
+    PERCENTUAL = "percentual"
+    POR_DIA = "por_dia"
+    POR_OCORRENCIA = "por_ocorrencia"
+
+
+class TaxaAplicacao(str, enum.Enum):
+    """Se a taxa entra automática ou como opcional."""
+
+    AUTOMATICA = "automatica"
+    OPCIONAL = "opcional"
+
+
+class PoliticaRetencaoTipo(str, enum.Enum):
+    """Tipo de retenção na política de cancelamento."""
+
+    PERCENTUAL = "percentual"
+    DIARIAS = "diarias"
+    VALOR_FIXO = "valor_fixo"
+
+
+class ReservaStatus(str, enum.Enum):
+    """Máquina de estados da reserva."""
+
+    PENDENTE = "pendente"
+    CONFIRMADA = "confirmada"
+    CHECKOUT = "checkout"
+    CONCLUIDA = "concluida"
+    CANCELADA = "cancelada"
+    NO_SHOW = "no_show"
+
+
+class ReservaAlocacao(str, enum.Enum):
+    """Garantida (veículo) ou por categoria."""
+
+    CATEGORIA = "categoria"
+    VEICULO = "veiculo"
+
+
+class ReservaOrigem(str, enum.Enum):
+    """Canal de origem da reserva."""
+
+    BALCAO = "balcao"
+    WEBSITE = "website"
+    APP = "app"
+    PARCEIRO = "parceiro"
+    TELEFONE = "telefone"
+
+
+class ReservaItemTipo(str, enum.Enum):
+    """Linha de cobranca na reserva/cotação."""
+
+    PROTECAO = "protecao"
+    TAXA = "taxa"
+    ACESSORIO = "acessorio"
+    DESCONTO = "desconto"
+
+
+class CotacaoStatus(str, enum.Enum):
+    """Situação da cotação sem compromisso."""
+
+    ABERTA = "aberta"
+    CONVERTIDA = "convertida"
+    EXPIRADA = "expirada"
+    CANCELADA = "cancelada"
+
+
 class AuditAction(str, enum.Enum):
     """Categorias de eventos registrados na trilha de auditoria."""
 

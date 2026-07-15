@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:1100px">
+  <h2 class="card-title">{{ title }}</h2>
+  {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+
+  <form method="post" action="/reservas/cotacoes/novo">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Filial retirada</label>
+        <select class="form-input" name="filial_retirada_id" required>
+          <option value="">Selecionar</option>
+          {% for f in filiais %}<option value="{{ f.id }}" {% if form.filial_retirada_id == f.id|string %}selected{% endif %}>{{ f.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Filial devolução</label>
+        <select class="form-input" name="filial_devolucao_id" required>
+          <option value="">Selecionar</option>
+          {% for f in filiais %}<option value="{{ f.id }}" {% if form.filial_devolucao_id == f.id|string %}selected{% endif %}>{{ f.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Categoria</label>
+        <select class="form-input" name="categoria_id" required>
+          <option value="">Selecionar</option>
+          {% for c in categorias %}<option value="{{ c.id }}" {% if form.categoria_id == c.id|string %}selected{% endif %}>{{ c.nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Canal</label>
+        <select class="form-input" name="canal">
+          {% for ch in ['balcao','site','app','parceiro','telefone'] %}
+          <option value="{{ ch }}" {% if form.canal == ch or (not form.canal and ch == 'balcao') %}selected{% endif %}>{{ ch }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Retirada</label><input class="form-input" type="datetime-local" name="retirada_em" required value="{{ form.retirada_em }}"></div>
+      <div class="form-group"><label class="form-label">Devolução</label><input class="form-input" type="datetime-local" name="devolucao_em" required value="{{ form.devolucao_em }}"></div>
+      <div class="form-group"><label class="form-label">Cliente (opcional)</label>
+        <select class="form-input" name="cliente_id"><option value="">—</option>{% for c in clientes %}<option value="{{ c.id }}" {% if form.cliente_id == c.id|string %}selected{% endif %}>{{ c.nome }}</option>{% endfor %}</select>
+      </div>
+      <div class="form-group"><label class="form-label">Validade (horas)</label><input class="form-input" type="number" name="validade_horas" min="1" max="168" value="{{ form.validade_horas or '24' }}"></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
+      <div>
+        <h4>Proteções</h4>
+        {% for p in protecoes %}
+        <label style="display:block"><input type="checkbox" name="protecao_ids" value="{{ p.id }}" {% if p.id|string in form.protecao_ids %}checked{% endif %}> {{ p.nome }}</label>
+        {% endfor %}
+      </div>
+      <div>
+        <h4>Taxas opcionais</h4>
+        {% for t in taxas_opcionais %}
+        {% if t.aplicacao.value == 'opcional' %}
+        <label style="display:block"><input type="checkbox" name="taxa_ids" value="{{ t.id }}" {% if t.id|string in form.taxa_ids %}checked{% endif %}> {{ t.nome }}</label>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-top:12px"><label class="form-label">Observações</label><textarea class="form-input" name="observacoes" rows="2">{{ form.observacoes }}</textarea></div>
+
+    <div class="form-actions" style="margin-top:16px">
+      <button class="btn" type="submit" name="acao" value="simular">Simular preço</button>
+      <button class="btn btn-primary" type="submit" name="acao" value="salvar">Salvar cotação</button>
+      <a class="btn" href="/reservas/cotacoes">Cancelar</a>
+    </div>
+  </form>
+
+  {% if resultado %}
+  <div style="margin-top:24px;border-top:1px solid var(--border);padding-top:16px">
+    <h3>Resultado da simulação</h3>
+    <table class="table">
+      <thead><tr><th>Item</th><th>Qtd</th><th>Unit.</th><th>Total</th></tr></thead>
+      <tbody>
+        <tr><td>Diárias</td><td class="num">{{ resultado.dias_cobrados }}</td><td class="num">{{ resultado.diaria_unitaria|currency }}</td><td class="num">{{ resultado.subtotal_diarias|currency }}</td></tr>
+        {% for t in resultado.taxas %}<tr><td>Taxa: {{ t.nome }}</td><td class="num">{{ t.quantidade }}</td><td class="num">{{ t.valor_unitario|currency }}</td><td class="num">{{ t.valor_total|currency }}</td></tr>{% endfor %}
+        {% for p in resultado.protecoes %}<tr><td>Proteção: {{ p.nome }}</td><td class="num">{{ p.quantidade }}</td><td class="num">{{ p.valor_unitario|currency }}</td><td class="num">{{ p.valor_total|currency }}</td></tr>{% endfor %}
+        <tr style="font-weight:bold"><td colspan="3">Total</td><td class="num">{{ resultado.total|currency }}</td></tr>
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

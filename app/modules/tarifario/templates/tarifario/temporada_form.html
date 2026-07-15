@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:900px">
+  <h2 class="card-title">{{ title }}</h2>
+  {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+  <form method="post" action="{{ action }}">
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label" for="nome">Nome</label><input class="form-input" id="nome" name="nome" required value="{{ temporada.nome if temporada else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="data_inicio">Data início</label><input class="form-input" type="date" id="data_inicio" name="data_inicio" required value="{{ temporada.data_inicio if temporada else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="data_fim">Data fim</label><input class="form-input" type="date" id="data_fim" name="data_fim" required value="{{ temporada.data_fim if temporada else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="tipo_ajuste">Tipo de ajuste</label>
+        <select class="form-input" id="tipo_ajuste" name="tipo_ajuste">
+          {% for t in ['percentual','valor_fixo','tabela_alternativa'] %}
+          <option value="{{ t }}" {% if temporada and temporada.tipo_ajuste.value == t %}selected{% endif %}>{{ t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label" for="valor_ajuste">Valor ajuste</label><input class="form-input" id="valor_ajuste" name="valor_ajuste" value="{{ temporada.valor_ajuste if temporada else '0' }}"></div>
+      <div class="form-group"><label class="form-label" for="tabela_alternativa_id">Tabela alternativa</label>
+        <select class="form-input" id="tabela_alternativa_id" name="tabela_alternativa_id"><option value="">—</option>{% for tb in tabelas %}<option value="{{ tb.id }}" {% if temporada and temporada.tabela_alternativa_id == tb.id %}selected{% endif %}>{{ tb.nome }}</option>{% endfor %}</select>
+      </div>
+      <div class="form-group"><label class="form-label" for="estadia_minima">Estadia mínima (dias)</label><input class="form-input" type="number" id="estadia_minima" name="estadia_minima" value="{{ temporada.estadia_minima if temporada else '1' }}"></div>
+      <div class="form-group"><label class="form-label" for="prioridade">Prioridade</label><input class="form-input" type="number" id="prioridade" name="prioridade" value="{{ temporada.prioridade if temporada else '0' }}"></div>
+      <div class="form-group"><label class="form-label" for="filial_id">Filial</label>
+        <select class="form-input" id="filial_id" name="filial_id"><option value="">Todas</option>{% for f in filiais %}<option value="{{ f.id }}" {% if temporada and temporada.filial_id == f.id %}selected{% endif %}>{{ f.name }}</option>{% endfor %}</select>
+      </div>
+      <div class="form-group"><label class="form-label" for="categoria_id">Categoria</label>
+        <select class="form-input" id="categoria_id" name="categoria_id"><option value="">Todas</option>{% for c in categorias %}<option value="{{ c.id }}" {% if temporada and temporada.categoria_id == c.id %}selected{% endif %}>{{ c.nome }}</option>{% endfor %}</select>
+      </div>
+      <div class="form-group"><label class="form-label" for="status">Status</label>
+        <select class="form-input" id="status" name="status">
+          <option value="active" {% if temporada and temporada.status.value == 'active' %}selected{% elif not temporada %}selected{% endif %}>Ativo</option>
+          <option value="inactive" {% if temporada and temporada.status.value == 'inactive' %}selected{% endif %}>Inativo</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-actions" style="margin-top:16px"><button class="btn btn-primary" type="submit">Salvar</button><a class="btn" href="/tarifario/temporadas">Cancelar</a></div>
+  </form>
+</div>
+{% endblock %}

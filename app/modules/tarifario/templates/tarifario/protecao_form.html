@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:900px">
+  <h2 class="card-title">{{ title }}</h2>
+  {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+  <form method="post" action="{{ action }}">
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label" for="nome">Nome</label><input class="form-input" id="nome" name="nome" required value="{{ protecao.nome if protecao else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="valor_diaria">Valor diária</label><input class="form-input" id="valor_diaria" name="valor_diaria" value="{{ protecao.valor_diaria if protecao else '0' }}"></div>
+      <div class="form-group"><label class="form-label" for="franquia">Franquia</label><input class="form-input" id="franquia" name="franquia" value="{{ protecao.franquia if protecao else '0' }}"></div>
+      <div class="form-group"><label class="form-label" for="fornecedor_id">Fornecedor</label>
+        <select class="form-input" id="fornecedor_id" name="fornecedor_id"><option value="">—</option>{% for f in fornecedores %}<option value="{{ f.id }}" {% if protecao and protecao.fornecedor_id == f.id %}selected{% endif %}>{{ f.nome }}</option>{% endfor %}</select>
+      </div>
+      <div class="form-group"><label class="form-label" for="status">Status</label>
+        <select class="form-input" id="status" name="status">
+          <option value="active" {% if protecao and protecao.status.value == 'active' %}selected{% elif not protecao %}selected{% endif %}>Ativo</option>
+          <option value="inactive" {% if protecao and protecao.status.value == 'inactive' %}selected{% endif %}>Inativo</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label"><input type="checkbox" name="obrigatoria" value="1" {% if protecao and protecao.obrigatoria %}checked{% endif %}> Obrigatória</label></div>
+    </div>
+    <div class="form-group" style="margin-top:12px"><label class="form-label" for="descricao">Descrição</label><textarea class="form-input" id="descricao" name="descricao" rows="2">{{ protecao.descricao if protecao else '' }}</textarea></div>
+    <div class="form-group"><label class="form-label" for="exclusoes">Exclusões</label><textarea class="form-input" id="exclusoes" name="exclusoes" rows="2">{{ protecao.exclusoes if protecao else '' }}</textarea></div>
+    <div class="form-group" style="margin-top:12px">
+      <label class="form-label">Categorias obrigatórias</label>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">
+        {% set vinculadas = categorias_vinculadas|map(attribute='categoria_id')|list if categorias_vinculadas else [] %}
+        {% for c in categorias %}
+        <label><input type="checkbox" name="categorias_obrigatorias" value="{{ c.id }}" {% if c.id in vinculadas %}checked{% endif %}> {{ c.nome }}</label>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="form-actions" style="margin-top:16px"><button class="btn btn-primary" type="submit">Salvar</button><a class="btn" href="/tarifario/protecoes">Cancelar</a></div>
+  </form>
+
+  {% if protecao %}
+  <div style="margin-top:24px;border-top:1px solid var(--border);padding-top:16px">
+    <h3>Vincular categoria</h3>
+    <form method="post" action="/tarifario/protecoes/{{ protecao.id }}/categorias" style="display:flex;gap:8px;flex-wrap:wrap">
+      <select class="form-input" name="categoria_id" required>
+        <option value="">Selecionar categoria</option>
+        {% for c in categorias %}<option value="{{ c.id }}">{{ c.nome }}</option>{% endfor %}
+      </select>
+      <button class="btn btn-sm btn-primary" type="submit">Vincular</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

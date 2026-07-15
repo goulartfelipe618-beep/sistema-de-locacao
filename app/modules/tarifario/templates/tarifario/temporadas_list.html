@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <form method="get" action="/tarifario/temporadas" style="display:flex;gap:8px;margin:0">
+      <input class="form-input" type="search" name="q" value="{{ q }}" placeholder="Nome...">
+      <button class="btn btn-sm" type="submit">Buscar</button>
+    </form>
+    {% if current_user.is_superuser or 'tarifario.temporada.criar' in current_user.permissions %}
+    <a class="btn btn-primary" href="/tarifario/temporadas/novo">+ Nova Temporada</a>
+    {% endif %}
+  </div>
+  {% if page_result.items %}
+  <table class="table">
+    <thead><tr><th>Nome</th><th>Período</th><th>Ajuste</th><th>Filial</th><th>Categoria</th><th>Prioridade</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for t in page_result.items %}
+    <tr>
+      <td><strong>{{ t.nome }}</strong></td>
+      <td>{{ t.data_inicio|date }} — {{ t.data_fim|date }}</td>
+      <td>{{ t.tipo_ajuste.value }} ({{ t.valor_ajuste|currency }})</td>
+      <td>{{ filial_nomes.get(t.filial_id|string, 'Todas') if t.filial_id else 'Todas' }}</td>
+      <td>{{ categoria_nomes.get(t.categoria_id|string, 'Todas') if t.categoria_id else 'Todas' }}</td>
+      <td class="num">{{ t.prioridade }}</td>
+      <td><span class="badge {% if t.status.value == 'active' %}badge-success{% else %}badge-warning{% endif %}">{{ t.status.value }}</span></td>
+      <td class="num">{% if current_user.is_superuser or 'tarifario.temporada.editar' in current_user.permissions %}<a class="btn btn-sm" href="/tarifario/temporadas/{{ t.id }}/editar">Editar</a>{% endif %}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhuma temporada cadastrada.</div>{% endif %}
+</div>
+{% endblock %}

@@ -12,6 +12,8 @@ from app.modules.cadastros import models as cadastros_models  # noqa: F401
 from app.modules.frota import models as frota_models  # noqa: F401
 from app.modules.identity import models as identity_models  # noqa: F401
 from app.modules.manutencao import models as manutencao_models  # noqa: F401
+from app.modules.reservas import models as reservas_models  # noqa: F401
+from app.modules.tarifario import models as tarifario_models  # noqa: F401
 
 # Ordem de import respeita dependências de chave estrangeira.
 from app.modules.tenants import models as tenants_models  # noqa: F401
@@ -25,4 +27,6 @@ __all__ = [
     "cadastros_models",
     "frota_models",
     "manutencao_models",
+    "reservas_models",
+    "tarifario_models",
 ]

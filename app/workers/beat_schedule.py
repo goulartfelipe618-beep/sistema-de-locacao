@@ -23,4 +23,16 @@ BEAT_SCHEDULE: dict[str, dict] = {
         "schedule": crontab(hour=5, minute=0),
         "options": {"queue": "maintenance"},
     },
+    # No-show de reservas confirmadas (§5.2).
+    "reservas-processar-no-show": {
+        "task": "reservas.processar_no_show",
+        "schedule": crontab(minute="*/30"),
+        "options": {"queue": "default"},
+    },
+    # Expira cotações não convertidas (§5.5).
+    "reservas-expirar-cotacoes": {
+        "task": "reservas.expirar_cotacoes",
+        "schedule": crontab(minute=15),
+        "options": {"queue": "default"},
+    },
 }

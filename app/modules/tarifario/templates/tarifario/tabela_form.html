@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:1100px">
+  <h2 class="card-title">{{ title }}</h2>
+  {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+  <form method="post" action="{{ action }}">
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label" for="nome">Nome</label><input class="form-input" id="nome" name="nome" required value="{{ tabela.nome if tabela else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="vigencia_inicio">Vigência início</label><input class="form-input" type="date" id="vigencia_inicio" name="vigencia_inicio" required value="{{ tabela.vigencia_inicio if tabela else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="vigencia_fim">Vigência fim</label><input class="form-input" type="date" id="vigencia_fim" name="vigencia_fim" value="{{ tabela.vigencia_fim if tabela and tabela.vigencia_fim else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="canal">Canal</label>
+        <select class="form-input" id="canal" name="canal">
+          {% for c in ['todos','balcao','site','app','parceiro','telefone'] %}
+          <option value="{{ c }}" {% if tabela and tabela.canal.value == c %}selected{% elif not tabela and c == 'todos' %}selected{% endif %}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label" for="filial_id">Filial</label>
+        <select class="form-input" id="filial_id" name="filial_id"><option value="">Todas</option>{% for f in filiais %}<option value="{{ f.id }}" {% if tabela and tabela.filial_id == f.id %}selected{% endif %}>{{ f.name }}</option>{% endfor %}</select>
+      </div>
+      <div class="form-group"><label class="form-label" for="parceiro_id">Parceiro</label>
+        <select class="form-input" id="parceiro_id" name="parceiro_id"><option value="">—</option>{% for p in parceiros %}<option value="{{ p.id }}" {% if tabela and tabela.parceiro_id == p.id %}selected{% endif %}>{{ p.nome }}</option>{% endfor %}</select>
+      </div>
+      <div class="form-group"><label class="form-label" for="cliente_id">Cliente</label>
+        <select class="form-input" id="cliente_id" name="cliente_id"><option value="">—</option>{% for c in clientes %}<option value="{{ c.id }}" {% if tabela and tabela.cliente_id == c.id %}selected{% endif %}>{{ c.nome }}</option>{% endfor %}</select>
+      </div>
+      <div class="form-group"><label class="form-label" for="prioridade">Prioridade</label><input class="form-input" type="number" id="prioridade" name="prioridade" value="{{ tabela.prioridade if tabela else '0' }}"></div>
+      <div class="form-group"><label class="form-label" for="status">Status</label>
+        <select class="form-input" id="status" name="status">
+          <option value="active" {% if tabela and tabela.status.value == 'active' %}selected{% elif not tabela %}selected{% endif %}>Ativo</option>
+          <option value="inactive" {% if tabela and tabela.status.value == 'inactive' %}selected{% endif %}>Inativo</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group" style="margin-top:12px"><label class="form-label" for="observacoes">Observações</label><textarea class="form-input" id="observacoes" name="observacoes" rows="2">{{ tabela.observacoes if tabela else '' }}</textarea></div>
+    <div class="form-actions" style="margin-top:16px"><button class="btn btn-primary" type="submit">Salvar</button><a class="btn" href="/tarifario/tabelas">Cancelar</a></div>
+  </form>
+
+  {% if tabela %}
+  <div style="margin-top:24px;border-top:1px solid var(--border);padding-top:16px">
+    <h3>Itens por categoria</h3>
+    {% if itens %}
+    <table class="table">
+      <thead><tr><th>Categoria</th><th>1-3d</th><th>4-7d</th><th>8-15d</th><th>16-30d</th><th>Mensal</th><th>KM</th><th></th></tr></thead>
+      <tbody>
+      {% for item in itens %}
+      <tr>
+        <td><strong>{{ categoria_nomes.get(item.categoria_id|string, item.categoria_id) }}</strong></td>
+        <td colspan="6">
+          <form method="post" action="/tarifario/tabelas/{{ tabela.id }}/itens/{{ item.id }}/editar" style="display:grid;grid-template-columns:repeat(6,1fr) auto;gap:6px;align-items:center">
+            <input class="form-input" name="valor_1_3" value="{{ item.valor_1_3 }}">
+            <input class="form-input" name="valor_4_7" value="{{ item.valor_4_7 }}">
+            <input class="form-input" name="valor_8_15" value="{{ item.valor_8_15 }}">
+            <input class="form-input" name="valor_16_30" value="{{ item.valor_16_30 }}">
+            <input class="form-input" name="valor_mensal" value="{{ item.valor_mensal }}">
+            <label><input type="checkbox" name="km_livre" value="1" {% if item.km_livre %}checked{% endif %}> Livre</label>
+            <button class="btn btn-sm" type="submit">Atualizar</button>
+          </form>
+        </td>
+        <td class="num"><form method="post" action="/tarifario/tabelas/{{ tabela.id }}/itens/{{ item.id }}/remover"><button class="btn btn-sm" type="submit">Remover</button></form></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<div class="empty-state">Nenhum item cadastrado nesta tabela.</div>{% endif %}
+
+    <form method="post" action="/tarifario/tabelas/{{ tabela.id }}/itens" style="margin-top:16px">
+      <h4>Adicionar categoria</h4>
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Categoria</label>
+          <select class="form-input" name="categoria_id" required><option value="">Selecionar</option>{% for c in categorias %}<option value="{{ c.id }}">{{ c.nome }}</option>{% endfor %}</select>
+        </div>
+        <div class="form-group"><label class="form-label">1-3 dias</label><input class="form-input" name="valor_1_3" value="0"></div>
+        <div class="form-group"><label class="form-label">4-7 dias</label><input class="form-input" name="valor_4_7" value="0"></div>
+        <div class="form-group"><label class="form-label">8-15 dias</label><input class="form-input" name="valor_8_15" value="0"></div>
+        <div class="form-group"><label class="form-label">16-30 dias</label><input class="form-input" name="valor_16_30" value="0"></div>
+        <div class="form-group"><label class="form-label">Mensal</label><input class="form-input" name="valor_mensal" value="0"></div>
+        <div class="form-group"><label class="form-label"><input type="checkbox" name="km_livre" value="1" checked> KM livre</label></div>
+      </div>
+      <button class="btn btn-sm btn-primary" type="submit" style="margin-top:8px">Adicionar item</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

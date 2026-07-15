@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <h2 class="card-title">{{ title }}</h2>
+  <form method="get" action="/reservas/calendario" class="form-grid" style="margin-bottom:16px">
+    <div class="form-group"><label class="form-label">Filial</label>
+      <select class="form-input" name="filial_id" required>
+        <option value="">Selecionar</option>
+        {% for f in filiais %}<option value="{{ f.id }}" {% if filial_id == f.id|string %}selected{% endif %}>{{ f.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Início</label><input class="form-input" type="datetime-local" name="inicio" value="{{ inicio }}"></div>
+    <div class="form-group"><label class="form-label">Fim</label><input class="form-input" type="datetime-local" name="fim" value="{{ fim }}"></div>
+    <div class="form-group" style="align-self:end"><button class="btn btn-primary" type="submit">Filtrar</button></div>
+  </form>
+
+  {% if eventos %}
+  <table class="table">
+    <thead><tr><th>Reserva</th><th>Veículo</th><th>Categoria</th><th>Início</th><th>Fim</th><th>Status</th><th>Realocar</th></tr></thead>
+    <tbody>
+    {% for e in eventos %}
+    <tr>
+      <td><a href="/reservas/{{ e.reserva_id }}">{{ e.numero }}</a></td>
+      <td>{% if e.veiculo_id %}{{ veiculo_placas.get(e.veiculo_id|string, e.veiculo_id) }}{% else %}—{% endif %}</td>
+      <td>{{ categoria_nomes.get(e.categoria_id|string, e.categoria_id) }}</td>
+      <td>{{ e.start|datetime }}</td>
+      <td>{{ e.end|datetime }}</td>
+      <td><span class="badge">{{ e.status.value }}</span></td>
+      <td>
+        {% if e.status.value in ['pendente','confirmada'] and (current_user.is_superuser or 'reservas.reserva.editar' in current_user.permissions) %}
+        <form method="post" action="/reservas/calendario/realocar" style="display:flex;gap:4px">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input type="hidden" name="reserva_id" value="{{ e.reserva_id }}">
+          <input type="hidden" name="filial_id" value="{{ filial_id }}">
+          <input type="hidden" name="inicio" value="{{ inicio }}">
+          <input type="hidden" name="fim" value="{{ fim }}">
+          <select class="form-input" name="novo_veiculo_id" required style="min-width:100px">
+            <option value="">Veículo</option>
+            {% for v in veiculos %}{% if v.categoria_id == e.categoria_id %}<option value="{{ v.id }}">{{ v.placa }}</option>{% endif %}{% endfor %}
+          </select>
+          <button class="btn btn-sm" type="submit">OK</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% elif filial_id %}<div class="empty-state">Nenhum evento no período.</div>{% else %}<div class="empty-state">Selecione filial e período.</div>{% endif %}
+</div>
+{% endblock %}

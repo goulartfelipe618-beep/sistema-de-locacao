@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <form method="get" action="/tarifario/protecoes" style="display:flex;gap:8px;margin:0">
+      <input class="form-input" type="search" name="q" value="{{ q }}" placeholder="Nome...">
+      <button class="btn btn-sm" type="submit">Buscar</button>
+    </form>
+    {% if current_user.is_superuser or 'tarifario.protecao.criar' in current_user.permissions %}
+    <a class="btn btn-primary" href="/tarifario/protecoes/novo">+ Nova Proteção</a>
+    {% endif %}
+  </div>
+  {% if page_result.items %}
+  <table class="table">
+    <thead><tr><th>Nome</th><th>Diária</th><th>Franquia</th><th>Obrigatória</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for p in page_result.items %}
+    <tr>
+      <td><strong>{{ p.nome }}</strong>{% if p.descricao %}<br><small>{{ p.descricao }}</small>{% endif %}</td>
+      <td class="num">{{ p.valor_diaria|currency }}</td>
+      <td class="num">{{ p.franquia|currency }}</td>
+      <td>{% if p.obrigatoria %}Sim{% else %}Não{% endif %}</td>
+      <td><span class="badge {% if p.status.value == 'active' %}badge-success{% else %}badge-warning{% endif %}">{{ p.status.value }}</span></td>
+      <td class="num">{% if current_user.is_superuser or 'tarifario.protecao.editar' in current_user.permissions %}<a class="btn btn-sm" href="/tarifario/protecoes/{{ p.id }}/editar">Editar</a>{% endif %}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhuma proteção cadastrada.</div>{% endif %}
+</div>
+{% endblock %}

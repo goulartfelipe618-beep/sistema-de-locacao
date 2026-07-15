@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:1100px">
+  <h2 class="card-title">{{ title }}</h2>
+  {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+
+  <form method="get" action="/reservas/disponibilidade" class="form-grid" style="margin-bottom:16px">
+    <div class="form-group"><label class="form-label">Filial</label>
+      <select class="form-input" name="filial_id" required>
+        <option value="">Selecionar</option>
+        {% for f in filiais %}<option value="{{ f.id }}" {% if filial_id == f.id|string %}selected{% endif %}>{{ f.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Categoria (opcional)</label>
+      <select class="form-input" name="categoria_id">
+        <option value="">Todas</option>
+        {% for c in categorias %}<option value="{{ c.id }}" {% if categoria_id == c.id|string %}selected{% endif %}>{{ c.nome }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Início</label><input class="form-input" type="datetime-local" name="inicio" required value="{{ inicio }}"></div>
+    <div class="form-group"><label class="form-label">Fim</label><input class="form-input" type="datetime-local" name="fim" required value="{{ fim }}"></div>
+    <div class="form-group" style="align-self:end"><button class="btn btn-primary" type="submit">Consultar</button></div>
+  </form>
+
+  {% if resultado %}
+  <table class="table">
+    <thead><tr><th>Categoria</th><th>Frota</th><th>Ocupados</th><th>Livres</th><th>Veículos livres</th></tr></thead>
+    <tbody>
+    {% for cat in resultado %}
+    <tr>
+      <td><strong>{{ cat.nome }}</strong></td>
+      <td class="num">{{ cat.total_frota }}</td>
+      <td class="num">{{ cat.ocupados }}</td>
+      <td class="num"><strong>{{ cat.livres }}</strong></td>
+      <td>
+        {% for v in cat.veiculos %}
+        {% if v.disponivel %}<span class="badge badge-success" style="margin:2px">{{ v.placa }}</span>{% endif %}
+        {% endfor %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endblock %}

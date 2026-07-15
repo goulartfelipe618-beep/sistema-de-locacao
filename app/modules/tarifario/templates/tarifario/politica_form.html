@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:900px">
+  <h2 class="card-title">{{ title }}</h2>
+  {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+  <form method="post" action="{{ action }}">
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label" for="nome">Nome</label><input class="form-input" id="nome" name="nome" required value="{{ politica.nome if politica else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="canal">Canal</label>
+        <select class="form-input" id="canal" name="canal">
+          {% for c in ['todos','balcao','site','app','parceiro','telefone'] %}
+          <option value="{{ c }}" {% if politica and politica.canal.value == c %}selected{% elif not politica and c == 'todos' %}selected{% endif %}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label" for="status">Status</label>
+        <select class="form-input" id="status" name="status">
+          <option value="active" {% if politica and politica.status.value == 'active' %}selected{% elif not politica %}selected{% endif %}>Ativo</option>
+          <option value="inactive" {% if politica and politica.status.value == 'inactive' %}selected{% endif %}>Inativo</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group" style="margin-top:12px"><label class="form-label" for="descricao">Descrição</label><textarea class="form-input" id="descricao" name="descricao" rows="2">{{ politica.descricao if politica else '' }}</textarea></div>
+    <div class="form-actions" style="margin-top:16px"><button class="btn btn-primary" type="submit">Salvar</button><a class="btn" href="/tarifario/cancelamento">Cancelar</a></div>
+  </form>
+
+  {% if politica %}
+  <div style="margin-top:24px;border-top:1px solid var(--border);padding-top:16px">
+    <h3>Faixas de retenção</h3>
+    {% if faixas %}
+    <table class="table">
+      <thead><tr><th>Ordem</th><th>Horas antes (min-max)</th><th>Tipo retenção</th><th>Valor</th><th></th></tr></thead>
+      <tbody>
+      {% for f in faixas %}
+      <tr>
+        <td class="num">{{ f.ordem }}</td>
+        <td>{{ f.horas_antes_min }}h{% if f.horas_antes_max is not none %} — {{ f.horas_antes_max }}h{% else %}+{% endif %}</td>
+        <td>{{ f.tipo_retencao.value }}</td>
+        <td class="num">{{ f.valor_retencao }}</td>
+        <td class="num"><form method="post" action="/tarifario/cancelamento/{{ politica.id }}/faixas/{{ f.id }}/remover"><button class="btn btn-sm" type="submit">Remover</button></form></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<div class="empty-state">Nenhuma faixa cadastrada.</div>{% endif %}
+
+    <form method="post" action="/tarifario/cancelamento/{{ politica.id }}/faixas" style="margin-top:16px">
+      <h4>Adicionar faixa</h4>
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Horas mín.</label><input class="form-input" type="number" name="horas_antes_min" value="0"></div>
+        <div class="form-group"><label class="form-label">Horas máx.</label><input class="form-input" type="number" name="horas_antes_max" placeholder="vazio = sem limite"></div>
+        <div class="form-group"><label class="form-label">Tipo retenção</label>
+          <select class="form-input" name="tipo_retencao">
+            {% for t in ['percentual','diarias','valor_fixo'] %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Valor retenção</label><input class="form-input" name="valor_retencao" value="0"></div>
+        <div class="form-group"><label class="form-label">Ordem</label><input class="form-input" type="number" name="ordem" value="0"></div>
+      </div>
+      <button class="btn btn-sm btn-primary" type="submit" style="margin-top:8px">Adicionar faixa</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

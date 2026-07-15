@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <form method="get" action="/reservas" style="display:flex;gap:8px;margin:0;flex-wrap:wrap">
+      <input class="form-input" type="search" name="q" value="{{ q }}" placeholder="Número...">
+      <select class="form-input" name="status">
+        <option value="">Todos status</option>
+        {% for s in ['pendente','confirmada','checkout','concluida','cancelada','no_show'] %}
+        <option value="{{ s }}" {% if status == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-sm" type="submit">Buscar</button>
+    </form>
+    {% if current_user.is_superuser or 'reservas.reserva.criar' in current_user.permissions %}
+    <a class="btn btn-primary" href="/reservas/nova">+ Nova Reserva</a>
+    {% endif %}
+  </div>
+  {% if page_result.items %}
+  <table class="table">
+    <thead><tr><th>Número</th><th>Cliente</th><th>Categoria</th><th>Retirada</th><th>Devolução</th><th>Status</th><th>Total</th><th></th></tr></thead>
+    <tbody>
+    {% for r in page_result.items %}
+    <tr>
+      <td><strong>{{ r.numero }}</strong></td>
+      <td>{{ cliente_nomes.get(r.cliente_id|string, r.cliente_id) }}</td>
+      <td>{{ categoria_nomes.get(r.categoria_id|string, r.categoria_id) }}</td>
+      <td>{{ r.retirada_em|datetime }}</td>
+      <td>{{ r.devolucao_em|datetime }}</td>
+      <td><span class="badge {% if r.status.value == 'confirmada' %}badge-success{% elif r.status.value in ['cancelada','no_show'] %}badge-danger{% else %}badge-warning{% endif %}">{{ r.status.value }}</span></td>
+      <td class="num">{{ r.valor_total|currency }}</td>
+      <td class="num"><a class="btn btn-sm" href="/reservas/{{ r.id }}">Detalhe</a></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhuma reserva encontrada.</div>{% endif %}
+</div>
+{% endblock %}

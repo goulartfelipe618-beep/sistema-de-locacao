@@ -1,0 +1,28 @@
+{% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+{% if resultado %}
+<div style="margin-top:8px">
+  <h4>Resumo de preços</h4>
+  <div class="form-grid" style="margin-bottom:12px">
+    <div><strong>Tabela:</strong> {{ resultado.tabela_nome }}</div>
+    <div><strong>Dias:</strong> {{ resultado.dias }} (cobrados: {{ resultado.dias_cobrados }})</div>
+    <div><strong>Diária:</strong> {{ resultado.diaria_unitaria|currency }}</div>
+    {% if resultado.temporada_nome %}<div><strong>Temporada:</strong> {{ resultado.temporada_nome }}</div>{% endif %}
+  </div>
+  <table class="table">
+    <thead><tr><th>Item</th><th>Qtd</th><th>Unit.</th><th>Total</th></tr></thead>
+    <tbody>
+      <tr><td>Diárias</td><td class="num">{{ resultado.dias_cobrados }}</td><td class="num">{{ resultado.diaria_unitaria|currency }}</td><td class="num">{{ resultado.subtotal_diarias|currency }}</td></tr>
+      {% for t in resultado.taxas %}
+      <tr><td>Taxa: {{ t.nome }}</td><td class="num">{{ t.quantidade }}</td><td class="num">{{ t.valor_unitario|currency }}</td><td class="num">{{ t.valor_total|currency }}</td></tr>
+      {% endfor %}
+      {% for p in resultado.protecoes %}
+      <tr><td>Proteção: {{ p.nome }}</td><td class="num">{{ p.quantidade }}</td><td class="num">{{ p.valor_unitario|currency }}</td><td class="num">{{ p.valor_total|currency }}</td></tr>
+      {% endfor %}
+      {% for a in resultado.acessorios %}
+      <tr><td>Acessório: {{ a.nome }}</td><td class="num">{{ a.quantidade }}</td><td class="num">{{ a.valor_unitario|currency }}</td><td class="num">{{ a.valor_total|currency }}</td></tr>
+      {% endfor %}
+      <tr style="font-weight:bold"><td colspan="3">Total</td><td class="num">{{ resultado.total|currency }}</td></tr>
+    </tbody>
+  </table>
+</div>
+{% endif %}

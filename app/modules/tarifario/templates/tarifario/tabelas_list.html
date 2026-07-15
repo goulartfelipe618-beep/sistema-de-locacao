@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <form method="get" action="/tarifario/tabelas" style="display:flex;gap:8px;margin:0;flex-wrap:wrap">
+      <input class="form-input" type="search" name="q" value="{{ q }}" placeholder="Nome da tabela...">
+      <select class="form-input" name="canal">
+        <option value="">Todos os canais</option>
+        {% for c in ['balcao','site','app','parceiro','telefone','todos'] %}
+        <option value="{{ c }}" {% if canal == c %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-sm" type="submit">Buscar</button>
+    </form>
+    {% if current_user.is_superuser or 'tarifario.tabela.criar' in current_user.permissions %}
+    <a class="btn btn-primary" href="/tarifario/tabelas/novo">+ Nova Tabela</a>
+    {% endif %}
+  </div>
+  {% if page_result.items %}
+  <table class="table">
+    <thead><tr><th>Nome</th><th>Vigência</th><th>Canal</th><th>Filial</th><th>Prioridade</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for t in page_result.items %}
+    <tr>
+      <td><strong>{{ t.nome }}</strong></td>
+      <td>{{ t.vigencia_inicio|date }}{% if t.vigencia_fim %} — {{ t.vigencia_fim|date }}{% endif %}</td>
+      <td>{{ t.canal.value }}</td>
+      <td>{{ filial_nomes.get(t.filial_id|string, 'Todas') if t.filial_id else 'Todas' }}</td>
+      <td class="num">{{ t.prioridade }}</td>
+      <td><span class="badge {% if t.status.value == 'active' %}badge-success{% else %}badge-warning{% endif %}">{{ t.status.value }}</span></td>
+      <td class="num">{% if current_user.is_superuser or 'tarifario.tabela.editar' in current_user.permissions %}<a class="btn btn-sm" href="/tarifario/tabelas/{{ t.id }}/editar">Editar</a>{% endif %}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhuma tabela de tarifas cadastrada.</div>{% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <form method="get" action="/tarifario/taxas" style="display:flex;gap:8px;margin:0">
+      <input class="form-input" type="search" name="q" value="{{ q }}" placeholder="Nome ou regra...">
+      <button class="btn btn-sm" type="submit">Buscar</button>
+    </form>
+    {% if current_user.is_superuser or 'tarifario.taxa.criar' in current_user.permissions %}
+    <a class="btn btn-primary" href="/tarifario/taxas/novo">+ Nova Taxa</a>
+    {% endif %}
+  </div>
+  {% if page_result.items %}
+  <table class="table">
+    <thead><tr><th>Nome</th><th>Tipo cálculo</th><th>Valor</th><th>Aplicação</th><th>Regra</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for t in page_result.items %}
+    <tr>
+      <td><strong>{{ t.nome }}</strong>{% if t.descricao %}<br><small>{{ t.descricao }}</small>{% endif %}</td>
+      <td>{{ t.tipo_calculo.value }}</td>
+      <td class="num">{{ t.valor|currency }}</td>
+      <td>{{ t.aplicacao.value }}</td>
+      <td>{{ t.regra_codigo or '-' }}</td>
+      <td><span class="badge {% if t.status.value == 'active' %}badge-success{% else %}badge-warning{% endif %}">{{ t.status.value }}</span></td>
+      <td class="num">{% if current_user.is_superuser or 'tarifario.taxa.editar' in current_user.permissions %}<a class="btn btn-sm" href="/tarifario/taxas/{{ t.id }}/editar">Editar</a>{% endif %}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhuma taxa cadastrada.</div>{% endif %}
+</div>
+{% endblock %}

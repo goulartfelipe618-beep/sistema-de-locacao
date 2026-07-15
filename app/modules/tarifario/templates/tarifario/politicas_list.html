@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <form method="get" action="/tarifario/cancelamento" style="display:flex;gap:8px;margin:0">
+      <input class="form-input" type="search" name="q" value="{{ q }}" placeholder="Nome...">
+      <button class="btn btn-sm" type="submit">Buscar</button>
+    </form>
+    {% if current_user.is_superuser or 'tarifario.politica.criar' in current_user.permissions %}
+    <a class="btn btn-primary" href="/tarifario/cancelamento/novo">+ Nova Política</a>
+    {% endif %}
+  </div>
+  {% if page_result.items %}
+  <table class="table">
+    <thead><tr><th>Nome</th><th>Canal</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for p in page_result.items %}
+    <tr>
+      <td><strong>{{ p.nome }}</strong>{% if p.descricao %}<br><small>{{ p.descricao }}</small>{% endif %}</td>
+      <td>{{ p.canal.value }}</td>
+      <td><span class="badge {% if p.status.value == 'active' %}badge-success{% else %}badge-warning{% endif %}">{{ p.status.value }}</span></td>
+      <td class="num">{% if current_user.is_superuser or 'tarifario.politica.editar' in current_user.permissions %}<a class="btn btn-sm" href="/tarifario/cancelamento/{{ p.id }}/editar">Editar</a>{% endif %}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhuma política de cancelamento cadastrada.</div>{% endif %}
+</div>
+{% endblock %}
