@@ -443,7 +443,7 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(
             ["dispositivo_id"],
             ["frota_telemetria_dispositivos.id"],
-            name="fk_frota_telemetria_eventos_dispositivo_id_frota_telemetria_dispositivos",
+            name="fk_frota_tel_evt_dispositivo_id",
             ondelete="CASCADE",
         ),
         sa.ForeignKeyConstraint(

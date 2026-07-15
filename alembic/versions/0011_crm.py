@@ -146,7 +146,7 @@ def upgrade() -> None:
         sa.Column("user_id", postgresql.UUID(as_uuid=True), nullable=True),
         sa.ForeignKeyConstraint(
             ["oportunidade_id"], ["crm_oportunidades.id"],
-            name="fk_crm_oportunidade_interacoes_oportunidade_id_crm_oportunidades",
+            name="fk_crm_opp_inter_opp_id",
             ondelete="CASCADE",
         ),
         sa.ForeignKeyConstraint(

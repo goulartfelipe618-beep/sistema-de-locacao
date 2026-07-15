@@ -262,7 +262,7 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(
             ["plano_preventivo_id"],
             ["man_planos_preventivos.id"],
-            name="fk_man_ordens_servico_plano_preventivo_id_man_planos_preventivos",
+            name="fk_man_os_plano_prev_id",
             ondelete="SET NULL",
         ),
         sa.ForeignKeyConstraint(

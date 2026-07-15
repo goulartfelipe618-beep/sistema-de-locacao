@@ -157,7 +157,7 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(
             ["politica_cancelamento_id"],
             ["tar_politicas_cancelamento.id"],
-            name="fk_res_reservas_politica_cancelamento_id_tar_politicas_cancelamento",
+            name="fk_res_res_pol_cancel_id",
             ondelete="SET NULL",
         ),
         sa.PrimaryKeyConstraint("id", name="pk_res_reservas"),
