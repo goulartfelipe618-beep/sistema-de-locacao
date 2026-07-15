@@ -53,4 +53,22 @@ BEAT_SCHEDULE: dict[str, dict] = {
         "schedule": crontab(hour=2, minute=0),
         "options": {"queue": "default"},
     },
+    # Expira propostas comerciais com validade vencida (§7.2).
+    "comercial-expirar-propostas": {
+        "task": "comercial.expirar_propostas",
+        "schedule": crontab(hour=1, minute=30),
+        "options": {"queue": "default"},
+    },
+    # Expira pontos de fidelidade além do prazo de validade (§7.5).
+    "comercial-expirar-pontos-fidelidade": {
+        "task": "comercial.expirar_pontos_fidelidade",
+        "schedule": crontab(hour=1, minute=45),
+        "options": {"queue": "default"},
+    },
+    # Alerta de oportunidades paradas no funil (§7.1).
+    "comercial-alertar-funil-parado": {
+        "task": "comercial.alertar_funil_parado",
+        "schedule": crontab(hour=6, minute=30),
+        "options": {"queue": "default"},
+    },
 }

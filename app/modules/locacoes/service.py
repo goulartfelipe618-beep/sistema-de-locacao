@@ -942,6 +942,20 @@ class CheckinService:
                 f"(ajustes={ajustes}, final={contrato.valor_final})"
             ),
         )
+        # Hook §7.5: credita pontos de fidelidade ao encerrar sem pendência.
+        if novo_status == ContratoStatus.ENCERRADO:
+            try:
+                from app.modules.comercial.service import FidelidadeService
+
+                await FidelidadeService(self.session).creditar_contrato(
+                    contrato.tenant_id,
+                    contrato_id=contrato.id,
+                    cliente_id=contrato.cliente_id,
+                    valor_total=contrato.valor_final or contrato.valor_total,
+                    dias=contrato.dias,
+                )
+            except Exception:  # noqa: BLE001 - fidelidade não deve bloquear o check-in
+                pass
         return contrato
 
     async def _calcular_ajustes(

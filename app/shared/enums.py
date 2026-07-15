@@ -546,6 +546,107 @@ class FaturaStatus(str, enum.Enum):
     CANCELADA = "cancelada"
 
 
+class CrmEstagio(str, enum.Enum):
+    """Estágios do funil de vendas (§7.1)."""
+
+    LEAD = "lead"
+    QUALIFICACAO = "qualificacao"
+    COTACAO_ENVIADA = "cotacao_enviada"
+    NEGOCIACAO = "negociacao"
+    FECHADO_GANHO = "fechado_ganho"
+    PERDIDO = "perdido"
+
+
+class CrmOrigemLead(str, enum.Enum):
+    """Origem/canal de captação do lead (§7.1)."""
+
+    SITE = "site"
+    TELEFONE = "telefone"
+    INDICACAO = "indicacao"
+    PARCEIRO = "parceiro"
+    REDES_SOCIAIS = "redes_sociais"
+    OUTRO = "outro"
+
+
+class CrmInteracaoTipo(str, enum.Enum):
+    """Tipo de interação registrada na oportunidade (§7.1)."""
+
+    NOTA = "nota"
+    LIGACAO = "ligacao"
+    EMAIL = "email"
+
+
+class CrmPropostaStatus(str, enum.Enum):
+    """Ciclo de vida de uma proposta comercial (§7.2)."""
+
+    RASCUNHO = "rascunho"
+    ENVIADA = "enviada"
+    VISUALIZADA = "visualizada"
+    ACEITA = "aceita"
+    RECUSADA = "recusada"
+    EXPIRADA = "expirada"
+
+
+class CrmCampanhaStatus(str, enum.Enum):
+    """Situação de uma campanha de marketing (§7.3)."""
+
+    RASCUNHO = "rascunho"
+    ATIVA = "ativa"
+    PAUSADA = "pausada"
+    ENCERRADA = "encerrada"
+
+
+class CrmCampanhaCanal(str, enum.Enum):
+    """Canal de disparo da campanha (§7.3)."""
+
+    EMAIL = "email"
+    SMS = "sms"
+    WHATSAPP = "whatsapp"
+    SITE = "site"
+
+
+class CrmCampanhaPublico(str, enum.Enum):
+    """Segmentação do público-alvo da campanha (§7.3)."""
+
+    TODOS = "todos"
+    CATEGORIA_CLIENTE = "categoria_cliente"
+    INATIVOS = "inativos"
+
+
+class CrmCupomTipo(str, enum.Enum):
+    """Tipo de desconto de um cupom (§7.4)."""
+
+    PERCENTUAL = "percentual"
+    VALOR_FIXO = "valor_fixo"
+
+
+class CrmCupomStatus(str, enum.Enum):
+    """Situação de um cupom promocional (§7.4)."""
+
+    ATIVO = "ativo"
+    EXPIRADO = "expirado"
+    ESGOTADO = "esgotado"
+    INATIVO = "inativo"
+
+
+class CrmFidelidadeMovimentoTipo(str, enum.Enum):
+    """Natureza de um movimento de pontos de fidelidade (§7.5)."""
+
+    CREDITO = "credito"
+    DEBITO = "debito"
+    EXPIRACAO = "expiracao"
+    AJUSTE = "ajuste"
+
+
+class CrmFidelidadeOrigem(str, enum.Enum):
+    """Origem de um movimento de pontos de fidelidade (§7.5)."""
+
+    CONTRATO = "contrato"
+    RESGATE = "resgate"
+    EXPIRACAO = "expiracao"
+    AJUSTE = "ajuste"
+
+
 class AuditAction(str, enum.Enum):
     """Categorias de eventos registrados na trilha de auditoria."""
 

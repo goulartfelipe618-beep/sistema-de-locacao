@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+<div class="card">
+  <h2 class="card-title">{{ title }}</h2>
+  <form method="post" action="/comercial/campanhas/nova">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Nome *</label><input class="form-input" name="nome" required></div>
+      <div class="form-group"><label class="form-label">Canal</label>
+        <select class="form-input" name="canal">{% for c in canais %}<option value="{{ c }}">{{ c }}</option>{% endfor %}</select>
+      </div>
+      <div class="form-group"><label class="form-label">Público-alvo</label>
+        <select class="form-input" name="publico_alvo">{% for p in publicos %}<option value="{{ p }}">{{ p }}</option>{% endfor %}</select>
+      </div>
+      <div class="form-group"><label class="form-label">Categoria cliente (código)</label><input class="form-input" name="categoria_cliente"></div>
+      <div class="form-group"><label class="form-label">Dias inativo</label><input class="form-input" name="dias_inativo" value="90"></div>
+      <div class="form-group"><label class="form-label">Desconto %</label><input class="form-input" name="desconto_percentual"></div>
+      <div class="form-group"><label class="form-label">Início</label><input class="form-input" type="date" name="inicio_em"></div>
+      <div class="form-group"><label class="form-label">Fim</label><input class="form-input" type="date" name="fim_em"></div>
+      <div class="form-group" style="grid-column:span 2"><label class="form-label">Assunto da mensagem</label><input class="form-input" name="mensagem_assunto"></div>
+      <div class="form-group" style="grid-column:span 2"><label class="form-label">Corpo da mensagem</label><input class="form-input" name="mensagem_corpo"></div>
+    </div>
+    <div class="form-actions" style="margin-top:12px">
+      <button class="btn btn-primary" type="submit">Salvar Campanha</button>
+      <a class="btn" href="/comercial/campanhas">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

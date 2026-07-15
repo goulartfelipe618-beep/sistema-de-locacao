@@ -353,6 +353,7 @@ async def reserva_nova_create(
     politica_cancelamento_id: Annotated[str, Form()] = "",
     observacoes: Annotated[str, Form()] = "",
     desconto: Annotated[str, Form()] = "0",
+    cupom_codigo: Annotated[str, Form()] = "",
 ) -> HTMLResponse:
     lookups = await _reservas_lookups(session, current_user.tenant_id)
     form = _form_to_dict(
@@ -376,6 +377,7 @@ async def reserva_nova_create(
         politica_cancelamento_id=politica_cancelamento_id,
         observacoes=observacoes,
         desconto=desconto,
+        cupom_codigo=cupom_codigo,
     )
     ctx = {
         "title": "Nova Reserva",
@@ -411,6 +413,7 @@ async def reserva_nova_create(
                 motoristas=_parse_motoristas(motorista_ids, motorista_principal),
                 observacoes=observacoes or None,
                 desconto=_dec(desconto),
+                cupom_codigo=cupom_codigo or None,
             ),
         )
     except (AppError, ValueError) as exc:

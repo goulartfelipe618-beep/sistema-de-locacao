@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <form method="get" action="/comercial/campanhas" style="display:flex;gap:8px;margin:0">
+      <select class="form-input" name="status">
+        <option value="">Todos status</option>
+        {% for s in ['rascunho','ativa','pausada','encerrada'] %}
+        <option value="{{ s }}" {% if status == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+      </select>
+      <button class="btn btn-sm" type="submit">Filtrar</button>
+    </form>
+    {% if current_user.is_superuser or 'comercial.campanha.criar' in current_user.permissions %}
+    <a class="btn btn-primary" href="/comercial/campanhas/nova">+ Nova Campanha</a>
+    {% endif %}
+  </div>
+  {% if page_result.items %}
+  <table class="table">
+    <thead><tr><th>Código</th><th>Nome</th><th>Canal</th><th>Público</th><th>Enviados</th><th>Convertidos</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for c in page_result.items %}
+    <tr>
+      <td>{{ c.codigo }}</td>
+      <td>{{ c.nome }}</td>
+      <td>{{ c.canal.value }}</td>
+      <td>{{ c.publico_alvo.value }}</td>
+      <td class="num">{{ c.enviados }}</td>
+      <td class="num">{{ c.convertidos }}</td>
+      <td><span class="badge {% if c.status.value == 'ativa' %}badge-success{% elif c.status.value == 'encerrada' %}badge-danger{% endif %}">{{ c.status.value }}</span></td>
+      <td><a class="btn btn-sm" href="/comercial/campanhas/{{ c.id }}">Abrir</a></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhuma campanha.</div>{% endif %}
+</div>
+{% endblock %}

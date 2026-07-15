@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card" style="margin-bottom:16px">
+  <h2 class="card-title">Extrato — {{ cliente_nomes.get(conta.cliente_id|string, '—') }}</h2>
+  <div class="form-grid">
+    <div><strong>Saldo atual:</strong> {{ conta.pontos_saldo }} pontos</div>
+    <div><strong>Histórico total:</strong> {{ conta.pontos_historico_total }} pontos</div>
+  </div>
+</div>
+<div class="card">
+  <h2 class="card-title">Movimentos</h2>
+  {% if movimentos %}
+  <table class="table">
+    <thead><tr><th>Data</th><th>Tipo</th><th>Origem</th><th>Pontos</th><th>Descrição</th><th>Expira em</th></tr></thead>
+    <tbody>
+    {% for m in movimentos %}
+    <tr>
+      <td>{{ m.created_at|datetime }}</td>
+      <td>{{ m.tipo.value }}</td>
+      <td>{{ m.origem.value }}</td>
+      <td class="num">{{ m.pontos }}</td>
+      <td>{{ m.descricao or '—' }}</td>
+      <td>{{ m.expira_em|datetime }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<div class="empty-state">Sem movimentos.</div>{% endif %}
+  <div class="toolbar" style="margin-top:12px"><a class="btn" href="/comercial/fidelidade">Voltar</a></div>
+</div>
+{% endblock %}

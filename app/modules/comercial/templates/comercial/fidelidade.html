@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+{% set can_edit = current_user.is_superuser or 'comercial.fidelidade.editar' in current_user.permissions %}
+{% set can_create = current_user.is_superuser or 'comercial.fidelidade.criar' in current_user.permissions %}
+
+<div class="card" style="margin-bottom:16px">
+  <h2 class="card-title">Regra do Programa</h2>
+  <form method="post" action="/comercial/fidelidade/regra">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Nome</label><input class="form-input" name="nome" value="{{ regra.nome if regra else 'Programa de Fidelidade' }}" {% if not can_edit %}disabled{% endif %}></div>
+      <div class="form-group"><label class="form-label">Pontos por R$</label><input class="form-input" name="pontos_por_real" value="{{ regra.pontos_por_real if regra else '1' }}" {% if not can_edit %}disabled{% endif %}></div>
+      <div class="form-group"><label class="form-label">Pontos por diária</label><input class="form-input" name="pontos_por_diaria" value="{{ regra.pontos_por_diaria if regra else '0' }}" {% if not can_edit %}disabled{% endif %}></div>
+      <div class="form-group"><label class="form-label">Valor por ponto (R$)</label><input class="form-input" name="valor_por_ponto" value="{{ regra.valor_por_ponto if regra else '0.10' }}" {% if not can_edit %}disabled{% endif %}></div>
+      <div class="form-group"><label class="form-label">Validade (meses)</label><input class="form-input" name="validade_meses" value="{{ regra.validade_meses if regra else '12' }}" {% if not can_edit %}disabled{% endif %}></div>
+      <div class="form-group"><label class="form-label">Ativo</label>
+        <select class="form-input" name="ativo" {% if not can_edit %}disabled{% endif %}>
+          <option value="on" {% if not regra or regra.ativo %}selected{% endif %}>Sim</option>
+          <option value="" {% if regra and not regra.ativo %}selected{% endif %}>Não</option>
+        </select>
+      </div>
+    </div>
+    {% if can_edit %}<div class="form-actions" style="margin-top:12px"><button class="btn btn-primary" type="submit">Salvar Regra</button></div>{% endif %}
+  </form>
+</div>
+
+<div class="card" style="margin-bottom:16px">
+  <h2 class="card-title">Tiers</h2>
+  {% if tiers %}
+  <table class="table">
+    <thead><tr><th>Ordem</th><th>Nome</th><th>Pontos mínimos</th><th>Benefício</th></tr></thead>
+    <tbody>
+    {% for t in tiers %}
+    <tr><td class="num">{{ t.ordem }}</td><td>{{ t.nome }}</td><td class="num">{{ t.pontos_minimos }}</td><td>{{ t.beneficio_descricao or '—' }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<div class="empty-state">Nenhum tier cadastrado.</div>{% endif %}
+  {% if can_create %}
+  <form method="post" action="/comercial/fidelidade/tiers/novo" style="margin-top:12px">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Nome *</label><input class="form-input" name="nome" required></div>
+      <div class="form-group"><label class="form-label">Pontos mínimos</label><input class="form-input" name="pontos_minimos" value="0"></div>
+      <div class="form-group"><label class="form-label">Ordem</label><input class="form-input" name="ordem" value="0"></div>
+      <div class="form-group" style="grid-column:span 2"><label class="form-label">Benefício</label><input class="form-input" name="beneficio_descricao"></div>
+    </div>
+    <div class="form-actions" style="margin-top:8px"><button class="btn" type="submit">+ Adicionar Tier</button></div>
+  </form>
+  {% endif %}
+</div>
+
+{% if can_edit %}
+<div class="card" style="margin-bottom:16px">
+  <h2 class="card-title">Resgatar Pontos</h2>
+  <form method="post" action="/comercial/fidelidade/resgatar">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Cliente *</label>
+        <select class="form-input" name="cliente_id" required>
+          <option value="">Selecionar</option>
+          {% for c in clientes %}<option value="{{ c.id }}">{{ c.nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Pontos *</label><input class="form-input" name="pontos" required></div>
+    </div>
+    <div class="form-actions" style="margin-top:8px"><button class="btn btn-primary" type="submit">Resgatar</button></div>
+  </form>
+</div>
+{% endif %}
+
+<div class="card">
+  <h2 class="card-title">Contas de Fidelidade</h2>
+  {% if page_result.items %}
+  <table class="table">
+    <thead><tr><th>Cliente</th><th>Saldo</th><th>Histórico</th><th></th></tr></thead>
+    <tbody>
+    {% for conta in page_result.items %}
+    <tr>
+      <td>{{ cliente_nomes.get(conta.cliente_id|string, '—') }}</td>
+      <td class="num">{{ conta.pontos_saldo }}</td>
+      <td class="num">{{ conta.pontos_historico_total }}</td>
+      <td><a class="btn btn-sm" href="/comercial/fidelidade/contas/{{ conta.id }}">Extrato</a></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhuma conta de fidelidade.</div>{% endif %}
+</div>
+{% endblock %}

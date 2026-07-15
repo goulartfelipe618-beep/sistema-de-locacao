@@ -10,6 +10,7 @@ from fastapi import APIRouter
 
 from app.modules.audit.web import router as audit_router
 from app.modules.cadastros.web import router as cadastros_router
+from app.modules.comercial.web import router as comercial_router
 from app.modules.dashboard.web import router as dashboard_router
 from app.modules.financeiro.web import router as financeiro_router
 from app.modules.frota.web import router as frota_router
@@ -32,4 +33,5 @@ web_router.include_router(tarifario_router)
 web_router.include_router(reservas_router)
 web_router.include_router(locacoes_router)
 web_router.include_router(financeiro_router)
+web_router.include_router(comercial_router)
 web_router.include_router(audit_router)

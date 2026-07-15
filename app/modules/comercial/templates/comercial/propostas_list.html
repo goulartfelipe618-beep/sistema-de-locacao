@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <form method="get" action="/comercial/propostas" style="display:flex;gap:8px;margin:0">
+      <select class="form-input" name="status">
+        <option value="">Todos status</option>
+        {% for s in ['rascunho','enviada','visualizada','aceita','recusada','expirada'] %}
+        <option value="{{ s }}" {% if status == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+      </select>
+      <button class="btn btn-sm" type="submit">Filtrar</button>
+    </form>
+    {% if current_user.is_superuser or 'comercial.proposta.criar' in current_user.permissions %}
+    <a class="btn btn-primary" href="/comercial/propostas/nova">+ Nova Proposta</a>
+    {% endif %}
+  </div>
+  {% if page_result.items %}
+  <table class="table">
+    <thead><tr><th>Número</th><th>Versão</th><th>Cliente</th><th>Validade</th><th>Total</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for p in page_result.items %}
+    <tr>
+      <td>{{ p.numero }}</td>
+      <td>v{{ p.versao }}</td>
+      <td>{{ cliente_nomes.get(p.cliente_id|string, '—') if p.cliente_id else '—' }}</td>
+      <td>{{ p.validade_em|date }}</td>
+      <td class="num">{{ p.valor_total|currency }}</td>
+      <td><span class="badge {% if p.status.value == 'aceita' %}badge-success{% elif p.status.value in ['recusada','expirada'] %}badge-danger{% endif %}">{{ p.status.value }}</span></td>
+      <td><a class="btn btn-sm" href="/comercial/propostas/{{ p.id }}">Abrir</a></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhuma proposta.</div>{% endif %}
+</div>
+{% endblock %}

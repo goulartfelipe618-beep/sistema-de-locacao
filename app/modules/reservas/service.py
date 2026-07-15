@@ -454,6 +454,26 @@ class ReservaService:
         pricing_input = self._build_pricing_input(tenant_id, data)
         quote = await self.pricing.calcular(pricing_input)
 
+        # Hook §7.4: valida e aplica cupom de desconto, se informado.
+        desconto_efetivo = data.desconto
+        cupom_result = None
+        if data.cupom_codigo:
+            from app.modules.comercial.schemas import CupomValidarInput
+            from app.modules.comercial.service import CupomService
+
+            cupom_result = await CupomService(self.session).validar(
+                CupomValidarInput(
+                    codigo=data.cupom_codigo,
+                    cliente_id=data.cliente_id,
+                    categoria_id=data.categoria_id,
+                    valor_base=quote.total,
+                )
+            )
+            if not cupom_result.ok:
+                raise BusinessRuleError(cupom_result.motivo or "Cupom inválido.")
+            if cupom_result.desconto > desconto_efetivo:
+                desconto_efetivo = cupom_result.desconto
+
         politica_id = data.politica_cancelamento_id or quote.politica_sugerida_id
         politica_snapshot = None
         if politica_id:
@@ -467,7 +487,7 @@ class ReservaService:
                 )
 
         numero = await self.next_numero(tenant_id)
-        fields = _pricing_to_reserva_fields(quote, desconto=data.desconto)
+        fields = _pricing_to_reserva_fields(quote, desconto=desconto_efetivo)
         reserva = ResReserva(
             tenant_id=tenant_id,
             numero=numero,
@@ -497,6 +517,17 @@ class ReservaService:
 
         await self._sync_itens(tenant_id, reserva.id, quote)
         await self._sync_motoristas(tenant_id, reserva.id, data.motoristas)
+
+        # Hook §7.4: registra o uso do cupom validado na reserva recém-criada.
+        if cupom_result is not None and cupom_result.ok and cupom_result.cupom_id:
+            from app.modules.comercial.service import CupomService
+
+            await CupomService(self.session).aplicar(
+                cupom_result.cupom_id,
+                cliente_id=data.cliente_id,
+                reserva_id=reserva.id,
+                desconto_aplicado=cupom_result.desconto,
+            )
 
         await audit_service.record(
             AuditAction.CREATE,
@@ -893,6 +924,13 @@ class CotacaoService:
             entity_id=cotacao.id,
             description=f"Cotação criada: {cotacao.numero}",
         )
+        # Hook §7.1: cria/atualiza oportunidade no funil (estágio cotação enviada).
+        try:
+            from app.modules.comercial.service import FunilService
+
+            await FunilService(self.session).from_cotacao(cotacao)
+        except Exception:  # noqa: BLE001 - o funil não deve bloquear a cotação
+            pass
         return cotacao
 
     async def update(self, cotacao_id: uuid.UUID, data: CotacaoUpdate) -> ResCotacao:
@@ -1031,6 +1069,13 @@ class CotacaoService:
             entity_id=cotacao.id,
             description=f"Cotação convertida em reserva {reserva.numero}",
         )
+        # Hook §7.1: fecha a oportunidade como ganha e vincula a reserva gerada.
+        try:
+            from app.modules.comercial.service import FunilService
+
+            await FunilService(self.session).marcar_ganho_por_cotacao(cotacao.id, reserva.id)
+        except Exception:  # noqa: BLE001 - o funil não deve bloquear a conversão
+            pass
         return reserva
 
     async def expirar_vencidas(self) -> int:

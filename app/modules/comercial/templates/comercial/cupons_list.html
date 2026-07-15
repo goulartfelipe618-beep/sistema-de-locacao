@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <form method="get" action="/comercial/cupons" style="display:flex;gap:8px;margin:0">
+      <select class="form-input" name="status">
+        <option value="">Todos status</option>
+        {% for s in ['ativo','expirado','esgotado','inativo'] %}
+        <option value="{{ s }}" {% if status == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+      </select>
+      <button class="btn btn-sm" type="submit">Filtrar</button>
+    </form>
+    {% if current_user.is_superuser or 'comercial.cupom.criar' in current_user.permissions %}
+    <a class="btn btn-primary" href="/comercial/cupons/novo">+ Novo Cupom</a>
+    {% endif %}
+  </div>
+  {% if page_result.items %}
+  <table class="table">
+    <thead><tr><th>Código</th><th>Tipo</th><th>Valor</th><th>Mínimo</th><th>Usos</th><th>Limite</th><th>Validade</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for c in page_result.items %}
+    <tr>
+      <td>{{ c.codigo }}</td>
+      <td>{{ c.tipo.value }}</td>
+      <td class="num">{% if c.tipo.value == 'percentual' %}{{ c.valor }}%{% else %}{{ c.valor|currency }}{% endif %}</td>
+      <td class="num">{{ c.valor_minimo|currency }}</td>
+      <td class="num">{{ c.usos_totais }}</td>
+      <td class="num">{{ c.limite_uso_total if c.limite_uso_total is not none else '∞' }}</td>
+      <td>{{ c.fim_em|date }}</td>
+      <td><span class="badge {% if c.status.value == 'ativo' %}badge-success{% elif c.status.value in ['expirado','esgotado'] %}badge-danger{% endif %}">{{ c.status.value }}</span></td>
+      <td>
+        {% if current_user.is_superuser or 'comercial.cupom.excluir' in current_user.permissions %}
+        <form method="post" action="/comercial/cupons/{{ c.id }}/excluir" style="margin:0" onsubmit="return confirm('Excluir cupom?')">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-sm btn-danger" type="submit">Excluir</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhum cupom.</div>{% endif %}
+</div>
+{% endblock %}

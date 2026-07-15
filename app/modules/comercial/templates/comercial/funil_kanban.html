@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+<div class="card" style="margin-bottom:16px">
+  <h2 class="card-title">Funil de Vendas</h2>
+  {% if current_user.is_superuser or 'comercial.funil.criar' in current_user.permissions %}
+  <form method="post" action="/comercial/funil/novo">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Título *</label><input class="form-input" name="titulo" required></div>
+      <div class="form-group"><label class="form-label">Origem do lead</label>
+        <select class="form-input" name="origem_lead">
+          {% for o in origens_lead %}<option value="{{ o }}">{{ o }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Cliente</label>
+        <select class="form-input" name="cliente_id">
+          <option value="">(sem cliente)</option>
+          {% for c in clientes %}<option value="{{ c.id }}">{{ c.nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Vendedor</label>
+        <select class="form-input" name="vendedor_id">
+          <option value="">(sem vendedor)</option>
+          {% for v in vendedores %}<option value="{{ v.id }}">{{ v.nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Valor estimado</label><input class="form-input" name="valor_estimado" value="0"></div>
+      <div class="form-group"><label class="form-label">Previsão fechamento</label><input class="form-input" type="date" name="data_prevista_fechamento"></div>
+    </div>
+    <div class="form-actions" style="margin-top:12px"><button class="btn btn-primary" type="submit">+ Nova Oportunidade</button></div>
+  </form>
+  {% endif %}
+</div>
+
+<div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:8px">
+  {% for estagio in estagios %}
+  <div class="card" style="min-width:230px;flex:1">
+    <h3 class="card-title" style="font-size:14px">{{ estagio.value }} <span class="badge">{{ board[estagio]|length }}</span></h3>
+    {% for opp in board[estagio] %}
+    <div style="border:1px solid var(--border,#e2e8f0);border-radius:8px;padding:8px;margin-bottom:8px">
+      <div style="font-weight:600"><a href="/comercial/funil/{{ opp.id }}">{{ opp.numero }}</a></div>
+      <div style="font-size:13px">{{ opp.titulo }}</div>
+      <div style="font-size:12px;color:#64748b">
+        {{ cliente_nomes.get(opp.cliente_id|string, '—') if opp.cliente_id else '—' }} · {{ opp.valor_estimado|currency }}
+      </div>
+      {% if current_user.is_superuser or 'comercial.funil.editar' in current_user.permissions %}
+      <form method="post" action="/comercial/funil/{{ opp.id }}/mover" style="margin-top:6px;display:flex;gap:4px">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <select class="form-input" name="estagio" style="font-size:12px;padding:2px">
+          {% for e in estagios %}<option value="{{ e.value }}" {% if e == opp.estagio %}selected{% endif %}>{{ e.value }}</option>{% endfor %}
+        </select>
+        <button class="btn btn-sm" type="submit">Mover</button>
+      </form>
+      {% endif %}
+    </div>
+    {% else %}
+    <div class="empty-state" style="font-size:12px">Vazio</div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

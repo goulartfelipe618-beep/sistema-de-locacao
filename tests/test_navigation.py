@@ -42,8 +42,14 @@ def test_future_modules_visible_but_disabled() -> None:
     menu = build_menu(_make_user({"dashboard.painel.visualizar"}))
     fiscal = next(s for s in menu if s["label"] == "Fiscal")
     assert all(item["enabled"] is False for item in fiscal["children"])
-    crm = next(s for s in menu if s["label"] == "Comercial / CRM")
-    assert all(item["enabled"] is False for item in crm["children"])
+
+
+def test_comercial_hidden_without_permissions() -> None:
+    # Comercial / CRM agora é implementado e depende de permissões: sem elas a
+    # seção não aparece para o usuário.
+    menu = build_menu(_make_user({"dashboard.painel.visualizar"}))
+    labels = [s["label"] for s in menu]
+    assert "Comercial / CRM" not in labels
 
 
 def test_financeiro_enabled_with_permissions() -> None:

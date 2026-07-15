@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+<div class="card">
+  <h2 class="card-title">{{ title }}</h2>
+  <form method="post" action="/comercial/propostas/nova">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Cliente</label>
+        <select class="form-input" name="cliente_id">
+          <option value="">(sem cliente)</option>
+          {% for c in clientes %}<option value="{{ c.id }}">{{ c.nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Vendedor</label>
+        <select class="form-input" name="vendedor_id">
+          <option value="">(sem vendedor)</option>
+          {% for v in vendedores %}<option value="{{ v.id }}">{{ v.nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Filial</label>
+        <select class="form-input" name="filial_id">
+          <option value="">(sem filial)</option>
+          {% for f in filiais %}<option value="{{ f.id }}">{{ f.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Validade</label><input class="form-input" type="date" name="validade_em"></div>
+      <div class="form-group" style="grid-column:span 2"><label class="form-label">Condições comerciais</label><input class="form-input" name="condicoes_comerciais"></div>
+      <div class="form-group" style="grid-column:span 2"><label class="form-label">Observações</label><input class="form-input" name="observacoes"></div>
+    </div>
+
+    <h3 class="card-title" style="font-size:14px;margin-top:16px">Itens</h3>
+    <table class="table">
+      <thead><tr><th>Descrição</th><th>Categoria</th><th>Qtd</th><th>Dias</th><th>Valor unit.</th></tr></thead>
+      <tbody>
+      {% for i in range(5) %}
+      <tr>
+        <td><input class="form-input" name="item_descricao"></td>
+        <td>
+          <select class="form-input" name="item_categoria_id">
+            <option value="">—</option>
+            {% for c in categorias %}<option value="{{ c.id }}">{{ c.nome }}</option>{% endfor %}
+          </select>
+        </td>
+        <td><input class="form-input" name="item_quantidade" value="1" style="width:70px"></td>
+        <td><input class="form-input" name="item_dias" value="1" style="width:70px"></td>
+        <td><input class="form-input" name="item_valor_unitario" value="0" style="width:110px"></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="form-actions" style="margin-top:12px">
+      <button class="btn btn-primary" type="submit">Salvar Proposta</button>
+      <a class="btn" href="/comercial/propostas">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

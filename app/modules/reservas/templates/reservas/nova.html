@@ -141,6 +141,7 @@
         </select>
       </div>
       <div class="form-group"><label class="form-label">Desconto (R$)</label><input class="form-input" name="desconto" value="{{ form.desconto or '0' }}"></div>
+      <div class="form-group"><label class="form-label">Cupom de desconto</label><input class="form-input" name="cupom_codigo" value="{{ form.cupom_codigo or '' }}" placeholder="Código do cupom"></div>
       <div class="form-group" style="grid-column:1/-1"><label class="form-label">Observações</label><textarea class="form-input" name="observacoes" rows="2">{{ form.observacoes }}</textarea></div>
     </div>
 

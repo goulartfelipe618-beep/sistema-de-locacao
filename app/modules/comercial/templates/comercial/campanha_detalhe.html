@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+{% set can_edit = current_user.is_superuser or 'comercial.campanha.editar' in current_user.permissions %}
+<div class="card" style="margin-bottom:16px">
+  <h2 class="card-title">Campanha {{ campanha.codigo }} — {{ campanha.nome }} · <span class="badge">{{ campanha.status.value }}</span></h2>
+  <div class="form-grid">
+    <div><strong>Canal:</strong> {{ campanha.canal.value }}</div>
+    <div><strong>Público-alvo:</strong> {{ campanha.publico_alvo.value }}</div>
+    <div><strong>Categoria cliente:</strong> {{ campanha.categoria_cliente or '—' }}</div>
+    <div><strong>Dias inativo:</strong> {{ campanha.dias_inativo }}</div>
+    <div><strong>Desconto %:</strong> {{ campanha.desconto_percentual if campanha.desconto_percentual is not none else '—' }}</div>
+    <div><strong>Período:</strong> {{ campanha.inicio_em|date }} — {{ campanha.fim_em|date }}</div>
+    <div><strong>Enviados:</strong> {{ campanha.enviados }}</div>
+    <div><strong>Abertos:</strong> {{ campanha.abertos }}</div>
+    <div><strong>Convertidos:</strong> {{ campanha.convertidos }}</div>
+    {% if campanha.mensagem_assunto %}<div style="grid-column:span 2"><strong>Assunto:</strong> {{ campanha.mensagem_assunto }}</div>{% endif %}
+    {% if campanha.mensagem_corpo %}<div style="grid-column:span 2"><strong>Mensagem:</strong> {{ campanha.mensagem_corpo }}</div>{% endif %}
+  </div>
+</div>
+
+{% if can_edit %}
+<div class="card">
+  <div class="toolbar" style="gap:8px">
+    {% if campanha.status.value in ['rascunho','pausada'] %}
+    <form method="post" action="/comercial/campanhas/{{ campanha.id }}/ativar" style="margin:0">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-primary" type="submit">Ativar</button>
+    </form>
+    {% endif %}
+    {% if campanha.status.value == 'ativa' %}
+    <form method="post" action="/comercial/campanhas/{{ campanha.id }}/disparar" style="margin:0">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-primary" type="submit">Disparar</button>
+    </form>
+    <form method="post" action="/comercial/campanhas/{{ campanha.id }}/pausar" style="margin:0">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-warning" type="submit">Pausar</button>
+    </form>
+    {% endif %}
+    {% if campanha.status.value != 'encerrada' %}
+    <form method="post" action="/comercial/campanhas/{{ campanha.id }}/encerrar" style="margin:0" onsubmit="return confirm('Encerrar campanha?')">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-danger" type="submit">Encerrar</button>
+    </form>
+    {% endif %}
+    <a class="btn" href="/comercial/campanhas">Voltar</a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

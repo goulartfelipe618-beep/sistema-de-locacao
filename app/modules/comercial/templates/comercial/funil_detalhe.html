@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+<div class="card" style="margin-bottom:16px">
+  <h2 class="card-title">{{ opp.numero }} — {{ opp.titulo }} · <span class="badge">{{ opp.estagio.value }}</span></h2>
+  <div class="form-grid">
+    <div><strong>Cliente:</strong> {{ cliente_nomes.get(opp.cliente_id|string, '—') if opp.cliente_id else '—' }}</div>
+    <div><strong>Vendedor:</strong> {{ vendedor_nomes.get(opp.vendedor_id|string, '—') if opp.vendedor_id else '—' }}</div>
+    <div><strong>Origem:</strong> {{ opp.origem_lead.value }}</div>
+    <div><strong>Valor estimado:</strong> {{ opp.valor_estimado|currency }}</div>
+    <div><strong>Previsão fechamento:</strong> {{ opp.data_prevista_fechamento|date }}</div>
+    <div><strong>Última interação:</strong> {{ opp.ultima_interacao_em|datetime }}</div>
+    {% if opp.motivo_perda %}<div><strong>Motivo da perda:</strong> {{ opp.motivo_perda }}</div>{% endif %}
+    {% if opp.observacoes %}<div><strong>Observações:</strong> {{ opp.observacoes }}</div>{% endif %}
+  </div>
+</div>
+
+{% if current_user.is_superuser or 'comercial.funil.editar' in current_user.permissions %}
+<div class="card" style="margin-bottom:16px">
+  <div class="toolbar" style="gap:8px">
+    <form method="post" action="/comercial/funil/{{ opp.id }}/ganho" style="margin:0">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button class="btn btn-primary" type="submit">Marcar Ganho</button>
+    </form>
+    <form method="post" action="/comercial/funil/{{ opp.id }}/perdido" style="margin:0;display:flex;gap:6px">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input class="form-input" name="motivo_perda" placeholder="Motivo da perda">
+      <button class="btn btn-warning" type="submit">Marcar Perdido</button>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<div class="card">
+  <h2 class="card-title">Interações</h2>
+  {% if current_user.is_superuser or 'comercial.funil.criar' in current_user.permissions %}
+  <form method="post" action="/comercial/funil/{{ opp.id }}/interacao" style="margin-bottom:12px">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Tipo</label>
+        <select class="form-input" name="tipo">{% for t in interacao_tipos %}<option value="{{ t }}">{{ t }}</option>{% endfor %}</select>
+      </div>
+      <div class="form-group" style="grid-column:span 2"><label class="form-label">Descrição</label><input class="form-input" name="descricao" required></div>
+    </div>
+    <div class="form-actions" style="margin-top:8px"><button class="btn" type="submit">Registrar Interação</button></div>
+  </form>
+  {% endif %}
+  {% if interacoes %}
+  <table class="table">
+    <thead><tr><th>Quando</th><th>Tipo</th><th>Descrição</th></tr></thead>
+    <tbody>
+    {% for i in interacoes %}
+    <tr><td>{{ i.ocorrido_em|datetime }}</td><td>{{ i.tipo.value }}</td><td>{{ i.descricao }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<div class="empty-state">Nenhuma interação registrada.</div>{% endif %}
+  <div class="toolbar" style="margin-top:12px"><a class="btn" href="/comercial/funil">Voltar ao funil</a></div>
+</div>
+{% endblock %}

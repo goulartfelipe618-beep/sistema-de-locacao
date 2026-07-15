@@ -270,11 +270,36 @@ NAVIGATION: tuple[MenuSection, ...] = (
         label="Comercial / CRM",
         icon="target",
         items=(
-            MenuItem("Funil de Vendas", url="/crm/funil"),
-            MenuItem("Propostas", url="/crm/propostas"),
-            MenuItem("Campanhas", url="/crm/campanhas"),
-            MenuItem("Cupons", url="/crm/cupons"),
-            MenuItem("Fidelidade", url="/crm/fidelidade"),
+            MenuItem(
+                "Funil de Vendas",
+                url="/comercial/funil",
+                permission="comercial.funil.visualizar",
+                implemented=True,
+            ),
+            MenuItem(
+                "Propostas",
+                url="/comercial/propostas",
+                permission="comercial.proposta.visualizar",
+                implemented=True,
+            ),
+            MenuItem(
+                "Campanhas",
+                url="/comercial/campanhas",
+                permission="comercial.campanha.visualizar",
+                implemented=True,
+            ),
+            MenuItem(
+                "Cupons",
+                url="/comercial/cupons",
+                permission="comercial.cupom.visualizar",
+                implemented=True,
+            ),
+            MenuItem(
+                "Fidelidade",
+                url="/comercial/fidelidade",
+                permission="comercial.fidelidade.visualizar",
+                implemented=True,
+            ),
         ),
     ),
     MenuSection(

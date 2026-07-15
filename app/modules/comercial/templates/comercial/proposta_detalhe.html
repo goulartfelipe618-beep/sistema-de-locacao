@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+{% set can_edit = current_user.is_superuser or 'comercial.proposta.editar' in current_user.permissions %}
+<div class="card" style="margin-bottom:16px">
+  <h2 class="card-title">Proposta {{ proposta.numero }} v{{ proposta.versao }} · <span class="badge">{{ proposta.status.value }}</span></h2>
+  <div class="form-grid">
+    <div><strong>Cliente:</strong> {{ cliente_nomes.get(proposta.cliente_id|string, '—') if proposta.cliente_id else '—' }}</div>
+    <div><strong>Vendedor:</strong> {{ vendedor_nomes.get(proposta.vendedor_id|string, '—') if proposta.vendedor_id else '—' }}</div>
+    <div><strong>Validade:</strong> {{ proposta.validade_em|date }}</div>
+    <div><strong>Total:</strong> {{ proposta.valor_total|currency }}</div>
+    <div><strong>Enviada em:</strong> {{ proposta.enviada_em|datetime }}</div>
+    <div><strong>Aceita em:</strong> {{ proposta.aceita_em|datetime }}</div>
+    {% if proposta.condicoes_comerciais %}<div style="grid-column:span 2"><strong>Condições:</strong> {{ proposta.condicoes_comerciais }}</div>{% endif %}
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:16px">
+  <h2 class="card-title">Itens</h2>
+  {% if itens %}
+  <table class="table">
+    <thead><tr><th>Descrição</th><th>Categoria</th><th>Qtd</th><th>Dias</th><th>Valor unit.</th><th>Total</th></tr></thead>
+    <tbody>
+    {% for it in itens %}
+    <tr>
+      <td>{{ it.descricao }}</td>
+      <td>{{ categoria_nomes.get(it.categoria_id|string, '—') if it.categoria_id else '—' }}</td>
+      <td class="num">{{ it.quantidade }}</td>
+      <td class="num">{{ it.dias }}</td>
+      <td class="num">{{ it.valor_unitario|currency }}</td>
+      <td class="num">{{ it.valor_total|currency }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<div class="empty-state">Sem itens.</div>{% endif %}
+</div>
+
+{% if can_edit %}
+<div class="card">
+  <div class="toolbar" style="gap:8px">
+    {% if proposta.status.value == 'rascunho' %}
+    <form method="post" action="/comercial/propostas/{{ proposta.id }}/enviar" style="margin:0">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-primary" type="submit">Enviar</button>
+    </form>
+    {% endif %}
+    {% if proposta.status.value in ['enviada','visualizada'] %}
+    <form method="post" action="/comercial/propostas/{{ proposta.id }}/aceitar" style="margin:0">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-primary" type="submit">Aceitar</button>
+    </form>
+    <form method="post" action="/comercial/propostas/{{ proposta.id }}/recusar" style="margin:0">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-warning" type="submit">Recusar</button>
+    </form>
+    {% endif %}
+    <form method="post" action="/comercial/propostas/{{ proposta.id }}/revisao" style="margin:0">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn" type="submit">Nova Revisão</button>
+    </form>
+    {% if proposta.status.value != 'aceita' and (current_user.is_superuser or 'comercial.proposta.excluir' in current_user.permissions) %}
+    <form method="post" action="/comercial/propostas/{{ proposta.id }}/excluir/confirmar" style="margin:0" onsubmit="return confirm('Excluir proposta?')">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-danger" type="submit">Excluir</button>
+    </form>
+    {% endif %}
+    <a class="btn" href="/comercial/propostas">Voltar</a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

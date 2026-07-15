@@ -10,6 +10,7 @@ from fastapi import APIRouter
 
 from app.api.v1.health import router as health_router
 from app.modules.cadastros.api import router as cadastros_router
+from app.modules.comercial.api import router as comercial_router
 from app.modules.financeiro.api import router as financeiro_router
 from app.modules.frota.api import router as frota_router
 from app.modules.identity.api import router as identity_router
@@ -31,3 +32,4 @@ api_router.include_router(tarifario_router)
 api_router.include_router(reservas_router)
 api_router.include_router(locacoes_router)
 api_router.include_router(financeiro_router)
+api_router.include_router(comercial_router)
