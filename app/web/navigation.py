@@ -402,11 +402,36 @@ NAVIGATION: tuple[MenuSection, ...] = (
         label="Fiscal",
         icon="file",
         items=(
-            MenuItem("NFS-e", url="/fiscal/nfse"),
-            MenuItem("NF-e", url="/fiscal/nfe"),
-            MenuItem("XML", url="/fiscal/xml"),
-            MenuItem("Cancelamentos", url="/fiscal/cancelamentos"),
-            MenuItem("Impostos", url="/fiscal/impostos"),
+            MenuItem(
+                "NFS-e",
+                url="/fiscal/nfse",
+                permission="fiscal.nfse.visualizar",
+                implemented=True,
+            ),
+            MenuItem(
+                "NF-e",
+                url="/fiscal/nfe",
+                permission="fiscal.nfe.visualizar",
+                implemented=True,
+            ),
+            MenuItem(
+                "XML",
+                url="/fiscal/xml",
+                permission="fiscal.xml.visualizar",
+                implemented=True,
+            ),
+            MenuItem(
+                "Cancelamentos",
+                url="/fiscal/cancelamentos",
+                permission="fiscal.cancelamentos.visualizar",
+                implemented=True,
+            ),
+            MenuItem(
+                "Impostos",
+                url="/fiscal/impostos",
+                permission="fiscal.impostos.visualizar",
+                implemented=True,
+            ),
         ),
     ),
     MenuSection(

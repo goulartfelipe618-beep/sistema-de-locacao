@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+<div class="card" style="margin-bottom:16px">
+  <a class="btn btn-sm" href="/fiscal/impostos">&larr; Configurações</a>
+  <h2 class="card-title">Configuração Tributária</h2>
+  <div class="detail-grid">
+    <div><span class="detail-label">Filial</span><span>{{ filial_nomes.get(config.filial_id|string, 'Padrão do tenant') if config.filial_id else 'Padrão do tenant' }}</span></div>
+    <div><span class="detail-label">Regime</span><span>{{ config.regime.value }}</span></div>
+    <div><span class="detail-label">Vigência</span><span>{{ config.vigencia_inicio|date }} — {{ config.vigencia_fim|date if config.vigencia_fim else 'atual' }}</span></div>
+    <div><span class="detail-label">NFS-e automática</span><span>{{ 'sim' if config.nfse_automatica else 'não' }}</span></div>
+    <div><span class="detail-label">Ativo</span><span>{{ 'sim' if config.ativo else 'não' }}</span></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2 class="card-title">Alíquotas</h2>
+  {% if aliquotas %}
+  <table class="table">
+    <thead><tr><th>Tipo</th><th>Descrição</th><th>Cód. serviço/produto</th><th>Alíquota %</th><th>Retenção</th><th>Vigência</th><th></th></tr></thead>
+    <tbody>
+    {% for a in aliquotas %}
+    <tr>
+      <td>{{ a.tipo.value }}</td>
+      <td>{{ a.descricao or '-' }}</td>
+      <td>{{ a.servico_produto_codigo or '-' }}</td>
+      <td class="num">{{ a.aliquota_percentual }}</td>
+      <td>{{ 'sim' if a.retencao else 'não' }}</td>
+      <td>{{ a.vigencia_inicio|date }} — {{ a.vigencia_fim|date if a.vigencia_fim else 'atual' }}</td>
+      <td>
+        {% if current_user.is_superuser or 'fiscal.impostos.editar' in current_user.permissions %}
+        <form method="post" action="/fiscal/impostos/aliquotas/{{ a.id }}/excluir" onsubmit="return confirm('Remover alíquota?')" style="display:inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input type="hidden" name="config_id" value="{{ config.id }}">
+          <button class="btn btn-sm btn-danger" type="submit">Excluir</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<div class="empty-state">Nenhuma alíquota cadastrada.</div>{% endif %}
+
+  {% if current_user.is_superuser or 'fiscal.impostos.criar' in current_user.permissions %}
+  <form method="post" action="/fiscal/impostos/{{ config.id }}/aliquotas/novo" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <select class="form-input" name="tipo" required>
+      {% for t in imposto_tipos %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+    </select>
+    <input class="form-input" name="aliquota_percentual" placeholder="Alíquota %" required>
+    <input class="form-input" name="descricao" placeholder="Descrição">
+    <input class="form-input" name="servico_produto_codigo" placeholder="Cód. serviço/produto">
+    <input class="form-input" type="date" name="vigencia_inicio" required>
+    <label style="align-self:center"><input type="checkbox" name="retencao" value="on"> Retenção</label>
+    <button class="btn btn-primary" type="submit">Adicionar</button>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

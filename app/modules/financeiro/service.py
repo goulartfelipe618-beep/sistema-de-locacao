@@ -1398,6 +1398,17 @@ class FaturamentoService:
             entity_id=fatura.id,
             description=f"Fatura emitida {fatura.numero} → título {cr.numero}.",
         )
+        # Hook §10.1: emite NFS-e automaticamente quando configurado na filial.
+        try:
+            from app.modules.fiscal.service import ImpostoService, NfseService
+
+            if await ImpostoService(self.session).nfse_automatica(filial_id):
+                nfse = await NfseService(self.session).create_from_fatura(
+                    fatura.id, automatica=True
+                )
+                await NfseService(self.session).emitir(nfse.id)
+        except Exception:  # noqa: BLE001 - fiscal não deve bloquear o faturamento
+            pass
         return fatura
 
     async def fechar_ciclos(self, tenant_id: uuid.UUID, *, ref: date | None = None) -> list[FinFatura]:

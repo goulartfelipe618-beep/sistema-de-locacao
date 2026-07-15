@@ -40,8 +40,8 @@ def test_operator_without_dashboard_permission_hides_it() -> None:
 
 def test_future_modules_visible_but_disabled() -> None:
     menu = build_menu(_make_user({"dashboard.painel.visualizar"}))
-    fiscal = next(s for s in menu if s["label"] == "Fiscal")
-    assert all(item["enabled"] is False for item in fiscal["children"])
+    relatorios = next(s for s in menu if s["label"] == "Relatórios")
+    assert all(item["enabled"] is False for item in relatorios["children"])
 
 
 def test_comercial_hidden_without_permissions() -> None:

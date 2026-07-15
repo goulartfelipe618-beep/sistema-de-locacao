@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+<div class="card">
+  <h2 class="card-title">{{ title }}</h2>
+  <form method="post" action="/fiscal/nfe/novo">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Filial *</label>
+        <select class="form-input" name="filial_id" required>
+          <option value="">Selecionar</option>
+          {% for f in filiais %}<option value="{{ f.id }}">{{ f.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Operação</label>
+        <select class="form-input" name="operacao">
+          {% for o in operacoes %}<option value="{{ o }}">{{ o }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Destinatário (nome) *</label><input class="form-input" name="destinatario_nome" required></div>
+      <div class="form-group"><label class="form-label">Destinatário (CPF/CNPJ)</label><input class="form-input" name="destinatario_doc"></div>
+      <div class="form-group"><label class="form-label">Veículo (venda de frota)</label>
+        <select class="form-input" name="veiculo_id">
+          <option value="">(não aplicável)</option>
+          {% for v in veiculos %}<option value="{{ v.id }}">{{ v.placa }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Natureza da operação</label><input class="form-input" name="natureza_operacao"></div>
+      <div class="form-group"><label class="form-label">CFOP padrão</label><input class="form-input" name="cfop_padrao"></div>
+    </div>
+
+    <h3 style="margin-top:20px">Item</h3>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Descrição *</label><input class="form-input" name="item_descricao" required></div>
+      <div class="form-group"><label class="form-label">Quantidade</label><input class="form-input" name="item_quantidade" value="1"></div>
+      <div class="form-group"><label class="form-label">Valor unitário *</label><input class="form-input" name="item_valor_unitario" required></div>
+      <div class="form-group"><label class="form-label">NCM</label><input class="form-input" name="item_ncm"></div>
+      <div class="form-group"><label class="form-label">CFOP</label><input class="form-input" name="item_cfop"></div>
+      <div class="form-group"><label class="form-label">ICMS (%)</label><input class="form-input" name="item_icms_aliquota" value="0"></div>
+      <div class="form-group"><label class="form-label">IPI (%)</label><input class="form-input" name="item_ipi_aliquota" value="0"></div>
+    </div>
+
+    <div class="form-group" style="margin-top:12px"><label class="form-label"><input type="checkbox" name="emitir" value="on" checked> Autorizar na SEFAZ imediatamente</label></div>
+    <div class="form-actions" style="margin-top:12px">
+      <button class="btn btn-primary" type="submit">Salvar</button>
+      <a class="btn" href="/fiscal/nfe">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

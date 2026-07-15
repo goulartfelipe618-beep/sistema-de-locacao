@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+<div class="card">
+  <h2 class="card-title">{{ title }}</h2>
+  <p>Cole o conteúdo XML de uma NF-e de fornecedor. Se contiver valor e CNPJ e uma filial for informada, um título em Contas a Pagar será rascunhado automaticamente.</p>
+  <form method="post" action="/fiscal/xml/importar">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Filial (destino do CP)</label>
+        <select class="form-input" name="filial_id">
+          <option value="">(não lançar CP)</option>
+          {% for f in filiais %}<option value="{{ f.id }}">{{ f.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Nome do arquivo (opcional)</label><input class="form-input" name="filename"></div>
+    </div>
+    <div class="form-group" style="margin-top:12px"><label class="form-label">Conteúdo XML *</label>
+      <textarea class="form-input" name="conteudo_xml" rows="12" required></textarea>
+    </div>
+    <div class="form-actions" style="margin-top:12px">
+      <button class="btn btn-primary" type="submit">Importar</button>
+      <a class="btn" href="/fiscal/xml">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

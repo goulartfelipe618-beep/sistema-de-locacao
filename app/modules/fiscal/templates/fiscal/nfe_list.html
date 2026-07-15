@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <form method="get" action="/fiscal/nfe" style="display:flex;gap:8px;margin:0">
+      <select class="form-input" name="status">
+        <option value="">Todos status</option>
+        {% for s in ['a_emitir','autorizada_sefaz','cancelada','denegada','rejeitada'] %}
+        <option value="{{ s }}" {% if status == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+      </select>
+      <button class="btn btn-sm" type="submit">Filtrar</button>
+    </form>
+    {% if current_user.is_superuser or 'fiscal.nfe.criar' in current_user.permissions %}
+    <a class="btn btn-primary" href="/fiscal/nfe/novo">+ Nova NF-e</a>
+    {% endif %}
+  </div>
+  {% if page_result.items %}
+  <table class="table">
+    <thead><tr><th>Número</th><th>Série</th><th>Operação</th><th>Destinatário</th><th>Valor</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for n in page_result.items %}
+    <tr>
+      <td>{{ n.numero }}</td>
+      <td>{{ n.serie }}</td>
+      <td>{{ n.operacao.value }}</td>
+      <td>{{ n.destinatario_nome }}</td>
+      <td class="num">{{ n.valor_total|currency }}</td>
+      <td><span class="badge {% if n.status.value == 'autorizada_sefaz' %}badge-success{% elif n.status.value in ['cancelada','denegada','rejeitada'] %}badge-danger{% else %}badge-warning{% endif %}">{{ n.status.value }}</span></td>
+      <td><a class="btn btn-sm" href="/fiscal/nfe/{{ n.id }}">Abrir</a></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhuma NF-e emitida.</div>{% endif %}
+</div>
+{% endblock %}

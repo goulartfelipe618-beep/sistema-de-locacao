@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+<div class="card">
+  <h2 class="card-title">{{ title }}</h2>
+  <p>Registre um evento fiscal manual (cancelamento, carta de correção ou inutilização). Cancelamentos de NFS-e/NF-e autorizadas devem preferencialmente ser feitos na própria nota (que valida o prazo legal).</p>
+  <form method="post" action="/fiscal/cancelamentos/novo">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Tipo de documento *</label>
+        <select class="form-input" name="documento_tipo" required>
+          {% for t in documento_tipos %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">ID do documento *</label><input class="form-input" name="documento_id" placeholder="UUID da NFS-e/NF-e" required></div>
+      <div class="form-group"><label class="form-label">Tipo de evento</label>
+        <select class="form-input" name="tipo_evento">
+          {% for t in evento_tipos %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Motivo *</label><input class="form-input" name="motivo" required></div>
+      <div class="form-group"><label class="form-label">Justificativa completa</label><input class="form-input" name="justificativa_completa"></div>
+    </div>
+    <div class="form-actions" style="margin-top:12px">
+      <button class="btn btn-primary" type="submit">Registrar e Processar</button>
+      <a class="btn" href="/fiscal/cancelamentos">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

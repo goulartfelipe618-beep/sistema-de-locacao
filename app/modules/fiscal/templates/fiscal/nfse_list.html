@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <form method="get" action="/fiscal/nfse" style="display:flex;gap:8px;margin:0">
+      <select class="form-input" name="status">
+        <option value="">Todos status</option>
+        {% for s in ['a_emitir','enviada_prefeitura','autorizada','cancelada','rejeitada'] %}
+        <option value="{{ s }}" {% if status == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+      </select>
+      <button class="btn btn-sm" type="submit">Filtrar</button>
+    </form>
+    {% if current_user.is_superuser or 'fiscal.nfse.criar' in current_user.permissions %}
+    <a class="btn btn-primary" href="/fiscal/nfse/novo">+ Nova NFS-e</a>
+    {% endif %}
+  </div>
+  {% if page_result.items %}
+  <table class="table">
+    <thead><tr><th>Número</th><th>Série</th><th>Tomador</th><th>Valor serviço</th><th>ISS</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for n in page_result.items %}
+    <tr>
+      <td>{{ n.numero }}</td>
+      <td>{{ n.serie }}</td>
+      <td>{{ cliente_nomes.get(n.cliente_id|string, '-') if n.cliente_id else '-' }}</td>
+      <td class="num">{{ n.valor_servico|currency }}</td>
+      <td class="num">{{ n.valor_iss|currency }}</td>
+      <td><span class="badge {% if n.status.value == 'autorizada' %}badge-success{% elif n.status.value in ['cancelada','rejeitada'] %}badge-danger{% else %}badge-warning{% endif %}">{{ n.status.value }}</span></td>
+      <td><a class="btn btn-sm" href="/fiscal/nfse/{{ n.id }}">Abrir</a></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhuma NFS-e emitida.</div>{% endif %}
+</div>
+{% endblock %}

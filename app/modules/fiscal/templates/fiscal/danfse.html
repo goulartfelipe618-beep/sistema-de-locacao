@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<style>
+  @media print { .no-print { display:none !important; } }
+  .danfse { max-width:820px; margin:0 auto; border:2px solid #000; padding:24px; background:#fff; }
+  .danfse h1 { text-align:center; font-size:18px; margin:0 0 4px; }
+  .danfse .row { display:flex; justify-content:space-between; border-bottom:1px solid #ccc; padding:6px 0; }
+  .danfse .box { border:1px solid #999; padding:10px; margin-top:12px; }
+</style>
+<div class="no-print" style="max-width:820px;margin:0 auto 12px;display:flex;gap:8px;justify-content:flex-end">
+  <button class="btn btn-primary" onclick="window.print()">Imprimir / Salvar PDF</button>
+  <a class="btn" href="/fiscal/nfse/{{ nfse.id }}">Voltar</a>
+</div>
+<div class="danfse">
+  <h1>DANFSE — Nota Fiscal de Serviço Eletrônica</h1>
+  <p style="text-align:center;margin:0 0 12px">Documento Auxiliar (substituto de PDF)</p>
+  <div class="row"><span><strong>Número:</strong> {{ nfse.numero }}</span><span><strong>Série:</strong> {{ nfse.serie }}</span><span><strong>Status:</strong> {{ nfse.status.value }}</span></div>
+  <div class="row"><span><strong>Chave de acesso:</strong> {{ nfse.chave_acesso or '-' }}</span></div>
+  <div class="row"><span><strong>Protocolo:</strong> {{ nfse.protocolo or '-' }}</span><span><strong>Autorizada em:</strong> {{ nfse.autorizada_em|datetime }}</span></div>
+  <div class="box">
+    <strong>Prestador</strong><br>Filial: {{ filial_nomes.get(nfse.filial_id|string, nfse.filial_id) }}
+  </div>
+  <div class="box">
+    <strong>Tomador</strong><br>{{ cliente_nomes.get(nfse.cliente_id|string, 'Consumidor não identificado') if nfse.cliente_id else 'Consumidor não identificado' }}
+  </div>
+  <div class="box">
+    <strong>Serviço</strong>
+    <div class="row"><span>Município incidência</span><span>{{ nfse.municipio_nome or '-' }} ({{ nfse.municipio_ibge or '-' }})</span></div>
+    <div class="row"><span>Discriminação</span><span>{{ nfse.discriminacao or '-' }}</span></div>
+    <div class="row"><span>Valor do serviço</span><span>{{ nfse.valor_servico|currency }}</span></div>
+    <div class="row"><span>Alíquota ISS</span><span>{{ nfse.aliquota_iss }}%</span></div>
+    <div class="row"><span>Valor ISS</span><span>{{ nfse.valor_iss|currency }}</span></div>
+    <div class="row"><span>ISS retido</span><span>{{ nfse.valor_iss_retido|currency }}</span></div>
+  </div>
+</div>
+{% endblock %}

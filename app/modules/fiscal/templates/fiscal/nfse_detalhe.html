@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+<div class="card" style="margin-bottom:16px">
+  <h2 class="card-title">NFS-e {{ nfse.serie }}-{{ nfse.numero }} · <span class="badge {% if nfse.status.value == 'autorizada' %}badge-success{% elif nfse.status.value in ['cancelada','rejeitada'] %}badge-danger{% else %}badge-warning{% endif %}">{{ nfse.status.value }}</span></h2>
+  <div class="form-grid">
+    <div><strong>Tomador:</strong> {{ cliente_nomes.get(nfse.cliente_id|string, '-') if nfse.cliente_id else '-' }}</div>
+    <div><strong>Filial:</strong> {{ filial_nomes.get(nfse.filial_id|string, nfse.filial_id) }}</div>
+    <div><strong>Município:</strong> {{ nfse.municipio_nome or '-' }} ({{ nfse.municipio_ibge or '-' }})</div>
+    <div><strong>Valor serviço:</strong> {{ nfse.valor_servico|currency }}</div>
+    <div><strong>Alíquota ISS:</strong> {{ nfse.aliquota_iss }}%</div>
+    <div><strong>Valor ISS:</strong> {{ nfse.valor_iss|currency }}</div>
+    <div><strong>ISS retido:</strong> {{ nfse.valor_iss_retido|currency }} ({{ 'sim' if nfse.retencao_iss else 'não' }})</div>
+    <div><strong>Provedor:</strong> {{ nfse.provedor }}</div>
+    <div><strong>Chave acesso:</strong> {{ nfse.chave_acesso or '-' }}</div>
+    <div><strong>Protocolo:</strong> {{ nfse.protocolo or '-' }}</div>
+    <div><strong>Emitida em:</strong> {{ nfse.emitida_em|datetime }}</div>
+    <div><strong>Autorizada em:</strong> {{ nfse.autorizada_em|datetime }}</div>
+    <div><strong>Automática:</strong> {{ 'sim' if nfse.automatica else 'não' }}</div>
+    {% if nfse.rejeicao_motivo %}<div><strong>Rejeição:</strong> {{ nfse.rejeicao_motivo }}</div>{% endif %}
+  </div>
+  <div style="margin-top:12px"><strong>Discriminação:</strong> {{ nfse.discriminacao or '-' }}</div>
+</div>
+
+<div class="card">
+  <div class="toolbar" style="gap:8px">
+    {% if nfse.status.value in ['a_emitir','rejeitada'] and (current_user.is_superuser or 'fiscal.nfse.criar' in current_user.permissions) %}
+    <form method="post" action="/fiscal/nfse/{{ nfse.id }}/emitir" style="margin:0">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-primary" type="submit">Emitir</button>
+    </form>
+    {% endif %}
+    {% if nfse.status.value == 'autorizada' %}
+    <a class="btn" href="/fiscal/nfse/{{ nfse.id }}/danfse" target="_blank">DANFSE</a>
+    {% if nfse.xml_arquivo_id %}<a class="btn" href="/fiscal/xml/{{ nfse.xml_arquivo_id }}/download">XML</a>{% endif %}
+    {% endif %}
+    <a class="btn" href="/fiscal/nfse">Voltar</a>
+  </div>
+  {% if nfse.status.value == 'autorizada' and (current_user.is_superuser or 'fiscal.nfse.cancelar' in current_user.permissions) %}
+  <form method="post" action="/fiscal/nfse/{{ nfse.id }}/cancelar" style="display:flex;gap:8px;margin-top:12px" onsubmit="return confirm('Cancelar NFS-e?')">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input class="form-input" name="motivo" placeholder="Motivo do cancelamento (obrigatório)" required>
+    <button class="btn btn-danger" type="submit">Cancelar NFS-e</button>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <form method="get" action="/fiscal/xml" style="display:flex;gap:8px;margin:0">
+      <select class="form-input" name="tipo">
+        <option value="">Todos os tipos</option>
+        {% for t in tipos %}<option value="{{ t }}" {% if tipo == t %}selected{% endif %}>{{ t }}</option>{% endfor %}
+      </select>
+      <button class="btn btn-sm" type="submit">Filtrar</button>
+    </form>
+    {% if current_user.is_superuser or 'fiscal.xml.criar' in current_user.permissions %}
+    <a class="btn btn-primary" href="/fiscal/xml/importar">+ Importar XML</a>
+    {% endif %}
+    <a class="btn" href="/fiscal/xml/exportar?periodo_inicio={{ ''|string }}&periodo_fim={{ ''|string }}" onclick="var pi=prompt('Período início (AAAA-MM-DD)');var pf=prompt('Período fim (AAAA-MM-DD)');if(pi&&pf){this.href='/fiscal/xml/exportar?periodo_inicio='+pi+'&periodo_fim='+pf;return true;}return false;">Exportar lote (ZIP)</a>
+  </div>
+  {% if page_result.items %}
+  <table class="table">
+    <thead><tr><th>Arquivo</th><th>Tipo</th><th>Direção</th><th>Chave</th><th>Período</th><th>Tamanho</th><th></th></tr></thead>
+    <tbody>
+    {% for x in page_result.items %}
+    <tr>
+      <td>{{ x.filename }}</td>
+      <td>{{ x.tipo.value }}</td>
+      <td>{{ x.direcao.value }}</td>
+      <td><small>{{ x.chave_acesso or '-' }}</small></td>
+      <td>{{ x.periodo_ref|date }}</td>
+      <td class="num">{{ x.tamanho_bytes }} B</td>
+      <td><a class="btn btn-sm" href="/fiscal/xml/{{ x.id }}/download">Baixar</a></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhum XML arquivado.</div>{% endif %}
+</div>
+{% endblock %}

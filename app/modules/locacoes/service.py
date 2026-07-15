@@ -956,6 +956,19 @@ class CheckinService:
                 )
             except Exception:  # noqa: BLE001 - fidelidade não deve bloquear o check-in
                 pass
+            # Hook §10.1: emite NFS-e automaticamente quando configurado na filial.
+            try:
+                from app.modules.fiscal.service import ImpostoService, NfseService
+
+                if await ImpostoService(self.session).nfse_automatica(
+                    contrato.filial_retirada_id
+                ):
+                    nfse = await NfseService(self.session).create_from_contrato(
+                        contrato.id, automatica=True
+                    )
+                    await NfseService(self.session).emitir(nfse.id)
+            except Exception:  # noqa: BLE001 - fiscal não deve bloquear o check-in
+                pass
         return contrato
 
     async def _calcular_ajustes(

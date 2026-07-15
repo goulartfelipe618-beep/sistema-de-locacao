@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<style>
+  @media print { .no-print { display:none !important; } }
+  .danfe { max-width:820px; margin:0 auto; border:2px solid #000; padding:24px; background:#fff; }
+  .danfe h1 { text-align:center; font-size:18px; margin:0 0 4px; }
+  .danfe .row { display:flex; justify-content:space-between; border-bottom:1px solid #ccc; padding:6px 0; }
+  .danfe .box { border:1px solid #999; padding:10px; margin-top:12px; }
+  .danfe table { width:100%; border-collapse:collapse; margin-top:8px; }
+  .danfe th, .danfe td { border:1px solid #999; padding:4px 6px; font-size:12px; text-align:left; }
+</style>
+<div class="no-print" style="max-width:820px;margin:0 auto 12px;display:flex;gap:8px;justify-content:flex-end">
+  <button class="btn btn-primary" onclick="window.print()">Imprimir / Salvar PDF</button>
+  <a class="btn" href="/fiscal/nfe/{{ nfe.id }}">Voltar</a>
+</div>
+<div class="danfe">
+  <h1>DANFE — Documento Auxiliar da NF-e</h1>
+  <p style="text-align:center;margin:0 0 12px">Documento Auxiliar (substituto de PDF)</p>
+  <div class="row"><span><strong>Número:</strong> {{ nfe.numero }}</span><span><strong>Série:</strong> {{ nfe.serie }}</span><span><strong>Operação:</strong> {{ nfe.operacao.value }}</span></div>
+  <div class="row"><span><strong>Chave de acesso:</strong> {{ nfe.chave_acesso or '-' }}</span></div>
+  <div class="row"><span><strong>Protocolo:</strong> {{ nfe.protocolo or '-' }}</span><span><strong>Natureza:</strong> {{ nfe.natureza_operacao or '-' }}</span></div>
+  <div class="box"><strong>Emitente</strong><br>Filial: {{ filial_nomes.get(nfe.filial_id|string, nfe.filial_id) }}</div>
+  <div class="box"><strong>Destinatário</strong><br>{{ nfe.destinatario_nome }} — {{ nfe.destinatario_doc or '-' }}</div>
+  <div class="box">
+    <strong>Itens</strong>
+    <table>
+      <thead><tr><th>Descrição</th><th>NCM</th><th>CFOP</th><th>Qtd</th><th>V. unit.</th><th>Total</th></tr></thead>
+      <tbody>
+      {% for i in itens %}
+      <tr><td>{{ i.descricao }}</td><td>{{ i.ncm or '-' }}</td><td>{{ i.cfop or '-' }}</td><td>{{ i.quantidade }}</td><td>{{ i.valor_unitario|currency }}</td><td>{{ i.valor_total|currency }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <div class="row" style="margin-top:8px"><span><strong>Valor total da nota</strong></span><span><strong>{{ nfe.valor_total|currency }}</strong></span></div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+<div class="card">
+  <h2 class="card-title">{{ title }}</h2>
+  <form method="post" action="/fiscal/nfse/novo">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Filial *</label>
+        <select class="form-input" name="filial_id" required>
+          <option value="">Selecionar</option>
+          {% for f in filiais %}<option value="{{ f.id }}">{{ f.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Tomador (cliente)</label>
+        <select class="form-input" name="cliente_id">
+          <option value="">(sem cliente)</option>
+          {% for c in clientes %}<option value="{{ c.id }}">{{ c.nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Valor do serviço *</label><input class="form-input" name="valor_servico" required></div>
+      <div class="form-group"><label class="form-label">Município (nome)</label><input class="form-input" name="municipio_nome"></div>
+      <div class="form-group"><label class="form-label">Município IBGE</label><input class="form-input" name="municipio_ibge"></div>
+      <div class="form-group"><label class="form-label">Alíquota ISS (%) — vazio calcula automático</label><input class="form-input" name="aliquota_iss"></div>
+      <div class="form-group"><label class="form-label"><input type="checkbox" name="retencao_iss" value="on"> ISS retido pelo tomador</label></div>
+      <div class="form-group"><label class="form-label">Discriminação</label><input class="form-input" name="discriminacao"></div>
+      <div class="form-group"><label class="form-label"><input type="checkbox" name="emitir" value="on" checked> Emitir imediatamente</label></div>
+    </div>
+    <div class="form-actions" style="margin-top:12px">
+      <button class="btn btn-primary" type="submit">Salvar</button>
+      <a class="btn" href="/fiscal/nfse">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

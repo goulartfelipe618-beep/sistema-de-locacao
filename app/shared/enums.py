@@ -647,6 +647,95 @@ class CrmFidelidadeOrigem(str, enum.Enum):
     AJUSTE = "ajuste"
 
 
+class NfseStatus(str, enum.Enum):
+    """Ciclo de vida de uma NFS-e (§10.1)."""
+
+    A_EMITIR = "a_emitir"
+    ENVIADA_PREFEITURA = "enviada_prefeitura"
+    AUTORIZADA = "autorizada"
+    CANCELADA = "cancelada"
+    REJEITADA = "rejeitada"
+
+
+class NfeStatus(str, enum.Enum):
+    """Ciclo de vida de uma NF-e (§10.2)."""
+
+    A_EMITIR = "a_emitir"
+    AUTORIZADA_SEFAZ = "autorizada_sefaz"
+    CANCELADA = "cancelada"
+    DENEGADA = "denegada"
+    REJEITADA = "rejeitada"
+
+
+class NfeOperacao(str, enum.Enum):
+    """Natureza da operação de uma NF-e (§10.2)."""
+
+    VENDA = "venda"
+    TRANSFERENCIA = "transferencia"
+    DEVOLUCAO = "devolucao"
+
+
+class FiscalXmlTipo(str, enum.Enum):
+    """Tipo de documento XML arquivado no repositório fiscal (§10.3)."""
+
+    NFSE_EMITIDA = "nfse_emitida"
+    NFE_EMITIDA = "nfe_emitida"
+    NFE_RECEBIDA = "nfe_recebida"
+    NFSE_RECEBIDA = "nfse_recebida"
+    OUTRO = "outro"
+
+
+class FiscalXmlDirecao(str, enum.Enum):
+    """Direção do fluxo do XML fiscal (§10.3)."""
+
+    EMITIDO = "emitido"
+    RECEBIDO = "recebido"
+
+
+class FiscalDocumentoTipo(str, enum.Enum):
+    """Tipo de documento fiscal alvo de um evento de cancelamento (§10.4)."""
+
+    NFSE = "nfse"
+    NFE = "nfe"
+
+
+class CancelamentoEventoTipo(str, enum.Enum):
+    """Tipo de evento fiscal (§10.4)."""
+
+    CANCELAMENTO = "cancelamento"
+    CARTA_CORRECAO = "carta_correcao"
+    INUTILIZACAO = "inutilizacao"
+
+
+class CancelamentoStatus(str, enum.Enum):
+    """Ciclo de vida de um evento de cancelamento fiscal (§10.4)."""
+
+    SOLICITADO = "solicitado"
+    PROCESSADO = "processado"
+    CONFIRMADO = "confirmado"
+    REJEITADO = "rejeitado"
+
+
+class RegimeTributario(str, enum.Enum):
+    """Regime tributário da empresa/filial (§10.5)."""
+
+    SIMPLES_NACIONAL = "simples_nacional"
+    LUCRO_PRESUMIDO = "lucro_presumido"
+    LUCRO_REAL = "lucro_real"
+
+
+class ImpostoTipo(str, enum.Enum):
+    """Tipo de imposto/tributo parametrizável (§10.5)."""
+
+    ISS = "iss"
+    ICMS = "icms"
+    IPI = "ipi"
+    PIS = "pis"
+    COFINS = "cofins"
+    CSLL = "csll"
+    IRRF = "irrf"
+
+
 class AuditAction(str, enum.Enum):
     """Categorias de eventos registrados na trilha de auditoria."""
 

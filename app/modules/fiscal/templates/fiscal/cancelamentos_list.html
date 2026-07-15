@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+<div class="card" style="margin-bottom:16px">
+  <div class="toolbar">
+    <h2 class="card-title" style="margin:0">Eventos Fiscais</h2>
+    {% if current_user.is_superuser or 'fiscal.cancelamentos.criar' in current_user.permissions %}
+    <a class="btn btn-primary" href="/fiscal/cancelamentos/novo">+ Novo Evento</a>
+    {% endif %}
+  </div>
+  {% if page_result.items %}
+  <table class="table">
+    <thead><tr><th>Número</th><th>Documento</th><th>Evento</th><th>Motivo</th><th>Solicitado</th><th>Protocolo</th><th>Prazo</th><th>Status</th></tr></thead>
+    <tbody>
+    {% for e in page_result.items %}
+    <tr>
+      <td>{{ e.numero }}</td>
+      <td>{{ e.documento_tipo.value }}</td>
+      <td>{{ e.tipo_evento.value }}</td>
+      <td>{{ e.motivo }}</td>
+      <td>{{ e.solicitado_em|datetime }}</td>
+      <td><small>{{ e.protocolo_retorno or '-' }}</small></td>
+      <td>{% if e.fora_do_prazo %}<span class="badge badge-danger">fora do prazo</span>{% else %}<span class="badge badge-success">no prazo</span>{% endif %}</td>
+      <td><span class="badge {% if e.status.value == 'confirmado' %}badge-success{% elif e.status.value == 'rejeitado' %}badge-danger{% else %}badge-warning{% endif %}">{{ e.status.value }}</span></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhum evento fiscal registrado.</div>{% endif %}
+</div>
+
+<div class="card">
+  <h2 class="card-title">Prazos de Cancelamento (parametrizáveis)</h2>
+  {% if prazos %}
+  <table class="table">
+    <thead><tr><th>Documento</th><th>UF</th><th>Município</th><th>Horas limite</th><th>Ativo</th></tr></thead>
+    <tbody>
+    {% for p in prazos %}
+    <tr><td>{{ p.tipo_documento.value }}</td><td>{{ p.uf or '-' }}</td><td>{{ p.municipio_ibge or '-' }}</td><td class="num">{{ p.horas_limite }}h</td><td>{{ 'sim' if p.ativo else 'não' }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<div class="empty-state">Sem prazos parametrizados (padrão: NFS-e 24h, NF-e 24h).</div>{% endif %}
+  {% if current_user.is_superuser or 'fiscal.cancelamentos.editar' in current_user.permissions %}
+  <form method="post" action="/fiscal/cancelamentos/prazos/novo" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <select class="form-input" name="tipo_documento" required>
+      <option value="nfse">nfse</option><option value="nfe">nfe</option>
+    </select>
+    <input class="form-input" name="horas_limite" placeholder="Horas limite" value="24" required>
+    <input class="form-input" name="uf" placeholder="UF (opcional)">
+    <input class="form-input" name="municipio_ibge" placeholder="Município IBGE (opcional)">
+    <input class="form-input" name="descricao" placeholder="Descrição">
+    <button class="btn" type="submit">Adicionar Prazo</button>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

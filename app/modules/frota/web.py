@@ -449,12 +449,37 @@ async def veiculo_bloquear(
 async def veiculo_baixar(
     session: SessionDep,
     veiculo_id: uuid.UUID,
-    _user: Annotated[
+    current_user: Annotated[
         AuthenticatedUser, Depends(require_web_permission("frota.veiculo.baixar"))
     ],
     motivo: Annotated[str, Form()],
+    destinatario_nome: Annotated[str, Form()] = "",
+    destinatario_doc: Annotated[str, Form()] = "",
+    valor_venda: Annotated[str, Form()] = "",
 ) -> RedirectResponse:
-    await VeiculoService(session).baixar(veiculo_id, motivo)
+    veiculo = await VeiculoService(session).baixar(veiculo_id, motivo)
+    # Hook §10.2: se for venda com dados do comprador, gera NF-e (rascunho a_emitir).
+    if "venda" in (motivo or "").lower() and destinatario_nome.strip() and veiculo.filial_id:
+        try:
+            valor = Decimal((valor_venda or "0").replace(".", "").replace(",", "."))
+        except InvalidOperation:
+            valor = veiculo.valor_mercado or veiculo.valor_fipe or Decimal("0")
+        if valor <= 0:
+            valor = veiculo.valor_mercado or veiculo.valor_fipe or Decimal("0")
+        try:
+            from app.modules.fiscal.service import NfeService
+
+            await NfeService(session).create_from_veiculo_baixar(
+                current_user.tenant_id,
+                veiculo_id=veiculo.id,
+                filial_id=veiculo.filial_id,
+                destinatario_nome=destinatario_nome.strip(),
+                destinatario_doc=destinatario_doc.strip() or None,
+                valor=valor,
+                descricao=f"Venda do veículo {veiculo.placa}",
+            )
+        except Exception:  # noqa: BLE001 - NF-e não deve bloquear a baixa
+            pass
     return RedirectResponse(f"/frota/veiculos/{veiculo_id}/editar", status_code=303)
 
 

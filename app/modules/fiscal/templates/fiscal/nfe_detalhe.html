@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+<div class="card" style="margin-bottom:16px">
+  <h2 class="card-title">NF-e {{ nfe.serie }}-{{ nfe.numero }} · <span class="badge {% if nfe.status.value == 'autorizada_sefaz' %}badge-success{% elif nfe.status.value in ['cancelada','denegada','rejeitada'] %}badge-danger{% else %}badge-warning{% endif %}">{{ nfe.status.value }}</span></h2>
+  <div class="form-grid">
+    <div><strong>Operação:</strong> {{ nfe.operacao.value }}</div>
+    <div><strong>Destinatário:</strong> {{ nfe.destinatario_nome }} ({{ nfe.destinatario_doc or '-' }})</div>
+    <div><strong>Filial:</strong> {{ filial_nomes.get(nfe.filial_id|string, nfe.filial_id) }}</div>
+    <div><strong>Natureza:</strong> {{ nfe.natureza_operacao or '-' }}</div>
+    <div><strong>Valor total:</strong> {{ nfe.valor_total|currency }}</div>
+    <div><strong>Provedor:</strong> {{ nfe.provedor }}</div>
+    <div><strong>Chave acesso:</strong> {{ nfe.chave_acesso or '-' }}</div>
+    <div><strong>Protocolo:</strong> {{ nfe.protocolo or '-' }}</div>
+    <div><strong>Autorizada em:</strong> {{ nfe.autorizada_em|datetime }}</div>
+    {% if nfe.rejeicao_motivo %}<div><strong>Rejeição:</strong> {{ nfe.rejeicao_motivo }}</div>{% endif %}
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:16px">
+  <h2 class="card-title">Itens</h2>
+  {% if itens %}
+  <table class="table">
+    <thead><tr><th>Descrição</th><th>NCM</th><th>CFOP</th><th>Qtd</th><th>V. unit.</th><th>Total</th><th>ICMS</th><th>IPI</th></tr></thead>
+    <tbody>
+    {% for i in itens %}
+    <tr><td>{{ i.descricao }}</td><td>{{ i.ncm or '-' }}</td><td>{{ i.cfop or '-' }}</td><td class="num">{{ i.quantidade }}</td><td class="num">{{ i.valor_unitario|currency }}</td><td class="num">{{ i.valor_total|currency }}</td><td class="num">{{ i.icms_valor|currency }}</td><td class="num">{{ i.ipi_valor|currency }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<div class="empty-state">Sem itens.</div>{% endif %}
+</div>
+
+<div class="card">
+  <div class="toolbar" style="gap:8px">
+    {% if nfe.status.value in ['a_emitir','rejeitada'] and (current_user.is_superuser or 'fiscal.nfe.criar' in current_user.permissions) %}
+    <form method="post" action="/fiscal/nfe/{{ nfe.id }}/emitir" style="margin:0">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-primary" type="submit">Autorizar (SEFAZ)</button>
+    </form>
+    {% endif %}
+    {% if nfe.status.value == 'autorizada_sefaz' %}
+    <a class="btn" href="/fiscal/nfe/{{ nfe.id }}/danfe" target="_blank">DANFE</a>
+    {% if nfe.xml_arquivo_id %}<a class="btn" href="/fiscal/xml/{{ nfe.xml_arquivo_id }}/download">XML</a>{% endif %}
+    {% endif %}
+    <a class="btn" href="/fiscal/nfe">Voltar</a>
+  </div>
+  {% if nfe.status.value == 'autorizada_sefaz' and (current_user.is_superuser or 'fiscal.nfe.cancelar' in current_user.permissions) %}
+  <form method="post" action="/fiscal/nfe/{{ nfe.id }}/cancelar" style="display:flex;gap:8px;margin-top:12px" onsubmit="return confirm('Cancelar NF-e?')">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input class="form-input" name="motivo" placeholder="Motivo do cancelamento (obrigatório)" required>
+    <button class="btn btn-danger" type="submit">Cancelar NF-e</button>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

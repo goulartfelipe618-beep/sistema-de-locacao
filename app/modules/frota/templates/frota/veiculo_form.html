@@ -134,9 +134,17 @@
     </form>
     {% endif %}
     {% if veiculo.status.value != 'baixado' %}
-    <form method="post" action="/frota/veiculos/{{ veiculo.id }}/baixar" style="display:flex;gap:8px;margin:8px 0">
-      <input class="form-input" name="motivo" placeholder="Motivo da baixa" required>
-      <button class="btn btn-sm" type="submit">Baixar</button>
+    <form method="post" action="/frota/veiculos/{{ veiculo.id }}/baixar" style="margin:8px 0">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <input class="form-input" name="motivo" placeholder="Motivo da baixa (ex.: venda)" required>
+        <button class="btn btn-sm" type="submit">Baixar</button>
+      </div>
+      <p style="margin:8px 0 0"><small>Venda? Preencha os dados abaixo para gerar uma NF-e (rascunho).</small></p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+        <input class="form-input" name="destinatario_nome" placeholder="Comprador (nome)">
+        <input class="form-input" name="destinatario_doc" placeholder="CPF/CNPJ do comprador">
+        <input class="form-input" name="valor_venda" placeholder="Valor da venda">
+      </div>
     </form>
     {% endif %}
     {% if veiculo.motivo_bloqueio %}<p><small>Bloqueio: {{ veiculo.motivo_bloqueio }}</small></p>{% endif %}

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card" style="margin-bottom:16px">
+  <a class="btn btn-sm" href="/fiscal/impostos">&larr; Configurações</a>
+  <h2 class="card-title">Apuração de Impostos</h2>
+  <form method="get" action="/fiscal/impostos/apuracao/periodo" style="display:flex;gap:8px;flex-wrap:wrap">
+    <div class="form-group"><label class="form-label">Início *</label><input class="form-input" type="date" name="periodo_inicio" value="{{ periodo_inicio or '' }}" required></div>
+    <div class="form-group"><label class="form-label">Fim *</label><input class="form-input" type="date" name="periodo_fim" value="{{ periodo_fim or '' }}" required></div>
+    <div class="form-group" style="align-self:flex-end"><button class="btn btn-primary" type="submit">Apurar</button></div>
+  </form>
+</div>
+
+{% if linhas %}
+<div class="card">
+  <h2 class="card-title">Resultado — {{ periodo_inicio }} a {{ periodo_fim }}</h2>
+  <table class="table">
+    <thead><tr><th>Imposto</th><th>Documentos</th><th>Base de cálculo</th><th>Valor apurado</th></tr></thead>
+    <tbody>
+    {% for l in linhas %}
+    <tr>
+      <td>{{ l.tipo }}</td>
+      <td class="num">{{ l.documentos }}</td>
+      <td class="num">R$ {{ l.base_calculo }}</td>
+      <td class="num">R$ {{ l.valor_imposto }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}
