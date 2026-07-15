@@ -42,6 +42,13 @@ DEFAULT_AUXILIARES: tuple[tuple[str, str, str, int], ...] = (
     ("motivo_bloqueio", "sinistro", "Sinistro anterior", 20),
     ("motivo_bloqueio", "fraude", "Suspeita de fraude", 30),
     ("motivo_bloqueio", "outros", "Outros", 99),
+    ("cor_veiculo", "branco", "Branco", 10),
+    ("cor_veiculo", "prata", "Prata", 20),
+    ("cor_veiculo", "preto", "Preto", 30),
+    ("cor_veiculo", "cinza", "Cinza", 40),
+    ("cor_veiculo", "vermelho", "Vermelho", 50),
+    ("cor_veiculo", "azul", "Azul", 60),
+    ("cor_veiculo", "outro", "Outra", 99),
 )
 
 

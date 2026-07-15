@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:960px">
+  <h2 class="card-title">{{ title }}</h2>
+  {% if veiculo %}
+  <p>Status: <span class="badge {% if veiculo.status.value == 'disponivel' %}badge-success{% elif veiculo.status.value in ['bloqueado','baixado'] %}badge-danger{% else %}badge-warning{% endif %}">{{ veiculo.status.value }}</span></p>
+  {% endif %}
+  {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+  <form method="post" action="{{ action }}">
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label" for="placa">Placa</label><input class="form-input" id="placa" name="placa" required value="{{ veiculo.placa if veiculo else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="renavam">RENAVAM</label><input class="form-input" id="renavam" name="renavam" value="{{ veiculo.renavam if veiculo else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="chassi">Chassi</label><input class="form-input" id="chassi" name="chassi" value="{{ veiculo.chassi if veiculo else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="ano_fabricacao">Ano fabricação</label><input class="form-input" type="number" id="ano_fabricacao" name="ano_fabricacao" required value="{{ veiculo.ano_fabricacao if veiculo else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="ano_modelo">Ano modelo</label><input class="form-input" type="number" id="ano_modelo" name="ano_modelo" required value="{{ veiculo.ano_modelo if veiculo else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="cor">Cor</label><input class="form-input" id="cor" name="cor" value="{{ veiculo.cor if veiculo else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="categoria_id">Categoria</label>
+        <select class="form-input" id="categoria_id" name="categoria_id" required>
+          <option value="">—</option>
+          {% for c in categorias %}<option value="{{ c.id }}" {% if veiculo and veiculo.categoria_id == c.id %}selected{% endif %}>{{ c.nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label" for="marca_id">Marca</label>
+        <select class="form-input" id="marca_id" name="marca_id" required>
+          <option value="">—</option>
+          {% for m in marcas %}<option value="{{ m.id }}" {% if veiculo and veiculo.marca_id == m.id %}selected{% endif %}>{{ m.nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label" for="modelo_id">Modelo</label>
+        <select class="form-input" id="modelo_id" name="modelo_id" required>
+          <option value="">—</option>
+          {% for m in modelos %}<option value="{{ m.id }}" {% if veiculo and veiculo.modelo_id == m.id %}selected{% endif %}>{{ m.nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label" for="combustivel_id">Combustível</label>
+        <select class="form-input" id="combustivel_id" name="combustivel_id" required>
+          <option value="">—</option>
+          {% for c in combustiveis %}<option value="{{ c.id }}" {% if veiculo and veiculo.combustivel_id == c.id %}selected{% endif %}>{{ c.nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label" for="filial_id">Filial</label>
+        <select class="form-input" id="filial_id" name="filial_id">
+          <option value="">—</option>
+          {% for f in filiais %}<option value="{{ f.id }}" {% if veiculo and veiculo.filial_id == f.id %}selected{% endif %}>{{ f.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label" for="propriedade">Propriedade</label>
+        <select class="form-input" id="propriedade" name="propriedade">
+          {% for p in ['propria','consorcio','financiada','terceirizada'] %}
+          <option value="{{ p }}" {% if veiculo and veiculo.propriedade.value == p %}selected{% elif not veiculo and p == 'propria' %}selected{% endif %}>{{ p }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label" for="data_compra">Data aquisição</label><input class="form-input" type="date" id="data_compra" name="data_compra" value="{{ veiculo.data_compra if veiculo and veiculo.data_compra else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="valor_aquisicao">Valor aquisição</label><input class="form-input" id="valor_aquisicao" name="valor_aquisicao" value="{{ veiculo.valor_aquisicao if veiculo and veiculo.valor_aquisicao else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="valor_fipe">Valor FIPE</label><input class="form-input" id="valor_fipe" name="valor_fipe" value="{{ veiculo.valor_fipe if veiculo and veiculo.valor_fipe else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="valor_mercado">Valor mercado</label><input class="form-input" id="valor_mercado" name="valor_mercado" value="{{ veiculo.valor_mercado if veiculo and veiculo.valor_mercado else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="proprietario_nome">Proprietário real</label><input class="form-input" id="proprietario_nome" name="proprietario_nome" value="{{ veiculo.proprietario_nome if veiculo else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="km_inicial">KM inicial</label><input class="form-input" type="number" id="km_inicial" name="km_inicial" value="{{ veiculo.km_inicial if veiculo and veiculo.km_inicial is not none else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="km_atual">KM atual</label><input class="form-input" type="number" id="km_atual" name="km_atual" value="{{ veiculo.km_atual if veiculo and veiculo.km_atual is not none else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="nivel_combustivel_atual">Nível combustível (0-8)</label><input class="form-input" type="number" min="0" max="8" id="nivel_combustivel_atual" name="nivel_combustivel_atual" value="{{ veiculo.nivel_combustivel_atual if veiculo else 8 }}"></div>
+    </div>
+    <div class="form-group" style="margin-top:12px"><label class="form-label" for="observacoes">Observações</label><textarea class="form-input" id="observacoes" name="observacoes" rows="3">{{ veiculo.observacoes if veiculo else '' }}</textarea></div>
+    <div class="form-actions" style="margin-top:16px"><button class="btn btn-primary" type="submit">Salvar</button><a class="btn" href="/frota/veiculos">Cancelar</a></div>
+  </form>
+
+  {% if veiculo %}
+  <div style="margin-top:24px;border-top:1px solid var(--border);padding-top:16px">
+    <h3>Acessórios instalados</h3>
+    {% if vinculos and vinculos.items %}
+    <table class="table"><thead><tr><th>Acessório</th><th>Instalação</th><th></th></tr></thead><tbody>
+      {% for v in vinculos.items %}
+      <tr>
+        <td>{{ acessorio_nomes.get(v.acessorio_id|string, v.acessorio_id) }}</td>
+        <td>{{ v.data_instalacao or '-' }}</td>
+        <td class="num">
+          <form method="post" action="/frota/veiculos/{{ veiculo.id }}/acessorios/{{ v.acessorio_id }}/remover">
+            <button class="btn btn-sm" type="submit">Remover</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody></table>
+    {% else %}<div class="empty-state">Nenhum acessório vinculado.</div>{% endif %}
+    <form method="post" action="/frota/veiculos/{{ veiculo.id }}/acessorios" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <select class="form-input" name="acessorio_id" required>
+        <option value="">Selecionar acessório</option>
+        {% for a in catalogo_acessorios %}<option value="{{ a.id }}">{{ a.nome }} ({{ a.tipo.value }})</option>{% endfor %}
+      </select>
+      <input class="form-input" type="date" name="data_instalacao">
+      <button class="btn btn-sm btn-primary" type="submit">Vincular</button>
+    </form>
+  </div>
+
+  <div style="margin-top:24px;border-top:1px solid var(--border);padding-top:16px">
+    <h3>Fotos</h3>
+    {% if fotos and fotos.items %}
+    <table class="table"><thead><tr><th>Arquivo</th><th>Legenda</th><th>Data</th><th></th></tr></thead><tbody>
+      {% for f in fotos.items %}
+      <tr>
+        <td><code>{{ f.storage_key }}</code></td>
+        <td>{{ f.legenda or '-' }}</td>
+        <td>{{ f.tirada_em or '-' }}</td>
+        <td class="num">
+          <form method="post" action="/frota/veiculos/{{ veiculo.id }}/fotos/{{ f.id }}/remover">
+            <button class="btn btn-sm" type="submit">Remover</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody></table>
+    {% else %}<div class="empty-state">Nenhuma foto cadastrada.</div>{% endif %}
+    <form method="post" action="/frota/veiculos/{{ veiculo.id }}/fotos" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <input class="form-input" name="storage_key" placeholder="storage key / URL" required>
+      <input class="form-input" name="legenda" placeholder="Legenda">
+      <input class="form-input" type="date" name="tirada_em">
+      <button class="btn btn-sm btn-primary" type="submit">Adicionar</button>
+    </form>
+  </div>
+
+  <div style="margin-top:24px;border-top:1px solid var(--border);padding-top:16px">
+    <h3>Ações de status</h3>
+    {% if veiculo.status.value != 'bloqueado' and veiculo.status.value != 'baixado' %}
+    <form method="post" action="/frota/veiculos/{{ veiculo.id }}/bloquear" style="display:flex;gap:8px;margin:8px 0">
+      <input class="form-input" name="motivo" placeholder="Motivo do bloqueio" required>
+      <button class="btn btn-sm" type="submit">Bloquear</button>
+    </form>
+    {% endif %}
+    {% if veiculo.status.value == 'bloqueado' %}
+    <form method="post" action="/frota/veiculos/{{ veiculo.id }}/liberar" style="display:flex;gap:8px;margin:8px 0">
+      <input class="form-input" name="motivo" placeholder="Motivo (opcional)">
+      <button class="btn btn-sm btn-primary" type="submit">Liberar</button>
+    </form>
+    {% endif %}
+    {% if veiculo.status.value != 'baixado' %}
+    <form method="post" action="/frota/veiculos/{{ veiculo.id }}/baixar" style="display:flex;gap:8px;margin:8px 0">
+      <input class="form-input" name="motivo" placeholder="Motivo da baixa" required>
+      <button class="btn btn-sm" type="submit">Baixar</button>
+    </form>
+    {% endif %}
+    {% if veiculo.motivo_bloqueio %}<p><small>Bloqueio: {{ veiculo.motivo_bloqueio }}</small></p>{% endif %}
+    {% if veiculo.motivo_baixa %}<p><small>Baixa: {{ veiculo.motivo_baixa }}</small></p>{% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

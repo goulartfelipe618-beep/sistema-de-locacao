@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Documentação{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <form method="get" action="/frota/documentacao" style="display:flex;gap:8px;margin:0;flex-wrap:wrap">
+      <select class="form-input" name="veiculo_id">
+        <option value="">Todos veículos</option>
+        {% for v in veiculos %}<option value="{{ v.id }}" {% if veiculo_id == v.id|string %}selected{% endif %}>{{ v.placa }}</option>{% endfor %}
+      </select>
+      <select class="form-input" name="status">
+        <option value="">Todos status</option>
+        {% for s in ['regular','a_vencer','vencido'] %}
+        <option value="{{ s }}" {% if status == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+      <select class="form-input" name="days">
+        <option value="">Sem filtro vencimento</option>
+        {% for d in [30,60,90] %}
+        <option value="{{ d }}" {% if days == d|string %}selected{% endif %}>Vence em {{ d }} dias</option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-sm" type="submit">Filtrar</button>
+    </form>
+    {% if current_user.is_superuser or 'frota.documentacao.criar' in current_user.permissions %}
+    <a class="btn btn-primary" href="/frota/documentacao/novo">+ Novo Documento</a>
+    {% endif %}
+  </div>
+  {% if page_result.items %}
+  <table class="table"><thead><tr><th>Tipo</th><th>Veículo</th><th>Validade</th><th>Status</th><th></th></tr></thead>
+  <tbody>{% for d in page_result.items %}
+  <tr>
+    <td><strong>{{ d.tipo.value }}</strong></td>
+    <td><code>{{ d.veiculo_id }}</code></td>
+    <td>{{ d.data_validade|date }}</td>
+    <td><span class="badge {% if d.status.value == 'regular' %}badge-success{% elif d.status.value == 'a_vencer' %}badge-warning{% else %}badge-danger{% endif %}">{{ d.status.value }}</span></td>
+    <td>{% if current_user.is_superuser or 'frota.documentacao.editar' in current_user.permissions %}<a class="btn btn-sm" href="/frota/documentacao/{{ d.id }}/editar">Editar</a>{% endif %}</td>
+  </tr>
+  {% endfor %}</tbody></table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhum documento.</div>{% endif %}
+</div>
+{% endblock %}

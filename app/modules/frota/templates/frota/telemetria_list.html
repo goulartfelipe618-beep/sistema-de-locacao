@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Telemetria{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <span>Dispositivos de rastreamento</span>
+    {% if current_user.is_superuser or 'frota.telemetria.criar' in current_user.permissions %}
+    <a class="btn btn-primary" href="/frota/telemetria/novo">+ Novo Dispositivo</a>
+    {% endif %}
+  </div>
+  {% if page_result.items %}
+  <table class="table"><thead><tr><th>Veículo</th><th>Provedor</th><th>Equipamento</th><th>Conexão</th><th>KM</th><th></th></tr></thead>
+  <tbody>{% for d in page_result.items %}
+  <tr>
+    <td><code>{{ d.veiculo_id }}</code></td>
+    <td>{{ d.provedor }}</td>
+    <td>{{ d.equipamento_id }}</td>
+    <td><span class="badge {% if d.conn_status.value == 'online' %}badge-success{% else %}badge-muted{% endif %}">{{ d.conn_status.value }}</span></td>
+    <td class="num">{{ d.km_telemetria or '-' }}</td>
+    <td><a class="btn btn-sm" href="/frota/telemetria/{{ d.veiculo_id }}">Detalhe</a></td>
+  </tr>
+  {% endfor %}</tbody></table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhum dispositivo.</div>{% endif %}
+</div>
+{% endblock %}

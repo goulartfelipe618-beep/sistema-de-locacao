@@ -20,7 +20,7 @@ celery_app = Celery(
     "erp_locadora",
     broker=settings.celery_broker_url,
     backend=settings.celery_result_backend,
-    include=["app.modules.audit.tasks"],
+    include=["app.modules.audit.tasks", "app.modules.frota.tasks"],
 )
 
 celery_app.conf.update(

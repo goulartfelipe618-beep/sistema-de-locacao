@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:800px">
+  <h2 class="card-title">{{ title }}</h2>
+  {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+  <form method="post" action="{{ action }}">
+    <div class="form-grid">
+      {% if not item %}
+      <div class="form-group"><label class="form-label" for="veiculo_id">Veículo</label>
+        <select class="form-input" id="veiculo_id" name="veiculo_id" required>
+          <option value="">—</option>
+          {% for v in veiculos %}<option value="{{ v.id }}">{{ v.placa }}</option>{% endfor %}
+        </select>
+      </div>
+      {% else %}
+      <div class="form-group"><label class="form-label">Veículo</label><input class="form-input" readonly value="{{ item.veiculo_id }}"></div>
+      {% endif %}
+      <div class="form-group"><label class="form-label" for="tipo">Tipo</label>
+        <select class="form-input" id="tipo" name="tipo" required>
+          {% for t in ['crlv','seguro','ipva','licenciamento','vistoria','autorizacao_transporte','outro'] %}
+          <option value="{{ t }}" {% if item and item.tipo.value == t %}selected{% endif %}>{{ t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label" for="numero">Número</label><input class="form-input" id="numero" name="numero" value="{{ item.numero if item else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="orgao_emissor">Órgão emissor</label><input class="form-input" id="orgao_emissor" name="orgao_emissor" value="{{ item.orgao_emissor if item else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="data_emissao">Data emissão</label><input class="form-input" type="date" id="data_emissao" name="data_emissao" value="{{ item.data_emissao if item and item.data_emissao else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="data_validade">Data validade</label><input class="form-input" type="date" id="data_validade" name="data_validade" required value="{{ item.data_validade if item and item.data_validade else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="arquivo_key">Arquivo (key)</label><input class="form-input" id="arquivo_key" name="arquivo_key" value="{{ item.arquivo_key if item else '' }}"></div>
+    </div>
+    <div class="form-group" style="margin-top:12px"><label class="form-label" for="observacoes">Observações</label><textarea class="form-input" id="observacoes" name="observacoes" rows="3">{{ item.observacoes if item else '' }}</textarea></div>
+    <div class="form-actions" style="margin-top:16px"><button class="btn btn-primary" type="submit">Salvar</button><a class="btn" href="/frota/documentacao">Cancelar</a></div>
+  </form>
+</div>
+{% endblock %}

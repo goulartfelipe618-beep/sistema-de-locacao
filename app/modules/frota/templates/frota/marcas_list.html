@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Marcas{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <form method="get" action="/frota/marcas" style="display:flex;gap:8px;margin:0">
+      <input class="form-input" type="search" name="q" value="{{ q }}" placeholder="Nome...">
+      <button class="btn btn-sm" type="submit">Buscar</button>
+    </form>
+    {% if current_user.is_superuser or 'frota.marca.criar' in current_user.permissions %}
+    <a class="btn btn-primary" href="/frota/marcas/novo">+ Nova Marca</a>
+    {% endif %}
+  </div>
+  {% if page_result.items %}
+  <table class="table"><thead><tr><th>Nome</th><th>País</th><th>Status</th><th></th></tr></thead>
+  <tbody>{% for m in page_result.items %}
+  <tr><td><strong>{{ m.nome }}</strong></td><td>{{ m.pais_origem or '-' }}</td>
+  <td><span class="badge {% if m.status.value == 'active' %}badge-success{% else %}badge-muted{% endif %}">{{ m.status.value }}</span></td>
+  <td>{% if current_user.is_superuser or 'frota.marca.editar' in current_user.permissions %}<a class="btn btn-sm" href="/frota/marcas/{{ m.id }}/editar">Editar</a>{% endif %}</td></tr>
+  {% endfor %}</tbody></table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhuma marca.</div>{% endif %}
+</div>
+{% endblock %}

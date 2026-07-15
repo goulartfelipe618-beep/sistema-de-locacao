@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Veículos{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <form method="get" action="/frota/veiculos" style="display:flex;gap:8px;margin:0;flex-wrap:wrap">
+      <input class="form-input" type="search" name="q" value="{{ q }}" placeholder="Placa, chassi...">
+      <select class="form-input" name="status">
+        <option value="">Todos status</option>
+        {% for s in ['disponivel','reservado','locado','manutencao','bloqueado','restrito','baixado'] %}
+        <option value="{{ s }}" {% if status == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-sm" type="submit">Buscar</button>
+    </form>
+    {% if current_user.is_superuser or 'frota.veiculo.criar' in current_user.permissions %}
+    <a class="btn btn-primary" href="/frota/veiculos/novo">+ Novo Veículo</a>
+    {% endif %}
+  </div>
+  {% if page_result.items %}
+  <table class="table"><thead><tr><th>Placa</th><th>Ano</th><th>KM</th><th>Combustível</th><th>Status</th><th></th></tr></thead>
+  <tbody>
+  {% for v in page_result.items %}
+  <tr>
+    <td><strong>{{ v.placa }}</strong></td>
+    <td>{{ v.ano_modelo }}</td>
+    <td class="num">{{ v.km_atual or '-' }}</td>
+    <td class="num">{{ v.nivel_combustivel_atual }}/8</td>
+    <td><span class="badge {% if v.status.value == 'disponivel' %}badge-success{% elif v.status.value == 'bloqueado' or v.status.value == 'baixado' %}badge-danger{% else %}badge-warning{% endif %}">{{ v.status.value }}</span></td>
+    <td class="num">{% if current_user.is_superuser or 'frota.veiculo.editar' in current_user.permissions %}<a class="btn btn-sm" href="/frota/veiculos/{{ v.id }}/editar">Editar</a>{% endif %}</td>
+  </tr>
+  {% endfor %}
+  </tbody></table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhum veículo.</div>{% endif %}
+</div>
+{% endblock %}

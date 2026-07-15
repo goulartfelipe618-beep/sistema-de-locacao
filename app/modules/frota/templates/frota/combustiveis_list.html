@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Combustíveis{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <form method="get" action="/frota/combustiveis" style="display:flex;gap:8px;margin:0">
+      <input class="form-input" type="search" name="q" value="{{ q }}" placeholder="Nome...">
+      <button class="btn btn-sm" type="submit">Buscar</button>
+    </form>
+    {% if current_user.is_superuser or 'frota.combustivel.criar' in current_user.permissions %}
+    <a class="btn btn-primary" href="/frota/combustiveis/novo">+ Novo Combustível</a>
+    {% endif %}
+  </div>
+  {% if page_result.items %}
+  <table class="table"><thead><tr><th>Nome</th><th>Unidade</th><th>Preço ref.</th><th>Status</th><th></th></tr></thead>
+  <tbody>{% for c in page_result.items %}
+  <tr><td><strong>{{ c.nome }}</strong></td><td>{{ c.unidade.value }}</td><td class="num">{{ c.preco_referencia|currency }}</td>
+  <td><span class="badge {% if c.status.value == 'active' %}badge-success{% else %}badge-muted{% endif %}">{{ c.status.value }}</span></td>
+  <td>{% if current_user.is_superuser or 'frota.combustivel.editar' in current_user.permissions %}<a class="btn btn-sm" href="/frota/combustiveis/{{ c.id }}/editar">Editar</a>{% endif %}</td></tr>
+  {% endfor %}</tbody></table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhum combustível.</div>{% endif %}
+</div>
+{% endblock %}

@@ -82,6 +82,81 @@ class ParceiroTipo(str, enum.Enum):
     MARKETPLACE = "marketplace"
 
 
+class VeiculoStatus(str, enum.Enum):
+    """Status operacional do veículo (máquina de estados da frota)."""
+
+    DISPONIVEL = "disponivel"
+    RESERVADO = "reservado"
+    LOCADO = "locado"
+    MANUTENCAO = "manutencao"
+    BLOQUEADO = "bloqueado"
+    RESTRITO = "restrito"
+    BAIXADO = "baixado"
+
+
+class VeiculoPropriedade(str, enum.Enum):
+    """Forma de propriedade / aquisição do veículo."""
+
+    PROPRIA = "propria"
+    CONSORCIO = "consorcio"
+    FINANCIADA = "financiada"
+    TERCEIRIZADA = "terceirizada"
+
+
+class CombustivelUnidade(str, enum.Enum):
+    """Unidade de medida do combustível/energia."""
+
+    LITRO = "litro"
+    KWH = "kwh"
+    M3 = "m3"
+
+
+class AcessorioTipo(str, enum.Enum):
+    """Tipo de acessório: fixo no veículo ou avulso locável."""
+
+    FIXO = "fixo"
+    AVULSO = "avulso"
+
+
+class DocumentoVeiculoTipo(str, enum.Enum):
+    """Tipos de documento com vigência por veículo."""
+
+    CRLV = "crlv"
+    SEGURO = "seguro"
+    IPVA = "ipva"
+    LICENCIAMENTO = "licenciamento"
+    VISTORIA = "vistoria"
+    AUTORIZACAO_TRANSPORTE = "autorizacao_transporte"
+    OUTRO = "outro"
+
+
+class DocumentoVeiculoStatus(str, enum.Enum):
+    """Situação calculada da vigência documental."""
+
+    REGULAR = "regular"
+    A_VENCER = "a_vencer"
+    VENCIDO = "vencido"
+
+
+class TelemetriaConnStatus(str, enum.Enum):
+    """Status de conexão do rastreador."""
+
+    ONLINE = "online"
+    OFFLINE = "offline"
+    SEM_SINAL = "sem_sinal"
+
+
+class TelemetriaEventoTipo(str, enum.Enum):
+    """Tipos de evento de telemetria/condução."""
+
+    EXCESSO_VELOCIDADE = "excesso_velocidade"
+    GEOFENCE = "geofence"
+    COLISAO = "colisao"
+    BLOQUEIO = "bloqueio"
+    DESBLOQUEIO = "desbloqueio"
+    OUTRO = "outro"
+
+
 class AuditAction(str, enum.Enum):
     """Categorias de eventos registrados na trilha de auditoria."""
 

@@ -11,4 +11,10 @@ BEAT_SCHEDULE: dict[str, dict] = {
         "schedule": crontab(hour=3, minute=0),
         "options": {"queue": "maintenance"},
     },
+    # Vigência documental da frota (§3.7) — alertas operacionais via status Restrito.
+    "frota-refresh-documentacao": {
+        "task": "frota.refresh_documentacao_vigencias",
+        "schedule": crontab(hour=4, minute=15),
+        "options": {"queue": "maintenance"},
+    },
 }
