@@ -13,6 +13,7 @@ from app.modules.cadastros.web import router as cadastros_router
 from app.modules.dashboard.web import router as dashboard_router
 from app.modules.frota.web import router as frota_router
 from app.modules.identity.web import router as identity_router
+from app.modules.manutencao.web import router as manutencao_router
 from app.modules.tenants.web import router as tenants_router
 
 web_router = APIRouter(include_in_schema=False)
@@ -22,4 +23,5 @@ web_router.include_router(identity_router)
 web_router.include_router(tenants_router)
 web_router.include_router(cadastros_router)
 web_router.include_router(frota_router)
+web_router.include_router(manutencao_router)
 web_router.include_router(audit_router)

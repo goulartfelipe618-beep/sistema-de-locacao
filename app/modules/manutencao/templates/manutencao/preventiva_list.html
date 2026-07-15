@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Planos Preventivos{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <form method="get" action="/manutencao/preventiva" style="display:flex;gap:8px;margin:0">
+      <input class="form-input" type="search" name="q" value="{{ q }}" placeholder="Nome do plano...">
+      <button class="btn btn-sm" type="submit">Buscar</button>
+    </form>
+    {% if current_user.is_superuser or 'manutencao.preventiva.criar' in current_user.permissions %}
+    <a class="btn btn-primary" href="/manutencao/preventiva/novo">+ Novo Plano</a>
+    {% endif %}
+  </div>
+  {% if page_result.items %}
+  <table class="table"><thead><tr><th>Nome</th><th>Intervalo KM</th><th>Intervalo meses</th><th>Custo est.</th><th>Status</th><th></th></tr></thead>
+  <tbody>
+  {% for p in page_result.items %}
+  <tr>
+    <td><strong>{{ p.nome }}</strong></td>
+    <td class="num">{{ p.intervalo_km or '-' }}</td>
+    <td class="num">{{ p.intervalo_meses or '-' }}</td>
+    <td class="num">{{ p.custo_estimado|currency }}</td>
+    <td><span class="badge {% if p.status.value == 'active' %}badge-success{% else %}badge-warning{% endif %}">{{ p.status.value }}</span></td>
+    <td class="num">{% if current_user.is_superuser or 'manutencao.preventiva.editar' in current_user.permissions %}<a class="btn btn-sm" href="/manutencao/preventiva/{{ p.id }}/editar">Editar</a>{% endif %}</td>
+  </tr>
+  {% endfor %}
+  </tbody></table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhum plano preventivo.</div>{% endif %}
+</div>
+
+<div class="card" style="margin-top:16px">
+  <h3 class="card-title">Próximas preventivas</h3>
+  {% if proximas %}
+  <table class="table"><thead><tr><th>Plano</th><th>Veículo</th><th>Urgência</th><th>KM rest.</th><th>Dias rest.</th><th></th></tr></thead>
+  <tbody>
+  {% for pr in proximas %}
+  <tr>
+    <td>{{ pr.plano_nome }}</td>
+    <td>{{ veiculo_placas.get(pr.veiculo_id|string, pr.veiculo_id) }}</td>
+    <td><span class="badge {% if pr.urgencia_pct >= 90 %}badge-danger{% elif pr.urgencia_pct >= 70 %}badge-warning{% else %}badge-success{% endif %}">{{ pr.urgencia_pct }}%</span></td>
+    <td class="num">{{ pr.km_restante if pr.km_restante is not none else '-' }}</td>
+    <td class="num">{{ pr.dias_restantes if pr.dias_restantes is not none else '-' }}</td>
+    <td class="num">
+      {% if current_user.is_superuser or 'manutencao.preventiva.criar' in current_user.permissions %}
+      <form method="post" action="/manutencao/preventiva/gerar-os/{{ pr.veiculo_plano_id }}" style="display:inline"><button class="btn btn-sm btn-primary" type="submit">Gerar OS</button></form>
+      {% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+  </tbody></table>
+  {% else %}<div class="empty-state">Nenhuma preventiva pendente.</div>{% endif %}
+</div>
+{% endblock %}

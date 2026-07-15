@@ -17,4 +17,10 @@ BEAT_SCHEDULE: dict[str, dict] = {
         "schedule": crontab(hour=4, minute=15),
         "options": {"queue": "maintenance"},
     },
+    # Planos preventivos (§4.2) — gera OS automática ao atingir gatilho.
+    "manutencao-avaliar-preventivas": {
+        "task": "manutencao.avaliar_preventivas",
+        "schedule": crontab(hour=5, minute=0),
+        "options": {"queue": "maintenance"},
+    },
 }

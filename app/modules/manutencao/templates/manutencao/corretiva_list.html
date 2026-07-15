@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Manutenção Corretiva{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <form method="get" action="/manutencao/corretiva" style="display:flex;gap:8px;margin:0;flex-wrap:wrap">
+      <input class="form-input" type="search" name="q" value="{{ q }}" placeholder="Número OS...">
+      <select class="form-input" name="status">
+        <option value="">Todos status</option>
+        {% for s in ['aberta','aguardando_peca','em_execucao','aguardando_aprovacao','concluida','cancelada'] %}
+        <option value="{{ s }}" {% if status == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-sm" type="submit">Buscar</button>
+    </form>
+    {% if current_user.is_superuser or 'manutencao.corretiva.criar' in current_user.permissions %}
+    <a class="btn btn-primary" href="/manutencao/corretiva/novo">+ Nova Corretiva</a>
+    {% endif %}
+  </div>
+  {% if page_result.items %}
+  <table class="table"><thead><tr><th>Número</th><th>Veículo</th><th>Causa</th><th>Responsável</th><th>Status</th><th>Custo</th><th></th></tr></thead>
+  <tbody>
+  {% for o in page_result.items %}
+  <tr>
+    <td><strong>{{ o.numero }}</strong></td>
+    <td>{{ veiculo_placas.get(o.veiculo_id|string, o.veiculo_id) }}</td>
+    <td>{{ o.causa.value if o.causa else '-' }}</td>
+    <td>{{ o.responsavel_custo.value if o.responsavel_custo else '-' }}</td>
+    <td><span class="badge {% if o.status.value == 'concluida' %}badge-success{% elif o.status.value == 'cancelada' %}badge-danger{% else %}badge-warning{% endif %}">{{ o.status.value }}</span></td>
+    <td class="num">{{ o.custo_total|currency }}</td>
+    <td class="num"><a class="btn btn-sm" href="/manutencao/os/{{ o.id }}/editar">Abrir OS</a></td>
+  </tr>
+  {% endfor %}
+  </tbody></table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhuma corretiva registrada.</div>{% endif %}
+</div>
+{% endblock %}

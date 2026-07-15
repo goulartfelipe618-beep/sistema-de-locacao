@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Ordens de Serviço{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <form method="get" action="/manutencao/os" style="display:flex;gap:8px;margin:0;flex-wrap:wrap">
+      <input class="form-input" type="search" name="q" value="{{ q }}" placeholder="Número OS...">
+      <select class="form-input" name="status">
+        <option value="">Todos status</option>
+        {% for s in ['aberta','aguardando_peca','em_execucao','aguardando_aprovacao','concluida','cancelada'] %}
+        <option value="{{ s }}" {% if status == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+      <select class="form-input" name="tipo">
+        <option value="">Todos tipos</option>
+        {% for t in ['preventiva','corretiva','sinistro','recall','estetica'] %}
+        <option value="{{ t }}" {% if tipo == t %}selected{% endif %}>{{ t }}</option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-sm" type="submit">Buscar</button>
+    </form>
+    {% if current_user.is_superuser or 'manutencao.os.criar' in current_user.permissions %}
+    <a class="btn btn-primary" href="/manutencao/os/novo">+ Nova OS</a>
+    {% endif %}
+  </div>
+  {% if page_result.items %}
+  <table class="table"><thead><tr><th>Número</th><th>Veículo</th><th>Tipo</th><th>Status</th><th>Custo</th><th>Abertura</th><th></th></tr></thead>
+  <tbody>
+  {% for o in page_result.items %}
+  <tr>
+    <td><strong>{{ o.numero }}</strong></td>
+    <td>{{ veiculo_placas.get(o.veiculo_id|string, o.veiculo_id) }}</td>
+    <td><span class="badge">{{ o.tipo.value }}</span></td>
+    <td><span class="badge {% if o.status.value == 'concluida' %}badge-success{% elif o.status.value == 'cancelada' %}badge-danger{% else %}badge-warning{% endif %}">{{ o.status.value }}</span></td>
+    <td class="num">{{ o.custo_total|currency }}</td>
+    <td>{{ o.data_abertura|date }}</td>
+    <td class="num">{% if current_user.is_superuser or 'manutencao.os.editar' in current_user.permissions %}<a class="btn btn-sm" href="/manutencao/os/{{ o.id }}/editar">Editar</a>{% endif %}</td>
+  </tr>
+  {% endfor %}
+  </tbody></table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhuma ordem de serviço.</div>{% endif %}
+</div>
+{% endblock %}

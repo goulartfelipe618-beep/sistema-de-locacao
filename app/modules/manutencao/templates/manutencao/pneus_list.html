@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Pneus{% endblock %}
+{% block content %}
+{% if alertas.items %}
+<div class="card" style="margin-bottom:16px">
+  <h3 class="card-title">Alertas — vida útil</h3>
+  <table class="table"><thead><tr><th>Nº Fogo</th><th>Veículo</th><th>KM percorrido</th><th>Vida útil</th><th>Uso</th><th></th></tr></thead>
+  <tbody>
+  {% for a in alertas.items %}
+  <tr>
+    <td><strong>{{ a.numero_fogo }}</strong></td>
+    <td>{{ veiculo_placas.get(a.veiculo_id|string, '-') if a.veiculo_id else '-' }}</td>
+    <td class="num">{{ a.km_percorrido }}</td>
+    <td class="num">{{ a.vida_util_km }}</td>
+    <td><span class="badge badge-danger">{{ a.uso_pct }}%</span></td>
+    <td class="num"><a class="btn btn-sm" href="/manutencao/pneus/{{ a.pneu_id }}/editar">Ver</a></td>
+  </tr>
+  {% endfor %}
+  </tbody></table>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="toolbar">
+    <form method="get" action="/manutencao/pneus" style="display:flex;gap:8px;margin:0;flex-wrap:wrap">
+      <input class="form-input" type="search" name="q" value="{{ q }}" placeholder="Nº fogo, marca...">
+      <select class="form-input" name="status">
+        <option value="">Todos status</option>
+        {% for s in ['novo','em_uso','recapado','descartado'] %}
+        <option value="{{ s }}" {% if status == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-sm" type="submit">Buscar</button>
+    </form>
+    {% if current_user.is_superuser or 'manutencao.pneu.criar' in current_user.permissions %}
+    <a class="btn btn-primary" href="/manutencao/pneus/novo">+ Novo Pneu</a>
+    {% endif %}
+  </div>
+  {% if page_result.items %}
+  <table class="table"><thead><tr><th>Nº Fogo</th><th>Marca</th><th>Medida</th><th>Veículo</th><th>Posição</th><th>Status</th><th></th></tr></thead>
+  <tbody>
+  {% for p in page_result.items %}
+  <tr>
+    <td><strong>{{ p.numero_fogo }}</strong></td>
+    <td>{{ p.marca }}</td>
+    <td>{{ p.medida }}</td>
+    <td>{{ veiculo_placas.get(p.veiculo_id|string, '-') if p.veiculo_id else '-' }}</td>
+    <td>{{ p.posicao.value if p.posicao else '-' }}</td>
+    <td><span class="badge {% if p.status.value == 'em_uso' %}badge-success{% elif p.status.value == 'descartado' %}badge-danger{% else %}badge-warning{% endif %}">{{ p.status.value }}</span></td>
+    <td class="num">{% if current_user.is_superuser or 'manutencao.pneu.editar' in current_user.permissions %}<a class="btn btn-sm" href="/manutencao/pneus/{{ p.id }}/editar">Editar</a>{% endif %}</td>
+  </tr>
+  {% endfor %}
+  </tbody></table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhum pneu cadastrado.</div>{% endif %}
+</div>
+{% endblock %}

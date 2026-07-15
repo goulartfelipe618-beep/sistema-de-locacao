@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:700px">
+  <h2 class="card-title">{{ title }}</h2>
+  {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+  <form method="post" action="{{ action }}">
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label" for="codigo">Código</label><input class="form-input" id="codigo" name="codigo" required value="{{ item.codigo if item else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="nome">Nome</label><input class="form-input" id="nome" name="nome" required value="{{ item.nome if item else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="categoria_codigo">Categoria</label><input class="form-input" id="categoria_codigo" name="categoria_codigo" value="{{ item.categoria_codigo if item else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="unidade">Unidade</label><input class="form-input" id="unidade" name="unidade" value="{{ item.unidade if item else 'UN' }}"></div>
+      <div class="form-group"><label class="form-label" for="custo_medio">Custo médio</label><input class="form-input" id="custo_medio" name="custo_medio" value="{{ item.custo_medio if item else '0' }}"></div>
+      <div class="form-group"><label class="form-label" for="status">Status</label>
+        <select class="form-input" id="status" name="status">
+          <option value="active" {% if item and item.status.value == 'active' %}selected{% elif not item %}selected{% endif %}>Ativo</option>
+          <option value="inactive" {% if item and item.status.value == 'inactive' %}selected{% endif %}>Inativo</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-actions" style="margin-top:16px"><button class="btn btn-primary" type="submit">Salvar</button><a class="btn" href="/manutencao/pecas">Cancelar</a></div>
+  </form>
+</div>
+{% endblock %}

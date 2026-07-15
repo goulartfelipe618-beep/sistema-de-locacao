@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:900px">
+  <h2 class="card-title">{{ title }}</h2>
+  {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+  <form method="post" action="{{ action }}">
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label" for="nome">Nome</label><input class="form-input" id="nome" name="nome" required value="{{ plano.nome if plano else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="intervalo_km">Intervalo KM</label><input class="form-input" type="number" id="intervalo_km" name="intervalo_km" value="{{ plano.intervalo_km if plano and plano.intervalo_km else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="intervalo_meses">Intervalo meses</label><input class="form-input" type="number" id="intervalo_meses" name="intervalo_meses" value="{{ plano.intervalo_meses if plano and plano.intervalo_meses else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="custo_estimado">Custo estimado</label><input class="form-input" id="custo_estimado" name="custo_estimado" value="{{ plano.custo_estimado if plano else '0' }}"></div>
+      <div class="form-group"><label class="form-label" for="fornecedor_sugerido_id">Fornecedor sugerido</label>
+        <select class="form-input" id="fornecedor_sugerido_id" name="fornecedor_sugerido_id">
+          <option value="">—</option>
+          {% for f in fornecedores %}<option value="{{ f.id }}" {% if plano and plano.fornecedor_sugerido_id == f.id %}selected{% endif %}>{{ f.nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label" for="status">Status</label>
+        <select class="form-input" id="status" name="status">
+          <option value="active" {% if plano and plano.status.value == 'active' %}selected{% elif not plano %}selected{% endif %}>Ativo</option>
+          <option value="inactive" {% if plano and plano.status.value == 'inactive' %}selected{% endif %}>Inativo</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label"><input type="checkbox" name="automatico" value="1" {% if not plano or plano.automatico %}checked{% endif %}> Geração automática</label></div>
+    </div>
+    <div class="form-group" style="margin-top:12px"><label class="form-label" for="descricao">Descrição</label><textarea class="form-input" id="descricao" name="descricao" rows="2">{{ plano.descricao if plano else '' }}</textarea></div>
+    <div class="form-group" style="margin-top:12px"><label class="form-label" for="checklist">Checklist (uma linha por item)</label><textarea class="form-input" id="checklist" name="checklist" rows="6">{{ checklist_text }}</textarea></div>
+    <div class="form-actions" style="margin-top:16px"><button class="btn btn-primary" type="submit">Salvar</button><a class="btn" href="/manutencao/preventiva">Cancelar</a></div>
+  </form>
+
+  {% if plano %}
+  <div style="margin-top:24px;border-top:1px solid var(--border);padding-top:16px">
+    <h3>Veículos vinculados</h3>
+    {% if vinculos %}
+    <table class="table"><thead><tr><th>Veículo</th><th>KM última</th><th>Data última</th><th></th></tr></thead><tbody>
+      {% for v in vinculos %}
+      <tr>
+        <td>{{ veiculo_placas.get(v.veiculo_id|string, v.veiculo_id) }}</td>
+        <td class="num">{{ v.km_ultima_execucao or '-' }}</td>
+        <td>{{ v.data_ultima_execucao|date if v.data_ultima_execucao else '-' }}</td>
+        <td class="num"><form method="post" action="/manutencao/preventiva/{{ plano.id }}/vincular/{{ v.veiculo_id }}/remover"><button class="btn btn-sm" type="submit">Remover</button></form></td>
+      </tr>
+      {% endfor %}
+    </tbody></table>
+    {% else %}<div class="empty-state">Nenhum veículo vinculado.</div>{% endif %}
+    <form method="post" action="/manutencao/preventiva/{{ plano.id }}/vincular" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <select class="form-input" name="veiculo_id" required>
+        <option value="">Selecionar veículo</option>
+        {% for v in veiculos %}<option value="{{ v.id }}">{{ v.placa }}</option>{% endfor %}
+      </select>
+      <input class="form-input" type="number" name="km_ultima_execucao" placeholder="KM última execução">
+      <input class="form-input" type="date" name="data_ultima_execucao">
+      <button class="btn btn-sm btn-primary" type="submit">Vincular</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -150,11 +150,36 @@ NAVIGATION: tuple[MenuSection, ...] = (
         label="Manutenção",
         icon="wrench",
         items=(
-            MenuItem("Ordens de Serviço", url="/manutencao/os"),
-            MenuItem("Preventiva", url="/manutencao/preventiva"),
-            MenuItem("Corretiva", url="/manutencao/corretiva"),
-            MenuItem("Peças / Estoque", url="/manutencao/pecas"),
-            MenuItem("Pneus", url="/manutencao/pneus"),
+            MenuItem(
+                "Ordens de Serviço",
+                url="/manutencao/os",
+                permission="manutencao.os.visualizar",
+                implemented=True,
+            ),
+            MenuItem(
+                "Preventiva",
+                url="/manutencao/preventiva",
+                permission="manutencao.preventiva.visualizar",
+                implemented=True,
+            ),
+            MenuItem(
+                "Corretiva",
+                url="/manutencao/corretiva",
+                permission="manutencao.corretiva.visualizar",
+                implemented=True,
+            ),
+            MenuItem(
+                "Peças / Estoque",
+                url="/manutencao/pecas",
+                permission="manutencao.peca.visualizar",
+                implemented=True,
+            ),
+            MenuItem(
+                "Pneus",
+                url="/manutencao/pneus",
+                permission="manutencao.pneu.visualizar",
+                implemented=True,
+            ),
         ),
     ),
     MenuSection(

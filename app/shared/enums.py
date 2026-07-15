@@ -157,6 +157,88 @@ class TelemetriaEventoTipo(str, enum.Enum):
     OUTRO = "outro"
 
 
+class OrdemServicoTipo(str, enum.Enum):
+    """Tipo/origem da ordem de serviço."""
+
+    PREVENTIVA = "preventiva"
+    CORRETIVA = "corretiva"
+    SINISTRO = "sinistro"
+    RECALL = "recall"
+    ESTETICA = "estetica"
+
+
+class OrdemServicoOrigem(str, enum.Enum):
+    """Como a OS foi gerada."""
+
+    MANUAL = "manual"
+    PLANO_PREVENTIVO = "plano_preventivo"
+    AVARIA_CHECKIN = "avaria_checkin"
+
+
+class OrdemServicoStatus(str, enum.Enum):
+    """Máquina de estados da OS."""
+
+    ABERTA = "aberta"
+    AGUARDANDO_PECA = "aguardando_peca"
+    EM_EXECUCAO = "em_execucao"
+    AGUARDANDO_APROVACAO = "aguardando_aprovacao"
+    CONCLUIDA = "concluida"
+    CANCELADA = "cancelada"
+
+
+class OrdemServicoItemTipo(str, enum.Enum):
+    """Linha de OS: mão de obra ou peça."""
+
+    MAO_DE_OBRA = "mao_de_obra"
+    PECA = "peca"
+
+
+class CorretivaCausa(str, enum.Enum):
+    """Causa raiz típica de OS corretiva."""
+
+    PECA = "peca"
+    USO = "uso"
+    ACIDENTE = "acidente"
+    DESGASTE = "desgaste"
+    OUTRO = "outro"
+
+
+class CorretivaResponsavel(str, enum.Enum):
+    """Quem arca com o custo da corretiva."""
+
+    CLIENTE = "cliente"
+    SEGURO = "seguro"
+    LOCADORA = "locadora"
+
+
+class EstoqueMovimentoTipo(str, enum.Enum):
+    """Tipos de movimentação de estoque de peças."""
+
+    ENTRADA = "entrada"
+    SAIDA = "saida"
+    AJUSTE = "ajuste"
+    TRANSFERENCIA = "transferencia"
+
+
+class PneuPosicao(str, enum.Enum):
+    """Posição do pneu no veículo."""
+
+    DD = "dd"  # dianteiro direito
+    DE = "de"
+    TD = "td"
+    TE = "te"
+    ESTEPE = "estepe"
+
+
+class PneuStatus(str, enum.Enum):
+    """Ciclo de vida do pneu."""
+
+    NOVO = "novo"
+    EM_USO = "em_uso"
+    RECAPADO = "recapado"
+    DESCARTADO = "descartado"
+
+
 class AuditAction(str, enum.Enum):
     """Categorias de eventos registrados na trilha de auditoria."""
 

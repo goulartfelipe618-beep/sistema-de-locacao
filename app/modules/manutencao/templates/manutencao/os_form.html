@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:960px">
+  <h2 class="card-title">{{ title }}</h2>
+  {% if os %}
+  <p>Status: <span class="badge {% if os.status.value == 'concluida' %}badge-success{% elif os.status.value == 'cancelada' %}badge-danger{% else %}badge-warning{% endif %}">{{ os.status.value }}</span>
+  {% if os.requer_aprovacao %}<span class="badge badge-danger">Requer aprovação</span>{% endif %}
+  Custo total: <strong>{{ os.custo_total|currency }}</strong></p>
+  {% endif %}
+  {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+  <form method="post" action="{{ action }}">
+    <div class="form-grid">
+      {% if not os %}
+      <div class="form-group"><label class="form-label" for="veiculo_id">Veículo</label>
+        <select class="form-input" id="veiculo_id" name="veiculo_id" required>
+          <option value="">—</option>
+          {% for v in veiculos %}<option value="{{ v.id }}">{{ v.placa }}</option>{% endfor %}
+        </select>
+      </div>
+      {% if not corretiva_mode %}
+      <div class="form-group"><label class="form-label" for="tipo">Tipo</label>
+        <select class="form-input" id="tipo" name="tipo">
+          {% for t in ['preventiva','corretiva','sinistro','recall','estetica'] %}
+          <option value="{{ t }}" {% if default_tipo == t %}selected{% endif %}>{{ t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+      {% endif %}
+      <div class="form-group"><label class="form-label" for="fornecedor_id">Fornecedor</label>
+        <select class="form-input" id="fornecedor_id" name="fornecedor_id">
+          <option value="">—</option>
+          {% for f in fornecedores %}<option value="{{ f.id }}" {% if os and os.fornecedor_id == f.id %}selected{% endif %}>{{ f.nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label" for="filial_id">Filial</label>
+        <select class="form-input" id="filial_id" name="filial_id">
+          <option value="">—</option>
+          {% for f in filiais %}<option value="{{ f.id }}" {% if os and os.filial_id == f.id %}selected{% endif %}>{{ f.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label" for="km_entrada">KM entrada</label><input class="form-input" type="number" id="km_entrada" name="km_entrada" value="{{ os.km_entrada if os and os.km_entrada is not none else '' }}"></div>
+      {% if os %}<div class="form-group"><label class="form-label" for="km_saida">KM saída</label><input class="form-input" type="number" id="km_saida" name="km_saida" value="{{ os.km_saida if os.km_saida is not none else '' }}"></div>{% endif %}
+      <div class="form-group"><label class="form-label" for="data_previsao">Previsão</label><input class="form-input" type="date" id="data_previsao" name="data_previsao" value="{{ os.data_previsao if os and os.data_previsao else '' }}"></div>
+      {% if os or corretiva_mode or default_tipo == 'corretiva' %}
+      <div class="form-group"><label class="form-label" for="causa">Causa</label>
+        <select class="form-input" id="causa" name="causa">
+          <option value="">—</option>
+          {% for c in ['peca','uso','acidente','desgaste','outro'] %}
+          <option value="{{ c }}" {% if os and os.causa and os.causa.value == c %}selected{% endif %}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label" for="responsavel_custo">Responsável custo</label>
+        <select class="form-input" id="responsavel_custo" name="responsavel_custo">
+          <option value="">—</option>
+          {% for r in ['cliente','seguro','locadora'] %}
+          <option value="{{ r }}" {% if os and os.responsavel_custo and os.responsavel_custo.value == r %}selected{% endif %}>{{ r }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+      <div class="form-group"><label class="form-label" for="garantia_dias">Garantia (dias)</label><input class="form-input" type="number" id="garantia_dias" name="garantia_dias" value="{{ os.garantia_dias if os and os.garantia_dias else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="garantia_km">Garantia (km)</label><input class="form-input" type="number" id="garantia_km" name="garantia_km" value="{{ os.garantia_km if os and os.garantia_km else '' }}"></div>
+    </div>
+    <div class="form-group" style="margin-top:12px"><label class="form-label" for="observacoes">Observações</label><textarea class="form-input" id="observacoes" name="observacoes" rows="3">{{ os.observacoes if os else '' }}</textarea></div>
+    <div class="form-actions" style="margin-top:16px"><button class="btn btn-primary" type="submit">Salvar</button><a class="btn" href="{% if corretiva_mode %}/manutencao/corretiva{% else %}/manutencao/os{% endif %}">Cancelar</a></div>
+  </form>
+
+  {% if os and os.status.value not in ['concluida','cancelada'] %}
+  <div style="margin-top:24px;border-top:1px solid var(--border);padding-top:16px">
+    <h3>Itens</h3>
+    {% if itens %}
+    <table class="table"><thead><tr><th>Tipo</th><th>Descrição</th><th>Qtd</th><th>Unit.</th><th>Total</th><th></th></tr></thead><tbody>
+      {% for i in itens %}
+      <tr>
+        <td>{{ i.tipo_item.value }}</td>
+        <td>{{ i.descricao }}{% if i.peca_id %} <small>({{ peca_nomes.get(i.peca_id|string, '') }})</small>{% endif %}</td>
+        <td class="num">{{ i.quantidade }}</td>
+        <td class="num">{{ i.valor_unitario|currency }}</td>
+        <td class="num">{{ i.valor_total|currency }}</td>
+        <td class="num"><form method="post" action="/manutencao/os/{{ os.id }}/itens/{{ i.id }}/remover"><button class="btn btn-sm" type="submit">Remover</button></form></td>
+      </tr>
+      {% endfor %}
+    </tbody></table>
+    {% else %}<div class="empty-state">Nenhum item.</div>{% endif %}
+    <form method="post" action="/manutencao/os/{{ os.id }}/itens" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <select class="form-input" name="tipo_item" required>
+        <option value="mao_de_obra">Mão de obra</option>
+        <option value="peca">Peça</option>
+      </select>
+      <input class="form-input" name="descricao" placeholder="Descrição" required>
+      <select class="form-input" name="peca_id"><option value="">Peça (opcional)</option>{% for p in pecas %}<option value="{{ p.id }}">{{ p.codigo }} — {{ p.nome }}</option>{% endfor %}</select>
+      <input class="form-input" name="quantidade" value="1" placeholder="Qtd">
+      <input class="form-input" name="valor_unitario" value="0" placeholder="Valor unit.">
+      <button class="btn btn-sm btn-primary" type="submit">Adicionar</button>
+    </form>
+  </div>
+
+  <div style="margin-top:24px;border-top:1px solid var(--border);padding-top:16px">
+    <h3>Fotos</h3>
+    {% if fotos %}
+    <table class="table"><thead><tr><th>Arquivo</th><th>Legenda</th><th>Fase</th><th></th></tr></thead><tbody>
+      {% for f in fotos %}
+      <tr>
+        <td><code>{{ f.storage_key }}</code></td>
+        <td>{{ f.legenda or '-' }}</td>
+        <td>{{ f.fase or '-' }}</td>
+        <td class="num"><form method="post" action="/manutencao/os/{{ os.id }}/fotos/{{ f.id }}/remover"><button class="btn btn-sm" type="submit">Remover</button></form></td>
+      </tr>
+      {% endfor %}
+    </tbody></table>
+    {% else %}<div class="empty-state">Nenhuma foto.</div>{% endif %}
+    <form method="post" action="/manutencao/os/{{ os.id }}/fotos" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <input class="form-input" name="storage_key" placeholder="storage key / URL" required>
+      <input class="form-input" name="legenda" placeholder="Legenda">
+      <input class="form-input" name="fase" placeholder="antes/depois">
+      <button class="btn btn-sm btn-primary" type="submit">Adicionar</button>
+    </form>
+  </div>
+
+  <div style="margin-top:24px;border-top:1px solid var(--border);padding-top:16px">
+    <h3>Ações</h3>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <form method="post" action="/manutencao/os/{{ os.id }}/status" style="display:flex;gap:8px">
+        <select class="form-input" name="novo_status">
+          {% for s in ['aguardando_peca','em_execucao','aguardando_aprovacao'] %}
+          <option value="{{ s }}">{{ s }}</option>
+          {% endfor %}
+        </select>
+        <button class="btn btn-sm" type="submit">Mudar status</button>
+      </form>
+      <form method="post" action="/manutencao/os/{{ os.id }}/concluir" style="display:flex;gap:8px">
+        <input class="form-input" name="km_saida" placeholder="KM saída">
+        <button class="btn btn-sm btn-primary" type="submit">Concluir</button>
+      </form>
+      <form method="post" action="/manutencao/os/{{ os.id }}/cancelar" style="display:flex;gap:8px">
+        <input class="form-input" name="motivo" placeholder="Motivo cancelamento">
+        <button class="btn btn-sm" type="submit">Cancelar</button>
+      </form>
+      {% if os.requer_aprovacao or os.status.value == 'aguardando_aprovacao' %}
+      {% if current_user.is_superuser or 'manutencao.os.aprovar' in current_user.permissions %}
+      <form method="post" action="/manutencao/os/{{ os.id }}/aprovar"><button class="btn btn-sm btn-primary" type="submit">Aprovar</button></form>
+      {% endif %}
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Peças e Estoque{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <div style="display:flex;gap:8px">
+      <a class="btn btn-sm {% if tab == 'pecas' %}btn-primary{% endif %}" href="/manutencao/pecas?tab=pecas">Peças</a>
+      <a class="btn btn-sm {% if tab == 'estoque' %}btn-primary{% endif %}" href="/manutencao/pecas?tab=estoque">Estoque</a>
+    </div>
+    <form method="get" action="/manutencao/pecas" style="display:flex;gap:8px;margin:0">
+      <input type="hidden" name="tab" value="{{ tab }}">
+      <input class="form-input" type="search" name="q" value="{{ q }}" placeholder="Código ou nome...">
+      <button class="btn btn-sm" type="submit">Buscar</button>
+    </form>
+    {% if current_user.is_superuser or 'manutencao.peca.criar' in current_user.permissions %}
+    <a class="btn btn-primary" href="/manutencao/pecas/novo">+ Nova Peça</a>
+    {% endif %}
+  </div>
+
+  {% if tab == 'estoque' %}
+  {% if alertas.items %}
+  <div class="alert alert-danger" style="margin-bottom:12px"><strong>Alertas de estoque baixo:</strong>
+    {% for a in alertas.items %}{{ a.peca_codigo }} ({{ a.quantidade_atual }}/{{ a.quantidade_minima }}){% if not loop.last %}, {% endif %}{% endfor %}
+  </div>
+  {% endif %}
+  {% if estoque.items %}
+  <table class="table"><thead><tr><th>Peça</th><th>Filial</th><th>Qtd atual</th><th>Mín.</th><th>Local</th></tr></thead>
+  <tbody>
+  {% for e in estoque.items %}
+  <tr>
+    <td>{{ peca_map.get(e.peca_id|string).codigo if peca_map.get(e.peca_id|string) else e.peca_id }} — {{ peca_map.get(e.peca_id|string).nome if peca_map.get(e.peca_id|string) else '' }}</td>
+    <td>{{ e.filial_id }}</td>
+    <td class="num {% if e.quantidade_atual < e.quantidade_minima %}text-danger{% endif %}">{{ e.quantidade_atual }}</td>
+    <td class="num">{{ e.quantidade_minima }}</td>
+    <td>{{ e.localizacao or '-' }}</td>
+  </tr>
+  {% endfor %}
+  </tbody></table>
+  {% else %}<div class="empty-state">Nenhuma posição de estoque.</div>{% endif %}
+
+  <div style="margin-top:24px;border-top:1px solid var(--border);padding-top:16px">
+    <h3>Movimentação</h3>
+    <div style="display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">
+      {% for label, action in [('Entrada','entrada'),('Saída','saida'),('Ajuste','ajuste')] %}
+      <form method="post" action="/manutencao/pecas/estoque/{{ action }}" class="card" style="padding:12px">
+        <h4>{{ label }}</h4>
+        <div class="form-group"><select class="form-input" name="peca_id" required><option value="">Peça</option>{% for p in todas_pecas %}<option value="{{ p.id }}">{{ p.codigo }}</option>{% endfor %}</select></div>
+        <div class="form-group"><select class="form-input" name="filial_id" required><option value="">Filial</option>{% for f in filiais %}<option value="{{ f.id }}">{{ f.name }}</option>{% endfor %}</select></div>
+        <div class="form-group"><input class="form-input" name="quantidade" placeholder="Quantidade" required></div>
+        {% if action == 'entrada' %}<div class="form-group"><input class="form-input" name="custo_unitario" placeholder="Custo unit."></div>{% endif %}
+        <div class="form-group"><input class="form-input" name="observacoes" placeholder="Observações"></div>
+        <button class="btn btn-sm btn-primary" type="submit">{{ label }}</button>
+      </form>
+      {% endfor %}
+    </div>
+  </div>
+  {% else %}
+  {% if page_result.items %}
+  <table class="table"><thead><tr><th>Código</th><th>Nome</th><th>Unidade</th><th>Custo médio</th><th>Status</th><th></th></tr></thead>
+  <tbody>
+  {% for p in page_result.items %}
+  <tr>
+    <td><strong>{{ p.codigo }}</strong></td>
+    <td>{{ p.nome }}</td>
+    <td>{{ p.unidade }}</td>
+    <td class="num">{{ p.custo_medio|currency }}</td>
+    <td><span class="badge {% if p.status.value == 'active' %}badge-success{% else %}badge-warning{% endif %}">{{ p.status.value }}</span></td>
+    <td class="num">{% if current_user.is_superuser or 'manutencao.peca.editar' in current_user.permissions %}<a class="btn btn-sm" href="/manutencao/pecas/{{ p.id }}/editar">Editar</a>{% endif %}</td>
+  </tr>
+  {% endfor %}
+  </tbody></table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhuma peça cadastrada.</div>{% endif %}
+  {% endif %}
+</div>
+{% endblock %}
