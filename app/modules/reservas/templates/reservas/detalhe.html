@@ -47,6 +47,9 @@
       <form method="post" action="/reservas/{{ reserva.id }}/confirmar" style="display:inline"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-primary" type="submit">Confirmar</button></form>
       {% endif %}
     {% endif %}
+    {% if reserva.status.value == 'confirmada' and (current_user.is_superuser or 'locacoes.contrato.criar' in current_user.permissions) %}
+    <form method="post" action="/locacoes/contratos/de-reserva/{{ reserva.id }}" style="display:inline"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-primary" type="submit">Gerar contrato</button></form>
+    {% endif %}
     {% if reserva.status.value == 'confirmada' and (current_user.is_superuser or 'reservas.reserva.editar' in current_user.permissions) %}
     <form method="post" action="/reservas/{{ reserva.id }}/no-show" style="display:inline"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-warning" type="submit">No-show</button></form>
     {% endif %}

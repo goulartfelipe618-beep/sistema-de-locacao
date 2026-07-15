@@ -13,6 +13,7 @@ from app.modules.cadastros.web import router as cadastros_router
 from app.modules.dashboard.web import router as dashboard_router
 from app.modules.frota.web import router as frota_router
 from app.modules.identity.web import router as identity_router
+from app.modules.locacoes.web import router as locacoes_router
 from app.modules.manutencao.web import router as manutencao_router
 from app.modules.reservas.web import router as reservas_router
 from app.modules.tarifario.web import router as tarifario_router
@@ -28,4 +29,5 @@ web_router.include_router(frota_router)
 web_router.include_router(manutencao_router)
 web_router.include_router(tarifario_router)
 web_router.include_router(reservas_router)
+web_router.include_router(locacoes_router)
 web_router.include_router(audit_router)

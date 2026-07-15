@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <h2 class="card-title" style="margin:0">{{ title }}</h2>
+    <a class="btn btn-sm" href="/locacoes/contratos">Contratos</a>
+  </div>
+  <p class="text-muted">Contratos ativos ou aguardando check-in.</p>
+  {% if page_result.items %}
+  <table class="table">
+    <thead><tr><th>Número</th><th>Cliente</th><th>Veículo</th><th>Devolução</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for c in page_result.items %}
+    <tr>
+      <td><strong>{{ c.numero }}</strong></td>
+      <td>{{ cliente_nomes.get(c.cliente_id|string, c.cliente_id) }}</td>
+      <td>{{ veiculo_placas.get(c.veiculo_id|string, c.veiculo_id) }}</td>
+      <td>{{ c.devolucao_prevista_em|datetime }}</td>
+      <td><span class="badge {{ status_badge(c.status) }}">{{ c.status.value }}</span></td>
+      <td class="num">
+        {% if current_user.is_superuser or 'locacoes.checkin.criar' in current_user.permissions %}
+        <a class="btn btn-sm btn-primary" href="/locacoes/checkin/{{ c.id }}">Executar</a>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhum contrato para check-in.</div>{% endif %}
+</div>
+{% endblock %}

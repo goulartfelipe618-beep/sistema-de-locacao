@@ -698,6 +698,18 @@ class ReservaService:
         )
         return reserva
 
+    async def create_contrato(self, reserva_id: uuid.UUID):
+        """Gera contrato AGUARDANDO_CHECKOUT a partir de reserva confirmada."""
+        reserva = await self.get(reserva_id)
+        if reserva.status != ReservaStatus.CONFIRMADA:
+            raise BusinessRuleError(
+                "Somente reservas confirmadas geram contrato.",
+                code="reserva_nao_confirmada",
+            )
+        from app.modules.locacoes.service import ContratoService
+
+        return await ContratoService(self.session).from_reserva(reserva_id)
+
     async def checkout_realizado(self, reserva_id: uuid.UUID) -> ResReserva:
         reserva = await self.get(reserva_id)
         if reserva.status != ReservaStatus.CONFIRMADA:

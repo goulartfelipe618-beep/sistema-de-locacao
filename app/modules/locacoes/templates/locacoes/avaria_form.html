@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:700px">
+  <h2 class="card-title">{{ title }}</h2>
+  {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+  <form method="post" action="{{ action }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    {% if not item %}
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Veículo</label>
+        <select class="form-input" name="veiculo_id" required>
+          <option value="">Selecionar</option>
+          {% for v in veiculos %}<option value="{{ v.id }}">{{ v.placa }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Origem</label>
+        <select class="form-input" name="origem" required>
+          {% for o in ['checkout','checkin','sinistro','inspecao'] %}<option value="{{ o }}">{{ o }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Contrato (opcional)</label>
+        <input class="form-input" name="contrato_id" placeholder="UUID">
+      </div>
+    </div>
+    {% else %}
+    <p><strong>Veículo:</strong> {{ veiculo_placas.get(item.veiculo_id|string, item.veiculo_id) }} · <strong>Origem:</strong> {{ item.origem.value }}</p>
+    {% endif %}
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Localização</label><input class="form-input" name="localizacao" required value="{{ item.localizacao if item else '' }}"></div>
+      <div class="form-group"><label class="form-label">Severidade</label>
+        <select class="form-input" name="severidade" required>
+          {% for s in ['leve','media','grave'] %}
+          <option value="{{ s }}" {% if item and item.severidade.value == s %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Valor reparo</label><input class="form-input" name="valor_reparo" value="{{ item.valor_reparo if item and item.valor_reparo else '' }}"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Laudo</label><textarea class="form-input" name="laudo" rows="2">{{ item.laudo if item and item.laudo else '' }}</textarea></div>
+    {% if not item %}
+    <div class="form-group"><label class="form-label">Fotos (storage keys, uma por linha)</label><textarea class="form-input" name="fotos" rows="2"></textarea></div>
+    {% endif %}
+    <div class="form-group"><label class="form-label">Observações</label><textarea class="form-input" name="observacoes" rows="2">{{ item.observacoes if item and item.observacoes else '' }}</textarea></div>
+    <div class="form-actions" style="margin-top:16px">
+      <button class="btn btn-primary" type="submit">Salvar</button>
+      <a class="btn" href="/locacoes/avarias">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

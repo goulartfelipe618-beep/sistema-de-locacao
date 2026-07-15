@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:1000px">
+  <div class="toolbar">
+    <h2 class="card-title" style="margin:0">{{ title }}</h2>
+    <a class="btn btn-sm" href="/locacoes/contratos">← Voltar</a>
+  </div>
+  {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+
+  <div class="form-grid" style="margin-bottom:16px">
+    <div><strong>Status:</strong> <span class="badge {{ status_badge }}">{{ contrato.status.value }}</span></div>
+    <div><strong>Versão:</strong> {{ contrato.versao }}</div>
+    <div><strong>Cliente:</strong> {{ cliente_nomes.get(contrato.cliente_id|string, contrato.cliente_id) }}</div>
+    <div><strong>Veículo:</strong> {{ veiculo_placas.get(contrato.veiculo_id|string, contrato.veiculo_id) }}</div>
+    <div><strong>Categoria:</strong> {{ categoria_nomes.get(contrato.categoria_id|string, contrato.categoria_id) }}</div>
+    <div><strong>Retirada:</strong> {{ filial_nomes.get(contrato.filial_retirada_id|string, '') }} — {{ contrato.retirada_prevista_em|datetime }}</div>
+    <div><strong>Devolução:</strong> {{ filial_nomes.get(contrato.filial_devolucao_id|string, '') }} — {{ contrato.devolucao_prevista_em|datetime }}</div>
+    <div><strong>Total:</strong> {{ contrato.valor_total|currency }}</div>
+    {% if contrato.valor_final %}<div><strong>Valor final:</strong> {{ contrato.valor_final|currency }}</div>{% endif %}
+    {% if contrato.caucao %}<div><strong>Caução:</strong> {{ contrato.caucao|currency }}</div>{% endif %}
+    {% if contrato.reserva_id %}<div><strong>Reserva:</strong> <a href="/reservas/{{ contrato.reserva_id }}">{{ contrato.reserva_id }}</a></div>{% endif %}
+    {% if contrato.checkout_em %}<div><strong>Check-out:</strong> {{ contrato.checkout_em|datetime }} (km {{ contrato.km_saida }}, comb. {{ contrato.combustivel_saida }}/8)</div>{% endif %}
+    {% if contrato.checkin_em %}<div><strong>Check-in:</strong> {{ contrato.checkin_em|datetime }} (km {{ contrato.km_entrada }}, comb. {{ contrato.combustivel_entrada }}/8)</div>{% endif %}
+    {% if contrato.pendencia_financeira %}<div><span class="badge badge-danger">Pendência financeira</span></div>{% endif %}
+  </div>
+
+  {% if motoristas_vinc %}
+  <h4>Motoristas</h4>
+  <ul>{% for mv in motoristas_vinc %}<li>{{ motorista_nomes.get(mv.motorista_id|string, mv.motorista_id) }}{% if mv.principal %} (principal){% endif %}</li>{% endfor %}</ul>
+  {% endif %}
+
+  {% if itens %}
+  <h4>Itens de cobrança</h4>
+  <table class="table">
+    <thead><tr><th>Tipo</th><th>Descrição</th><th>Qtd</th><th>Total</th></tr></thead>
+    <tbody>
+    {% for i in itens %}
+    <tr><td>{{ i.tipo.value }}</td><td>{{ i.descricao }}</td><td class="num">{{ i.quantidade }}</td><td class="num">{{ i.valor_total|currency }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  <div class="form-actions" style="margin-top:16px;flex-wrap:wrap;gap:8px">
+    {% if contrato.status.value in ['rascunho','aguardando_checkout'] and (current_user.is_superuser or 'locacoes.checkout.visualizar' in current_user.permissions) %}
+    <a class="btn btn-primary" href="/locacoes/checkout/{{ contrato.id }}">Check-out</a>
+    {% endif %}
+    {% if contrato.status.value in ['ativo','aguardando_checkin'] and (current_user.is_superuser or 'locacoes.checkin.visualizar' in current_user.permissions) %}
+    <a class="btn btn-primary" href="/locacoes/checkin/{{ contrato.id }}">Check-in</a>
+    {% endif %}
+    {% if contrato.status.value == 'ativo' and (current_user.is_superuser or 'locacoes.renovacao.visualizar' in current_user.permissions) %}
+    <a class="btn btn-sm" href="/locacoes/renovacoes?contrato_id={{ contrato.id }}">Renovar</a>
+    {% endif %}
+    {% if contrato.status.value not in ['encerrado','encerrado_pendencia','cancelado','ativo'] and (current_user.is_superuser or 'locacoes.contrato.cancelar' in current_user.permissions) %}
+    <form method="post" action="/locacoes/contratos/{{ contrato.id }}/cancelar" style="display:inline-flex;gap:4px;align-items:center">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input class="form-input" name="motivo" placeholder="Motivo cancelamento" required style="width:200px">
+      <button class="btn btn-danger" type="submit">Cancelar</button>
+    </form>
+    {% endif %}
+    {% if contrato.status.value in ['encerrado','encerrado_pendencia'] and (current_user.is_superuser or 'locacoes.encerramento.reabrir' in current_user.permissions) %}
+    <form method="post" action="/locacoes/encerramentos/{{ contrato.id }}/reabrir" style="display:inline-flex;gap:4px;align-items:center">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input class="form-input" name="motivo" placeholder="Motivo reabertura" required style="width:200px">
+      <button class="btn btn-warning" type="submit">Reabrir</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

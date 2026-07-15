@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <form method="get" action="/locacoes/contratos" style="display:flex;gap:8px;margin:0;flex-wrap:wrap">
+      <input class="form-input" type="search" name="q" value="{{ q }}" placeholder="Número...">
+      <select class="form-input" name="status">
+        <option value="">Todos status</option>
+        {% for s in ['rascunho','aguardando_checkout','ativo','aguardando_checkin','encerrado','encerrado_pendencia','cancelado'] %}
+        <option value="{{ s }}" {% if status == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-sm" type="submit">Buscar</button>
+    </form>
+    {% if current_user.is_superuser or 'locacoes.contrato.criar' in current_user.permissions %}
+    <a class="btn btn-primary" href="/locacoes/contratos/novo">+ Novo Contrato</a>
+    {% endif %}
+  </div>
+  {% if page_result.items %}
+  <table class="table">
+    <thead><tr><th>Número</th><th>Cliente</th><th>Veículo</th><th>Retirada</th><th>Devolução</th><th>Status</th><th>Total</th><th></th></tr></thead>
+    <tbody>
+    {% for c in page_result.items %}
+    <tr>
+      <td><strong>{{ c.numero }}</strong></td>
+      <td>{{ cliente_nomes.get(c.cliente_id|string, c.cliente_id) }}</td>
+      <td>{{ veiculo_placas.get(c.veiculo_id|string, c.veiculo_id) }}</td>
+      <td>{{ c.retirada_prevista_em|datetime }}</td>
+      <td>{{ c.devolucao_prevista_em|datetime }}</td>
+      <td><span class="badge {{ status_badge(c.status) }}">{{ c.status.value }}</span></td>
+      <td class="num">{{ c.valor_total|currency }}</td>
+      <td class="num"><a class="btn btn-sm" href="/locacoes/contratos/{{ c.id }}">Detalhe</a></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhum contrato encontrado.</div>{% endif %}
+</div>
+{% endblock %}

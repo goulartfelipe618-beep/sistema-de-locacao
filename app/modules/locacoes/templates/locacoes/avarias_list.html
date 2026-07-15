@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <form method="get" action="/locacoes/avarias" style="display:flex;gap:8px;margin:0;flex-wrap:wrap">
+      <select class="form-input" name="status">
+        <option value="">Todos status</option>
+        {% for s in ['registrada','em_analise','responsabilidade_definida','os_gerada','cobranca_gerada','encerrada'] %}
+        <option value="{{ s }}" {% if status == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-sm" type="submit">Filtrar</button>
+    </form>
+    {% if current_user.is_superuser or 'locacoes.avaria.criar' in current_user.permissions %}
+    <a class="btn btn-primary" href="/locacoes/avarias/novo">+ Nova Avaria</a>
+    {% endif %}
+  </div>
+  {% if page_result.items %}
+  <table class="table">
+    <thead><tr><th>Veículo</th><th>Localização</th><th>Severidade</th><th>Origem</th><th>Status</th><th>Valor</th><th></th></tr></thead>
+    <tbody>
+    {% for a in page_result.items %}
+    <tr>
+      <td>{{ veiculo_placas.get(a.veiculo_id|string, a.veiculo_id) }}</td>
+      <td>{{ a.localizacao }}</td>
+      <td><span class="badge {% if a.severidade.value == 'grave' %}badge-danger{% else %}badge-warning{% endif %}">{{ a.severidade.value }}</span></td>
+      <td>{{ a.origem.value }}</td>
+      <td>{{ a.status.value }}</td>
+      <td class="num">{{ a.valor_reparo|currency if a.valor_reparo else '—' }}</td>
+      <td class="num" style="white-space:nowrap">
+        {% if current_user.is_superuser or 'locacoes.avaria.editar' in current_user.permissions %}
+        <a class="btn btn-sm" href="/locacoes/avarias/{{ a.id }}/editar">Editar</a>
+        <form method="post" action="/locacoes/avarias/{{ a.id }}/responsabilidade" style="display:inline-flex;gap:4px">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <select class="form-input" name="responsabilidade" style="width:110px">
+            {% for r in ['cliente','seguro','desgaste','locadora'] %}<option value="{{ r }}">{{ r }}</option>{% endfor %}
+          </select>
+          <button class="btn btn-sm" type="submit">Resp.</button>
+        </form>
+        <form method="post" action="/locacoes/avarias/{{ a.id }}/gerar-os" style="display:inline"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-sm" type="submit">OS</button></form>
+        <form method="post" action="/locacoes/avarias/{{ a.id }}/encerrar" style="display:inline"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-sm" type="submit">Encerrar</button></form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhuma avaria registrada.</div>{% endif %}
+</div>
+{% endblock %}

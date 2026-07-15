@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:700px">
+  <h2 class="card-title">{{ title }}</h2>
+  {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+  <form method="post" action="{{ action }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    {% if not item %}
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Veículo</label>
+        <select class="form-input" name="veiculo_id" required>
+          <option value="">Selecionar</option>
+          {% for v in veiculos %}<option value="{{ v.id }}">{{ v.placa }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Ocorrido em</label><input class="form-input" type="datetime-local" name="ocorrido_em" required></div>
+    </div>
+    {% endif %}
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Órgão</label><input class="form-input" name="orgao" required value="{{ item.orgao if item else '' }}"></div>
+      <div class="form-group"><label class="form-label">Código infração</label><input class="form-input" name="codigo_infracao" required value="{{ item.codigo_infracao if item else '' }}"></div>
+      <div class="form-group"><label class="form-label">Valor</label><input class="form-input" name="valor" required value="{{ item.valor if item else '' }}"></div>
+      <div class="form-group"><label class="form-label">Pontuação</label><input class="form-input" name="pontuacao" value="{{ item.pontuacao if item else '0' }}"></div>
+      <div class="form-group"><label class="form-label">AIT</label><input class="form-input" name="ait" value="{{ item.ait if item and item.ait else '' }}"></div>
+      <div class="form-group"><label class="form-label">Taxa admin</label><input class="form-input" name="taxa_admin" value="{{ item.taxa_admin if item else '0' }}"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Observações</label><textarea class="form-input" name="observacoes" rows="2">{{ item.observacoes if item and item.observacoes else '' }}</textarea></div>
+    <div class="form-actions" style="margin-top:16px">
+      <button class="btn btn-primary" type="submit">Salvar</button>
+      <a class="btn" href="/locacoes/multas">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

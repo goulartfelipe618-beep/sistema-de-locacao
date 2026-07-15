@@ -328,6 +328,80 @@ class CotacaoStatus(str, enum.Enum):
     CANCELADA = "cancelada"
 
 
+class ContratoStatus(str, enum.Enum):
+    """Máquina de estados do contrato de locação."""
+
+    RASCUNHO = "rascunho"
+    AGUARDANDO_CHECKOUT = "aguardando_checkout"
+    ATIVO = "ativo"
+    AGUARDANDO_CHECKIN = "aguardando_checkin"
+    ENCERRADO = "encerrado"
+    ENCERRADO_PENDENCIA = "encerrado_pendencia"
+    CANCELADO = "cancelado"
+
+
+class ContratoCondicaoPagamento(str, enum.Enum):
+    """Condição comercial de pagamento do contrato."""
+
+    AVISTA = "avista"
+    CARTAO_RECORRENTE = "cartao_recorrente"
+    FATURADO = "faturado"
+
+
+class VistoriaTipo(str, enum.Enum):
+    """Tipo de vistoria vinculada ao contrato."""
+
+    CHECKOUT = "checkout"
+    CHECKIN = "checkin"
+
+
+class AvariaOrigem(str, enum.Enum):
+    """Origem do registro de avaria."""
+
+    CHECKOUT = "checkout"
+    CHECKIN = "checkin"
+    SINISTRO = "sinistro"
+    INSPECAO = "inspecao"
+
+
+class AvariaSeveridade(str, enum.Enum):
+    """Severidade da avaria."""
+
+    LEVE = "leve"
+    MEDIA = "media"
+    GRAVE = "grave"
+
+
+class AvariaResponsabilidade(str, enum.Enum):
+    """Quem arca com a avaria."""
+
+    CLIENTE = "cliente"
+    SEGURO = "seguro"
+    DESGASTE = "desgaste"
+    LOCADORA = "locadora"
+
+
+class AvariaStatus(str, enum.Enum):
+    """Ciclo de vida da avaria."""
+
+    REGISTRADA = "registrada"
+    EM_ANALISE = "em_analise"
+    RESPONSABILIDADE_DEFINIDA = "responsabilidade_definida"
+    OS_GERADA = "os_gerada"
+    COBRANCA_GERADA = "cobranca_gerada"
+    ENCERRADA = "encerrada"
+
+
+class MultaStatus(str, enum.Enum):
+    """Ciclo de vida da multa de trânsito."""
+
+    RECEBIDA = "recebida"
+    VINCULADA = "vinculada"
+    NOTIFICADO = "notificado"
+    PAGA = "paga"
+    CONTESTADA = "contestada"
+
+
 class AuditAction(str, enum.Enum):
     """Categorias de eventos registrados na trilha de auditoria."""
 

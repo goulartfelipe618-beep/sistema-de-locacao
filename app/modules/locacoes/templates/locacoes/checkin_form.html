@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:950px">
+  <div class="toolbar">
+    <h2 class="card-title" style="margin:0">{{ title }}</h2>
+    <a class="btn btn-sm" href="/locacoes/checkin">← Voltar</a>
+  </div>
+  {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+
+  <div class="form-grid" style="margin-bottom:16px">
+    <div><strong>Contrato:</strong> {{ contrato.numero }}</div>
+    <div><strong>Cliente:</strong> {{ cliente_nomes.get(contrato.cliente_id|string, '') }}</div>
+    <div><strong>Veículo:</strong> {{ veiculo.placa }}</div>
+    <div><strong>Km saída:</strong> {{ contrato.km_saida or '—' }}</div>
+    <div><strong>Comb. saída:</strong> {{ contrato.combustivel_saida or '—' }}/8</div>
+    <div><strong>Caução:</strong> {{ contrato.caucao|currency }}</div>
+  </div>
+
+  <form method="post" action="/locacoes/checkin/{{ contrato.id }}/concluir">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Km entrada</label><input class="form-input" name="km_entrada" type="number" min="{{ contrato.km_saida or 0 }}" required value="{{ veiculo.km_atual or contrato.km_saida or 0 }}"></div>
+      <div class="form-group"><label class="form-label">Combustível (0-8)</label><input class="form-input" name="combustivel_entrada" type="number" min="0" max="8" required value="{{ veiculo.nivel_combustivel_atual or 8 }}"></div>
+      <div class="form-group"><label class="form-label">Atraso (horas)</label><input class="form-input" name="atraso_horas" value="0"></div>
+      <div class="form-group"><label class="form-label">Valor km excedente</label><input class="form-input" name="valor_km_excedente" value="0"></div>
+      <div class="form-group"><label class="form-label">Caução devolvida</label><input class="form-input" name="caucao_devolvida" value="{{ contrato.caucao }}"></div>
+      <div class="form-group"><label class="form-label">Caução retida</label><input class="form-input" name="caucao_retida" value="0"></div>
+    </div>
+
+    <h4>Fotos (storage keys)</h4>
+    <div class="form-grid">
+      {% for ang in foto_angulos %}
+      <div class="form-group"><label class="form-label">{{ ang }}</label><input class="form-input" name="foto_{{ ang }}" placeholder="storage/key/foto.jpg"></div>
+      {% endfor %}
+    </div>
+
+    <div class="form-group"><label class="form-label">Checklist</label><textarea class="form-input" name="checklist" rows="3"></textarea></div>
+
+    <h4>Avarias extras (opcional)</h4>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Localização</label><input class="form-input" name="avaria_localizacao" placeholder="Para-choque dianteiro"></div>
+      <div class="form-group"><label class="form-label">Severidade</label>
+        <select class="form-input" name="avaria_severidade">
+          <option value="leve">leve</option>
+          <option value="media">media</option>
+          <option value="grave">grave</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Laudo</label><input class="form-input" name="avaria_laudo"></div>
+      <div class="form-group"><label class="form-label">Valor reparo</label><input class="form-input" name="avaria_valor" value="0"></div>
+    </div>
+
+    <div class="form-group"><label class="form-label">Observações</label><textarea class="form-input" name="observacoes" rows="2"></textarea></div>
+    <div class="form-group"><label><input type="checkbox" name="pendencia_financeira"> Pendência financeira</label></div>
+
+    <div class="form-actions" style="margin-top:16px">
+      <button class="btn btn-primary" type="submit">Concluir check-in</button>
+      <a class="btn" href="/locacoes/contratos/{{ contrato.id }}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

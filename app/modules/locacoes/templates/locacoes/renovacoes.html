@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <h2 class="card-title" style="margin:0">{{ title }}</h2>
+  </div>
+
+  <div class="card" style="max-width:700px;margin-bottom:24px">
+    <h3>Simular renovação</h3>
+    {% if preview_error %}<div class="alert alert-danger">{{ preview_error }}</div>{% endif %}
+    <form method="get" action="/locacoes/renovacoes" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end">
+      <div class="form-group"><label class="form-label">Contrato</label>
+        <select class="form-input" name="contrato_id" required>
+          <option value="">Selecionar</option>
+          {% for c in page_result.items %}
+          <option value="{{ c.id }}" {% if contrato_id == c.id|string %}selected{% endif %}>{{ c.numero }} — {{ cliente_nomes.get(c.cliente_id|string, '') }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Nova devolução</label><input class="form-input" type="datetime-local" name="nova_devolucao" required value="{{ nova_devolucao }}"></div>
+      <button class="btn btn-sm" type="submit">Preview</button>
+    </form>
+    {% if preview %}
+    <div style="margin-top:12px;padding:12px;background:var(--bg-muted);border-radius:6px">
+      <strong>Preview:</strong> +{{ preview.dias_extra }} dias, aditivo {{ preview.valor_aditivo|currency }}
+    </div>
+    {% endif %}
+    {% if contrato_id and nova_devolucao and (current_user.is_superuser or 'locacoes.renovacao.criar' in current_user.permissions) %}
+    <form method="post" action="/locacoes/renovacoes" style="margin-top:12px">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="contrato_id" value="{{ contrato_id }}">
+      <input type="hidden" name="nova_devolucao" value="{{ nova_devolucao }}">
+      <div class="form-group"><label class="form-label">Motivo</label><input class="form-input" name="motivo" placeholder="Opcional"></div>
+      <button class="btn btn-primary" type="submit">Confirmar renovação</button>
+    </form>
+    {% endif %}
+  </div>
+
+  <h3>Contratos ativos</h3>
+  {% if page_result.items %}
+  <table class="table">
+    <thead><tr><th>Número</th><th>Cliente</th><th>Veículo</th><th>Devolução atual</th><th>Total</th><th></th></tr></thead>
+    <tbody>
+    {% for c in page_result.items %}
+    <tr>
+      <td><strong>{{ c.numero }}</strong></td>
+      <td>{{ cliente_nomes.get(c.cliente_id|string, c.cliente_id) }}</td>
+      <td>{{ veiculo_placas.get(c.veiculo_id|string, c.veiculo_id) }}</td>
+      <td>{{ c.devolucao_prevista_em|datetime }}</td>
+      <td class="num">{{ c.valor_total|currency }}</td>
+      <td class="num"><a class="btn btn-sm" href="/locacoes/contratos/{{ c.id }}">Detalhe</a></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhum contrato ativo.</div>{% endif %}
+</div>
+{% endblock %}

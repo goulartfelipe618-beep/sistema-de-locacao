@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <form method="get" action="/locacoes/encerramentos" style="display:flex;gap:8px;margin:0;flex-wrap:wrap">
+      <input class="form-input" type="search" name="q" value="{{ q }}" placeholder="Número...">
+      <select class="form-input" name="status">
+        <option value="">Todos encerrados</option>
+        <option value="encerrado" {% if status == 'encerrado' %}selected{% endif %}>encerrado</option>
+        <option value="encerrado_pendencia" {% if status == 'encerrado_pendencia' %}selected{% endif %}>encerrado_pendencia</option>
+      </select>
+      <button class="btn btn-sm" type="submit">Buscar</button>
+    </form>
+  </div>
+  {% if page_result.items %}
+  <table class="table">
+    <thead><tr><th>Número</th><th>Cliente</th><th>Veículo</th><th>Check-in</th><th>Status</th><th>Valor final</th><th></th></tr></thead>
+    <tbody>
+    {% for c in page_result.items %}
+    <tr>
+      <td><strong>{{ c.numero }}</strong></td>
+      <td>{{ cliente_nomes.get(c.cliente_id|string, c.cliente_id) }}</td>
+      <td>{{ veiculo_placas.get(c.veiculo_id|string, c.veiculo_id) }}</td>
+      <td>{{ c.checkin_em|datetime }}</td>
+      <td><span class="badge {{ status_badge(c.status) }}">{{ c.status.value }}</span>{% if c.pendencia_financeira %} <span class="badge badge-danger">pendência</span>{% endif %}</td>
+      <td class="num">{{ c.valor_final|currency if c.valor_final else '—' }}</td>
+      <td class="num">
+        <a class="btn btn-sm" href="/locacoes/contratos/{{ c.id }}">Detalhe</a>
+        {% if current_user.is_superuser or 'locacoes.encerramento.reabrir' in current_user.permissions %}
+        <form method="post" action="/locacoes/encerramentos/{{ c.id }}/reabrir" style="display:inline-flex;gap:4px;margin-top:4px">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input class="form-input" name="motivo" placeholder="Motivo" required style="width:120px">
+          <button class="btn btn-sm btn-warning" type="submit">Reabrir</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhum contrato encerrado.</div>{% endif %}
+</div>
+{% endblock %}

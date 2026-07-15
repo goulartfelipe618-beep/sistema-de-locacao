@@ -40,5 +40,7 @@ def test_operator_without_dashboard_permission_hides_it() -> None:
 
 def test_future_modules_visible_but_disabled() -> None:
     menu = build_menu(_make_user({"dashboard.painel.visualizar"}))
-    frota = next(s for s in menu if s["label"] == "Frota")
-    assert all(item["enabled"] is False for item in frota["children"])
+    financeiro = next(s for s in menu if s["label"] == "Financeiro")
+    assert all(item["enabled"] is False for item in financeiro["children"])
+    crm = next(s for s in menu if s["label"] == "Comercial / CRM")
+    assert all(item["enabled"] is False for item in crm["children"])
