@@ -49,6 +49,39 @@ class ClienteStatus(str, enum.Enum):
     BLOCKED = "blocked"
 
 
+class CadastroStatus(str, enum.Enum):
+    """Situação genérica ativo/inativo para cadastros mestre."""
+
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+
+
+class MotoristaVinculo(str, enum.Enum):
+    """Tipo de vínculo do motorista."""
+
+    CLIENTE = "cliente"
+    FUNCIONARIO = "funcionario"
+    TERCEIRO = "terceiro"
+
+
+class MotoristaCnhStatus(str, enum.Enum):
+    """Situação da CNH do motorista."""
+
+    REGULAR = "regular"
+    VENCIDA = "vencida"
+    SUSPENSA = "suspensa"
+    CASSADA = "cassada"
+
+
+class ParceiroTipo(str, enum.Enum):
+    """Tipo de parceria comercial."""
+
+    INDICACAO = "indicacao"
+    WHITE_LABEL = "white_label"
+    FRANQUIA = "franquia"
+    MARKETPLACE = "marketplace"
+
+
 class AuditAction(str, enum.Enum):
     """Categorias de eventos registrados na trilha de auditoria."""
 

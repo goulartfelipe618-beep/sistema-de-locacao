@@ -1,0 +1,32 @@
+﻿{% extends "base.html" %}
+{% block title %}Motoristas{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <form method="get" action="/cadastros/motoristas" style="display:flex;gap:8px;margin:0">
+      <input class="form-input" type="search" name="q" value="{{ q }}" placeholder="Nome, CPF, CNH...">
+      <button class="btn btn-sm" type="submit">Buscar</button>
+    </form>
+    {% if current_user.is_superuser or 'cadastros.motorista.criar' in current_user.permissions %}
+    <a class="btn btn-primary" href="/cadastros/motoristas/novo">+ Novo Motorista</a>
+    {% endif %}
+  </div>
+  {% if page_result.items %}
+  <table class="table"><thead><tr><th>Nome</th><th>Vínculo</th><th>CNH</th><th>Validade</th><th>Situação CNH</th><th>Status</th><th></th></tr></thead>
+  <tbody>
+  {% for m in page_result.items %}
+  <tr>
+    <td><strong>{{ m.nome }}</strong>{% if m.cpf %}<div class="form-help">{{ m.cpf }}</div>{% endif %}</td>
+    <td>{{ m.vinculo.value }}</td>
+    <td>{{ m.cnh_numero or '-' }} {% if m.cnh_categoria %}({{ m.cnh_categoria }}){% endif %}</td>
+    <td>{{ m.cnh_validade or '-' }}</td>
+    <td><span class="badge {% if m.cnh_status.value == 'regular' %}badge-success{% elif m.cnh_status.value == 'vencida' %}badge-warning{% else %}badge-danger{% endif %}">{{ m.cnh_status.value }}</span></td>
+    <td><span class="badge {% if m.status.value == 'active' %}badge-success{% else %}badge-muted{% endif %}">{{ m.status.value }}</span></td>
+    <td class="num">{% if current_user.is_superuser or 'cadastros.motorista.editar' in current_user.permissions %}<a class="btn btn-sm" href="/cadastros/motoristas/{{ m.id }}/editar">Editar</a>{% endif %}</td>
+  </tr>
+  {% endfor %}
+  </tbody></table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhum motorista.</div>{% endif %}
+</div>
+{% endblock %}

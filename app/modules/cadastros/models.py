@@ -21,6 +21,12 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.modules.cadastros.models_extra import (  # noqa: F401
+    Fornecedor,
+    Motorista,
+    Parceiro,
+    Vendedor,
+)
 from app.shared.base_model import TenantBaseModel
 from app.shared.enums import ClienteStatus, PersonType
 

@@ -1,0 +1,38 @@
+﻿{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:900px">
+  <h2 class="card-title">{{ title }}</h2>
+  {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+  <form method="post" action="{{ action }}">
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label" for="nome">Nome / Razão social</label><input class="form-input" id="nome" name="nome" required value="{{ item.nome if item else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="nome_fantasia">Nome fantasia</label><input class="form-input" id="nome_fantasia" name="nome_fantasia" value="{{ item.nome_fantasia if item else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="status">Status</label>
+        <select class="form-input" id="status" name="status">
+          <option value="active" {% if item and item.status.value == 'active' %}selected{% endif %}>Ativo</option>
+          <option value="inactive" {% if item and item.status.value == 'inactive' %}selected{% endif %}>Inativo</option>
+        </select>
+      </div>
+      {% if not item %}<div class="form-group"><label class="form-label" for="cnpj">CNPJ</label><input class="form-input" id="cnpj" name="cnpj"></div>{% endif %}
+      <div class="form-group"><label class="form-label" for="categoria_codigo">Categoria</label>
+        <select class="form-input" id="categoria_codigo" name="categoria_codigo">
+          <option value="">—</option>
+          {% for c in categorias %}<option value="{{ c.codigo }}" {% if item and item.categoria_codigo == c.codigo %}selected{% endif %}>{{ c.descricao }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label" for="email">E-mail</label><input class="form-input" id="email" name="email" value="{{ item.email if item else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="telefone">Telefone</label><input class="form-input" id="telefone" name="telefone" value="{{ item.telefone if item else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="cidade">Cidade</label><input class="form-input" id="cidade" name="cidade" value="{{ item.cidade if item else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="uf">UF</label><input class="form-input" id="uf" name="uf" maxlength="2" value="{{ item.uf if item else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="prazo_pagamento_dias">Prazo pgto (dias)</label><input class="form-input" type="number" id="prazo_pagamento_dias" name="prazo_pagamento_dias" value="{{ item.prazo_pagamento_dias if item else 30 }}"></div>
+      {% if item %}
+      <div class="form-group"><label class="form-label" for="bloqueado"><input type="checkbox" id="bloqueado" name="bloqueado" value="1" {% if item.bloqueado %}checked{% endif %}> Bloqueado</label></div>
+      <div class="form-group"><label class="form-label" for="motivo_bloqueio">Motivo bloqueio</label><input class="form-input" id="motivo_bloqueio" name="motivo_bloqueio" value="{{ item.motivo_bloqueio if item.motivo_bloqueio else '' }}"></div>
+      {% endif %}
+    </div>
+    <div class="form-group" style="margin-top:12px"><label class="form-label" for="observacoes">Observações</label><textarea class="form-input" id="observacoes" name="observacoes" rows="3">{{ item.observacoes if item else '' }}</textarea></div>
+    <div class="form-actions" style="margin-top:16px"><button class="btn btn-primary" type="submit">Salvar</button><a class="btn" href="/cadastros/fornecedores">Cancelar</a></div>
+  </form>
+</div>
+{% endblock %}

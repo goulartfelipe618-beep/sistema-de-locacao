@@ -19,12 +19,29 @@ from app.modules.cadastros.schemas import (
 )
 from app.shared.enums import AuditAction, ClienteStatus
 
-# Itens padrão semeados por tenant (grupo de categorias de cliente).
-DEFAULT_CATEGORIAS_CLIENTE: tuple[tuple[str, str, int], ...] = (
-    ("varejo", "Varejo", 10),
-    ("corporativo", "Corporativo", 20),
-    ("frota", "Frota", 30),
-    ("turismo", "Turismo", 40),
+# Itens padrão semeados por tenant.
+DEFAULT_AUXILIARES: tuple[tuple[str, str, str, int], ...] = (
+    ("categoria_cliente", "varejo", "Varejo", 10),
+    ("categoria_cliente", "corporativo", "Corporativo", 20),
+    ("categoria_cliente", "frota", "Frota", 30),
+    ("categoria_cliente", "turismo", "Turismo", 40),
+    ("categoria_fornecedor", "pecas", "Peças", 10),
+    ("categoria_fornecedor", "manutencao", "Serviço de Manutenção", 20),
+    ("categoria_fornecedor", "seguro", "Seguro", 30),
+    ("categoria_fornecedor", "combustivel", "Combustível", 40),
+    ("categoria_fornecedor", "pneus", "Pneus", 50),
+    ("categoria_fornecedor", "telemetria", "Rastreador/Telemetria", 60),
+    ("categoria_fornecedor", "financeiro", "Financeiro/Banco", 70),
+    ("categoria_fornecedor", "outros", "Outros", 99),
+    ("cnh_categoria", "b", "B", 10),
+    ("cnh_categoria", "ab", "AB", 20),
+    ("cnh_categoria", "c", "C", 30),
+    ("cnh_categoria", "d", "D", 40),
+    ("cnh_categoria", "e", "E", 50),
+    ("motivo_bloqueio", "inadimplencia", "Inadimplência", 10),
+    ("motivo_bloqueio", "sinistro", "Sinistro anterior", 20),
+    ("motivo_bloqueio", "fraude", "Suspeita de fraude", 30),
+    ("motivo_bloqueio", "outros", "Outros", 99),
 )
 
 
@@ -36,14 +53,14 @@ class TabelaAuxiliarService:
         self.repo = TabelaAuxiliarRepository(session)
 
     async def ensure_defaults(self, tenant_id: uuid.UUID) -> None:
-        """Garante categorias padrão de cliente (idempotente)."""
-        for codigo, descricao, ordem in DEFAULT_CATEGORIAS_CLIENTE:
-            existing = await self.repo.get_by_grupo_codigo("categoria_cliente", codigo)
+        """Garante itens padrão dos grupos auxiliares (idempotente)."""
+        for grupo, codigo, descricao, ordem in DEFAULT_AUXILIARES:
+            existing = await self.repo.get_by_grupo_codigo(grupo, codigo)
             if existing is None:
                 self.repo.add(
                     TabelaAuxiliar(
                         tenant_id=tenant_id,
-                        grupo="categoria_cliente",
+                        grupo=grupo,
                         codigo=codigo,
                         descricao=descricao,
                         ordem=ordem,

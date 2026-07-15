@@ -1,0 +1,34 @@
+﻿{% extends "base.html" %}
+{% block title %}Fornecedores{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <form method="get" action="/cadastros/fornecedores" style="display:flex;gap:8px;margin:0">
+      <input class="form-input" type="search" name="q" value="{{ q }}" placeholder="Nome, fantasia, CNPJ...">
+      <button class="btn btn-sm" type="submit">Buscar</button>
+    </form>
+    {% if current_user.is_superuser or 'cadastros.fornecedor.criar' in current_user.permissions %}
+    <a class="btn btn-primary" href="/cadastros/fornecedores/novo">+ Novo Fornecedor</a>
+    {% endif %}
+  </div>
+  {% if page_result.items %}
+  <table class="table"><thead><tr><th>Nome</th><th>CNPJ</th><th>Categoria</th><th>Contato</th><th>Status</th><th></th></tr></thead>
+  <tbody>
+  {% for f in page_result.items %}
+  <tr>
+    <td><strong>{{ f.nome }}</strong>{% if f.nome_fantasia %}<div class="form-help">{{ f.nome_fantasia }}</div>{% endif %}</td>
+    <td>{{ f.cnpj or '-' }}</td>
+    <td>{{ f.categoria_codigo or '-' }}</td>
+    <td>{{ f.email or f.telefone or '-' }}</td>
+    <td>
+      {% if f.bloqueado %}<span class="badge badge-danger">bloqueado</span>
+      {% else %}<span class="badge {% if f.status.value == 'active' %}badge-success{% else %}badge-muted{% endif %}">{{ f.status.value }}</span>{% endif %}
+    </td>
+    <td class="num">{% if current_user.is_superuser or 'cadastros.fornecedor.editar' in current_user.permissions %}<a class="btn btn-sm" href="/cadastros/fornecedores/{{ f.id }}/editar">Editar</a>{% endif %}</td>
+  </tr>
+  {% endfor %}
+  </tbody></table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhum fornecedor.</div>{% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,46 @@
+﻿{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:900px">
+  <h2 class="card-title">{{ title }}</h2>
+  {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+  <form method="post" action="{{ action }}">
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label" for="nome">Nome</label><input class="form-input" id="nome" name="nome" required value="{{ item.nome if item else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="vinculo">Vínculo</label>
+        <select class="form-input" id="vinculo" name="vinculo">
+          {% for v in ['funcionario','terceiro'] %}
+          <option value="{{ v }}" {% if item and item.vinculo.value == v %}selected{% elif not item and v == 'terceiro' %}selected{% endif %}>{{ v }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label" for="status">Status</label>
+        <select class="form-input" id="status" name="status">
+          <option value="active" {% if item and item.status.value == 'active' %}selected{% endif %}>Ativo</option>
+          <option value="inactive" {% if item and item.status.value == 'inactive' %}selected{% endif %}>Inativo</option>
+        </select>
+      </div>
+      {% if not item %}<div class="form-group"><label class="form-label" for="cpf">CPF</label><input class="form-input" id="cpf" name="cpf"></div>{% endif %}
+      <div class="form-group"><label class="form-label" for="email">E-mail</label><input class="form-input" id="email" name="email" value="{{ item.email if item else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="celular">Celular</label><input class="form-input" id="celular" name="celular" value="{{ item.celular if item else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="cnh_numero">CNH</label><input class="form-input" id="cnh_numero" name="cnh_numero" value="{{ item.cnh_numero if item else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="cnh_categoria">Categoria CNH</label>
+        <select class="form-input" id="cnh_categoria" name="cnh_categoria">
+          <option value="">—</option>
+          {% for c in cnh_cats %}<option value="{{ c.codigo }}" {% if item and item.cnh_categoria == c.codigo %}selected{% endif %}>{{ c.descricao }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label" for="cnh_validade">Validade CNH</label><input class="form-input" type="date" id="cnh_validade" name="cnh_validade" value="{{ item.cnh_validade if item and item.cnh_validade else '' }}"></div>
+      <div class="form-group"><label class="form-label" for="cnh_status">Situação CNH</label>
+        <select class="form-input" id="cnh_status" name="cnh_status">
+          {% for s in ['regular','vencida','suspensa','cassada'] %}
+          <option value="{{ s }}" {% if item and item.cnh_status.value == s %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="form-group" style="margin-top:12px"><label class="form-label" for="observacoes">Observações</label><textarea class="form-input" id="observacoes" name="observacoes" rows="3">{{ item.observacoes if item else '' }}</textarea></div>
+    <div class="form-actions" style="margin-top:16px"><button class="btn btn-primary" type="submit">Salvar</button><a class="btn" href="/cadastros/motoristas">Cancelar</a></div>
+  </form>
+</div>
+{% endblock %}

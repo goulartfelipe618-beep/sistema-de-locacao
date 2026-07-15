@@ -17,10 +17,12 @@ from app.core.pagination import PageParams
 from app.core.templating import render
 from app.modules.cadastros.schemas import ClienteCreate, ClienteUpdate, TabelaAuxiliarCreate
 from app.modules.cadastros.service import ClienteService, TabelaAuxiliarService
+from app.modules.cadastros.web_extra import router as cadastros_extra_router
 from app.modules.identity.service import AuthenticatedUser
 from app.shared.enums import ClienteStatus, PersonType
 
 router = APIRouter()
+router.include_router(cadastros_extra_router)
 SessionDep = Annotated[AsyncSession, Depends(get_db_session)]
 
 
