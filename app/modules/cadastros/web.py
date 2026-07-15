@@ -1,0 +1,301 @@
+"""Rotas Web (HTML/Jinja2/HTMX) do módulo de Cadastros."""
+
+from __future__ import annotations
+
+import uuid
+from decimal import Decimal, InvalidOperation
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, Form, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.database import get_db_session
+from app.core.deps import require_web_permission
+from app.core.exceptions import AppError
+from app.core.pagination import PageParams
+from app.core.templating import render
+from app.modules.cadastros.schemas import ClienteCreate, ClienteUpdate, TabelaAuxiliarCreate
+from app.modules.cadastros.service import ClienteService, TabelaAuxiliarService
+from app.modules.identity.service import AuthenticatedUser
+from app.shared.enums import ClienteStatus, PersonType
+
+router = APIRouter()
+SessionDep = Annotated[AsyncSession, Depends(get_db_session)]
+
+
+def _parse_decimal(raw: str | None) -> Decimal:
+    if not raw or not raw.strip():
+        return Decimal("0.00")
+    normalized = raw.strip().replace(".", "").replace(",", ".")
+    try:
+        return Decimal(normalized)
+    except InvalidOperation as exc:
+        raise ValueError("Limite de crédito inválido.") from exc
+
+
+# ============================================================== Clientes
+@router.get("/cadastros/clientes", response_class=HTMLResponse)
+async def clientes_list(
+    request: Request,
+    session: SessionDep,
+    current_user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("cadastros.cliente.visualizar"))
+    ],
+    page: int = 1,
+    q: str = "",
+) -> HTMLResponse:
+    """Lista clientes com busca."""
+    await TabelaAuxiliarService(session).ensure_defaults(current_user.tenant_id)
+    result = await ClienteService(session).list_clientes(PageParams(page=page, size=25), search=q or None)
+    return render(
+        request,
+        "cadastros/clientes_list.html",
+        {"page_result": result, "q": q, "title": "Clientes"},
+    )
+
+
+@router.get("/cadastros/clientes/novo", response_class=HTMLResponse)
+async def cliente_new_form(
+    request: Request,
+    session: SessionDep,
+    current_user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("cadastros.cliente.criar"))
+    ],
+) -> HTMLResponse:
+    """Formulário de novo cliente."""
+    await TabelaAuxiliarService(session).ensure_defaults(current_user.tenant_id)
+    categorias = await TabelaAuxiliarService(session).list_by_grupo(
+        "categoria_cliente", PageParams(page=1, size=100), apenas_ativos=True
+    )
+    return render(
+        request,
+        "cadastros/cliente_form.html",
+        {
+            "cliente": None,
+            "error": None,
+            "categorias": categorias.items,
+            "title": "Novo Cliente",
+            "action": "/cadastros/clientes/novo",
+        },
+    )
+
+
+@router.post("/cadastros/clientes/novo", response_class=HTMLResponse)
+async def cliente_create(
+    request: Request,
+    session: SessionDep,
+    current_user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("cadastros.cliente.criar"))
+    ],
+    person_type: Annotated[str, Form()],
+    nome: Annotated[str, Form()],
+    status: Annotated[str, Form()] = "active",
+    nome_fantasia: Annotated[str, Form()] = "",
+    cpf: Annotated[str, Form()] = "",
+    cnpj: Annotated[str, Form()] = "",
+    email: Annotated[str, Form()] = "",
+    telefone: Annotated[str, Form()] = "",
+    celular: Annotated[str, Form()] = "",
+    whatsapp: Annotated[str, Form()] = "",
+    cidade: Annotated[str, Form()] = "",
+    uf: Annotated[str, Form()] = "",
+    categoria_codigo: Annotated[str, Form()] = "",
+    limite_credito: Annotated[str, Form()] = "0",
+    observacoes: Annotated[str, Form()] = "",
+) -> HTMLResponse:
+    """Cria cliente."""
+    categorias = await TabelaAuxiliarService(session).list_by_grupo(
+        "categoria_cliente", PageParams(page=1, size=100), apenas_ativos=True
+    )
+    try:
+        data = ClienteCreate(
+            person_type=PersonType(person_type),
+            status=ClienteStatus(status),
+            nome=nome,
+            nome_fantasia=nome_fantasia or None,
+            cpf=cpf or None,
+            cnpj=cnpj or None,
+            email=email or None,
+            telefone=telefone or None,
+            celular=celular or None,
+            whatsapp=bool(whatsapp),
+            cidade=cidade or None,
+            uf=uf or None,
+            categoria_codigo=categoria_codigo or None,
+            limite_credito=_parse_decimal(limite_credito),
+            observacoes=observacoes or None,
+        )
+        await ClienteService(session).create(current_user.tenant_id, data)
+    except (AppError, ValueError) as exc:
+        await session.rollback()
+        message = exc.message if isinstance(exc, AppError) else str(exc)
+        return render(
+            request,
+            "cadastros/cliente_form.html",
+            {
+                "cliente": None,
+                "error": message,
+                "categorias": categorias.items,
+                "title": "Novo Cliente",
+                "action": "/cadastros/clientes/novo",
+                "form": {
+                    "person_type": person_type,
+                    "nome": nome,
+                    "cpf": cpf,
+                    "cnpj": cnpj,
+                    "email": email,
+                },
+            },
+            status_code=400,
+        )
+    return RedirectResponse(url="/cadastros/clientes", status_code=303)
+
+
+@router.get("/cadastros/clientes/{cliente_id}/editar", response_class=HTMLResponse)
+async def cliente_edit_form(
+    request: Request,
+    session: SessionDep,
+    cliente_id: uuid.UUID,
+    current_user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("cadastros.cliente.editar"))
+    ],
+) -> HTMLResponse:
+    """Formulário de edição de cliente."""
+    await TabelaAuxiliarService(session).ensure_defaults(current_user.tenant_id)
+    cliente = await ClienteService(session).get(cliente_id)
+    categorias = await TabelaAuxiliarService(session).list_by_grupo(
+        "categoria_cliente", PageParams(page=1, size=100), apenas_ativos=True
+    )
+    return render(
+        request,
+        "cadastros/cliente_form.html",
+        {
+            "cliente": cliente,
+            "error": None,
+            "categorias": categorias.items,
+            "title": "Editar Cliente",
+            "action": f"/cadastros/clientes/{cliente_id}/editar",
+        },
+    )
+
+
+@router.post("/cadastros/clientes/{cliente_id}/editar", response_class=HTMLResponse)
+async def cliente_update(
+    request: Request,
+    session: SessionDep,
+    cliente_id: uuid.UUID,
+    current_user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("cadastros.cliente.editar"))
+    ],
+    nome: Annotated[str, Form()],
+    status: Annotated[str, Form()] = "active",
+    nome_fantasia: Annotated[str, Form()] = "",
+    email: Annotated[str, Form()] = "",
+    telefone: Annotated[str, Form()] = "",
+    celular: Annotated[str, Form()] = "",
+    whatsapp: Annotated[str, Form()] = "",
+    cidade: Annotated[str, Form()] = "",
+    uf: Annotated[str, Form()] = "",
+    categoria_codigo: Annotated[str, Form()] = "",
+    limite_credito: Annotated[str, Form()] = "0",
+    observacoes: Annotated[str, Form()] = "",
+) -> HTMLResponse:
+    """Atualiza cliente."""
+    categorias = await TabelaAuxiliarService(session).list_by_grupo(
+        "categoria_cliente", PageParams(page=1, size=100), apenas_ativos=True
+    )
+    try:
+        data = ClienteUpdate(
+            status=ClienteStatus(status),
+            nome=nome,
+            nome_fantasia=nome_fantasia or None,
+            email=email or None,
+            telefone=telefone or None,
+            celular=celular or None,
+            whatsapp=bool(whatsapp),
+            cidade=cidade or None,
+            uf=uf or None,
+            categoria_codigo=categoria_codigo or None,
+            limite_credito=_parse_decimal(limite_credito),
+            observacoes=observacoes or None,
+        )
+        await ClienteService(session).update(cliente_id, data)
+    except (AppError, ValueError) as exc:
+        await session.rollback()
+        cliente = await ClienteService(session).get(cliente_id)
+        message = exc.message if isinstance(exc, AppError) else str(exc)
+        return render(
+            request,
+            "cadastros/cliente_form.html",
+            {
+                "cliente": cliente,
+                "error": message,
+                "categorias": categorias.items,
+                "title": "Editar Cliente",
+                "action": f"/cadastros/clientes/{cliente_id}/editar",
+            },
+            status_code=400,
+        )
+    return RedirectResponse(url="/cadastros/clientes", status_code=303)
+
+
+@router.post("/cadastros/clientes/{cliente_id}/bloquear", response_class=HTMLResponse)
+async def cliente_bloquear(
+    session: SessionDep,
+    cliente_id: uuid.UUID,
+    _user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("cadastros.cliente.bloquear"))
+    ],
+    motivo: Annotated[str, Form()] = "",
+) -> RedirectResponse:
+    """Bloqueia cliente."""
+    await ClienteService(session).bloquear(cliente_id, motivo)
+    return RedirectResponse(url="/cadastros/clientes", status_code=303)
+
+
+# ======================================================= Tabelas Auxiliares
+@router.get("/cadastros/tabelas", response_class=HTMLResponse)
+async def tabelas_list(
+    request: Request,
+    session: SessionDep,
+    current_user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("cadastros.tabela.visualizar"))
+    ],
+    grupo: str = "categoria_cliente",
+    page: int = 1,
+) -> HTMLResponse:
+    """Lista itens de tabelas auxiliares."""
+    svc = TabelaAuxiliarService(session)
+    await svc.ensure_defaults(current_user.tenant_id)
+    grupos = await svc.list_grupos()
+    result = await svc.list_by_grupo(grupo, PageParams(page=page, size=50))
+    return render(
+        request,
+        "cadastros/tabelas_list.html",
+        {
+            "page_result": result,
+            "grupos": grupos,
+            "grupo": grupo,
+            "title": "Tabelas Auxiliares",
+        },
+    )
+
+
+@router.post("/cadastros/tabelas", response_class=HTMLResponse)
+async def tabelas_create(
+    session: SessionDep,
+    current_user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("cadastros.tabela.criar"))
+    ],
+    grupo: Annotated[str, Form()],
+    codigo: Annotated[str, Form()],
+    descricao: Annotated[str, Form()],
+    ordem: Annotated[int, Form()] = 0,
+) -> RedirectResponse:
+    """Cria item auxiliar."""
+    await TabelaAuxiliarService(session).create(
+        current_user.tenant_id,
+        TabelaAuxiliarCreate(grupo=grupo, codigo=codigo, descricao=descricao, ordem=ordem),
+    )
+    return RedirectResponse(url=f"/cadastros/tabelas?grupo={grupo}", status_code=303)

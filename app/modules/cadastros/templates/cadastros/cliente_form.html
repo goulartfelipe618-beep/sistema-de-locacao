@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width: 900px;">
+  <h2 class="card-title">{{ title }}</h2>
+  {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+
+  <form method="post" action="{{ action }}">
+    <div class="form-grid">
+      {% if not cliente %}
+      <div class="form-group">
+        <label class="form-label" for="person_type">Tipo</label>
+        <select class="form-input" id="person_type" name="person_type" required>
+          <option value="pf" {% if form and form.person_type == 'pf' %}selected{% endif %}>Pessoa Física</option>
+          <option value="pj" {% if form and form.person_type == 'pj' %}selected{% endif %}>Pessoa Jurídica</option>
+        </select>
+      </div>
+      {% else %}
+      <div class="form-group">
+        <label class="form-label">Tipo</label>
+        <input class="form-input" value="{{ 'Pessoa Física' if cliente.person_type.value == 'pf' else 'Pessoa Jurídica' }}" disabled>
+      </div>
+      {% endif %}
+
+      <div class="form-group">
+        <label class="form-label" for="status">Situação</label>
+        <select class="form-input" id="status" name="status">
+          <option value="active" {% if cliente and cliente.status.value == 'active' %}selected{% endif %}>Ativo</option>
+          <option value="inactive" {% if cliente and cliente.status.value == 'inactive' %}selected{% endif %}>Inativo</option>
+          <option value="blocked" {% if cliente and cliente.status.value == 'blocked' %}selected{% endif %}>Bloqueado</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="nome">Nome / Razão Social</label>
+        <input class="form-input" id="nome" name="nome" required
+               value="{{ cliente.nome if cliente else (form.nome if form else '') }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="nome_fantasia">Nome Fantasia</label>
+        <input class="form-input" id="nome_fantasia" name="nome_fantasia"
+               value="{{ cliente.nome_fantasia if cliente else '' }}">
+      </div>
+
+      {% if not cliente %}
+      <div class="form-group">
+        <label class="form-label" for="cpf">CPF</label>
+        <input class="form-input" id="cpf" name="cpf" value="{{ form.cpf if form else '' }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="cnpj">CNPJ</label>
+        <input class="form-input" id="cnpj" name="cnpj" value="{{ form.cnpj if form else '' }}">
+      </div>
+      {% else %}
+      <div class="form-group">
+        <label class="form-label">Documento</label>
+        <input class="form-input" value="{{ cliente.cpf or cliente.cnpj or '-' }}" disabled>
+      </div>
+      {% endif %}
+
+      <div class="form-group">
+        <label class="form-label" for="email">E-mail</label>
+        <input class="form-input" type="email" id="email" name="email"
+               value="{{ cliente.email if cliente else (form.email if form else '') }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="telefone">Telefone</label>
+        <input class="form-input" id="telefone" name="telefone"
+               value="{{ cliente.telefone if cliente else '' }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="celular">Celular</label>
+        <input class="form-input" id="celular" name="celular"
+               value="{{ cliente.celular if cliente else '' }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="whatsapp">WhatsApp</label>
+        <label class="form-help" style="display:flex;gap:8px;align-items:center;margin-top:8px">
+          <input type="checkbox" id="whatsapp" name="whatsapp" value="1"
+                 {% if cliente and cliente.whatsapp %}checked{% endif %}>
+          Celular é WhatsApp
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="cidade">Cidade</label>
+        <input class="form-input" id="cidade" name="cidade"
+               value="{{ cliente.cidade if cliente else '' }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="uf">UF</label>
+        <input class="form-input" id="uf" name="uf" maxlength="2"
+               value="{{ cliente.uf if cliente else '' }}">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="categoria_codigo">Categoria</label>
+        <select class="form-input" id="categoria_codigo" name="categoria_codigo">
+          <option value="">—</option>
+          {% for cat in categorias %}
+          <option value="{{ cat.codigo }}"
+            {% if cliente and cliente.categoria_codigo == cat.codigo %}selected{% endif %}>
+            {{ cat.descricao }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="limite_credito">Limite de crédito (R$)</label>
+        <input class="form-input" id="limite_credito" name="limite_credito"
+               value="{{ cliente.limite_credito if cliente else '0,00' }}">
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-top:12px">
+      <label class="form-label" for="observacoes">Observações</label>
+      <textarea class="form-input" id="observacoes" name="observacoes" rows="3">{{ cliente.observacoes if cliente else '' }}</textarea>
+    </div>
+
+    <div class="form-actions" style="margin-top:16px">
+      <button type="submit" class="btn btn-primary">Salvar</button>
+      <a class="btn" href="/cadastros/clientes">Cancelar</a>
+    </div>
+  </form>
+
+  {% if cliente and (current_user.is_superuser or 'cadastros.cliente.bloquear' in current_user.permissions) %}
+  <hr style="margin:24px 0;border:0;border-top:1px solid var(--border)">
+  <form method="post" action="/cadastros/clientes/{{ cliente.id }}/bloquear" class="form-grid">
+    <div class="form-group" style="grid-column:1 / -1">
+      <label class="form-label" for="motivo">Bloquear cliente (blacklist)</label>
+      <input class="form-input" id="motivo" name="motivo" placeholder="Motivo do bloqueio" required>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-danger">Bloquear</button>
+    </div>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

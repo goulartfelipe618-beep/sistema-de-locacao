@@ -41,6 +41,14 @@ class PersonType(str, enum.Enum):
     LEGAL = "pj"  # Pessoa Jurídica
 
 
+class ClienteStatus(str, enum.Enum):
+    """Situação cadastral do cliente."""
+
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    BLOCKED = "blocked"
+
+
 class AuditAction(str, enum.Enum):
     """Categorias de eventos registrados na trilha de auditoria."""
 

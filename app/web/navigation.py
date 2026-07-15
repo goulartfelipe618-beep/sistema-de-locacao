@@ -54,12 +54,22 @@ NAVIGATION: tuple[MenuSection, ...] = (
         label="Cadastros",
         icon="users",
         items=(
-            MenuItem("Clientes", url="/cadastros/clientes"),
+            MenuItem(
+                "Clientes",
+                url="/cadastros/clientes",
+                permission="cadastros.cliente.visualizar",
+                implemented=True,
+            ),
             MenuItem("Motoristas", url="/cadastros/motoristas"),
             MenuItem("Parceiros", url="/cadastros/parceiros"),
             MenuItem("Fornecedores", url="/cadastros/fornecedores"),
             MenuItem("Vendedores", url="/cadastros/vendedores"),
-            MenuItem("Tabelas Auxiliares", url="/cadastros/tabelas"),
+            MenuItem(
+                "Tabelas Auxiliares",
+                url="/cadastros/tabelas",
+                permission="cadastros.tabela.visualizar",
+                implemented=True,
+            ),
         ),
     ),
     MenuSection(

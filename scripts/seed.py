@@ -198,6 +198,15 @@ async def _seed_admin(tenant_id, filial_id) -> None:
             uow.session.add(UserFilial(tenant_id=tenant_id, user_id=user.id, filial_id=filial_id))
 
 
+async def _seed_cadastros_defaults(tenant_id) -> None:
+    """Semeia tabelas auxiliares padrão (categorias de cliente)."""
+    from app.modules.cadastros.service import TabelaAuxiliarService
+
+    async with UnitOfWork(tenant_id=tenant_id) as uow:
+        await TabelaAuxiliarService(uow.session).ensure_defaults(tenant_id)
+    logger.info("Cadastros: categorias padrão de cliente garantidas.")
+
+
 async def main() -> None:
     """Executa a sequência completa de seed."""
     configure_logging()
@@ -208,6 +217,7 @@ async def main() -> None:
     await _seed_roles(tenant.id)
     filial = await _seed_filial(tenant.id)
     await _seed_admin(tenant.id, filial.id)
+    await _seed_cadastros_defaults(tenant.id)
     await dispose_engine()
 
     logger.info("Seed concluído com sucesso.")

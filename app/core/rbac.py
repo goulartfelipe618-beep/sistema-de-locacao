@@ -73,6 +73,16 @@ SYSTEM_PERMISSIONS: tuple[PermissionDef, ...] = (
     _perm("configuracoes", "filial", "criar", "Criar filiais/unidades"),
     _perm("configuracoes", "filial", "editar", "Editar filiais/unidades"),
     _perm("configuracoes", "filial", "excluir", "Excluir filiais/unidades"),
+    # ---- Cadastros ----
+    _perm("cadastros", "cliente", "visualizar", "Visualizar clientes"),
+    _perm("cadastros", "cliente", "criar", "Criar clientes"),
+    _perm("cadastros", "cliente", "editar", "Editar clientes"),
+    _perm("cadastros", "cliente", "excluir", "Excluir clientes"),
+    _perm("cadastros", "cliente", "bloquear", "Bloquear clientes / blacklist"),
+    _perm("cadastros", "tabela", "visualizar", "Visualizar tabelas auxiliares"),
+    _perm("cadastros", "tabela", "criar", "Criar itens de tabelas auxiliares"),
+    _perm("cadastros", "tabela", "editar", "Editar tabelas auxiliares"),
+    _perm("cadastros", "tabela", "excluir", "Excluir tabelas auxiliares"),
     # ---- Auditoria / Logs ----
     _perm("auditoria", "trilha", "visualizar", "Visualizar trilha de auditoria"),
     _perm("logs", "sistema", "visualizar", "Visualizar logs do sistema"),
@@ -106,6 +116,11 @@ GERENTE_FILIAL = RoleTemplate(
         "configuracoes.empresa.visualizar",
         "configuracoes.filial.visualizar",
         "configuracoes.filial.editar",
+        "cadastros.cliente.visualizar",
+        "cadastros.cliente.criar",
+        "cadastros.cliente.editar",
+        "cadastros.cliente.bloquear",
+        "cadastros.tabela.visualizar",
         "auditoria.trilha.visualizar",
     ),
 )
@@ -118,6 +133,10 @@ OPERADOR = RoleTemplate(
         "dashboard.painel.visualizar",
         "configuracoes.empresa.visualizar",
         "configuracoes.filial.visualizar",
+        "cadastros.cliente.visualizar",
+        "cadastros.cliente.criar",
+        "cadastros.cliente.editar",
+        "cadastros.tabela.visualizar",
     ),
 )
 
@@ -131,6 +150,8 @@ AUDITOR = RoleTemplate(
         "identidade.papel.visualizar",
         "configuracoes.empresa.visualizar",
         "configuracoes.filial.visualizar",
+        "cadastros.cliente.visualizar",
+        "cadastros.tabela.visualizar",
         "auditoria.trilha.visualizar",
         "logs.sistema.visualizar",
     ),

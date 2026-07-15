@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Clientes{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <form method="get" action="/cadastros/clientes" class="toolbar" style="gap:8px;margin:0;padding:0;border:0">
+      <input class="form-input" type="search" name="q" value="{{ q }}" placeholder="Buscar nome, CPF/CNPJ, e-mail..." style="min-width:260px">
+      <button class="btn btn-sm" type="submit">Buscar</button>
+    </form>
+    {% if current_user.is_superuser or 'cadastros.cliente.criar' in current_user.permissions %}
+    <a class="btn btn-primary" href="/cadastros/clientes/novo">+ Novo Cliente</a>
+    {% endif %}
+  </div>
+
+  {% if page_result.items %}
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Tipo</th>
+        <th>Documento</th>
+        <th>Contato</th>
+        <th>Cidade/UF</th>
+        <th>Situação</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in page_result.items %}
+      <tr>
+        <td>
+          <strong>{{ c.nome }}</strong>
+          {% if c.nome_fantasia %}<div class="form-help">{{ c.nome_fantasia }}</div>{% endif %}
+        </td>
+        <td>{{ 'PF' if c.person_type.value == 'pf' else 'PJ' }}</td>
+        <td><code>{{ c.cpf or c.cnpj or '-' }}</code></td>
+        <td>
+          {{ c.email or '-' }}
+          {% if c.celular %}<div class="form-help">{{ c.celular }}</div>{% endif %}
+        </td>
+        <td>{{ c.cidade or '-' }}{% if c.uf %}/{{ c.uf }}{% endif %}</td>
+        <td>
+          {% if c.status.value == 'active' %}
+            <span class="badge badge-success">Ativo</span>
+          {% elif c.status.value == 'blocked' %}
+            <span class="badge badge-danger">Bloqueado</span>
+          {% else %}
+            <span class="badge badge-muted">Inativo</span>
+          {% endif %}
+          {% if c.blacklist %}<span class="badge badge-warning">Blacklist</span>{% endif %}
+        </td>
+        <td class="num">
+          {% if current_user.is_superuser or 'cadastros.cliente.editar' in current_user.permissions %}
+          <a class="btn btn-sm" href="/cadastros/clientes/{{ c.id }}/editar">Editar</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="pagination">
+    {% if page_result.has_prev %}
+      <a class="btn btn-sm" href="?page={{ page_result.page - 1 }}&q={{ q }}">Anterior</a>
+    {% endif %}
+    <span>Página {{ page_result.page }} de {{ page_result.pages }} · {{ page_result.total }} registro(s)</span>
+    {% if page_result.has_next %}
+      <a class="btn btn-sm" href="?page={{ page_result.page + 1 }}&q={{ q }}">Próxima</a>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="empty-state">Nenhum cliente encontrado.</div>
+  {% endif %}
+</div>
+{% endblock %}
