@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card" style="margin-bottom:16px">
+  <h2 class="card-title">{{ conta.banco_nome }} · Ag. {{ conta.agencia }} · Cc. {{ conta.conta }}</h2>
+  <div class="form-grid">
+    <div><strong>Saldo atual:</strong> {{ conta.saldo_atual|currency }}</div>
+    <div><strong>Integração:</strong> {{ conta.integracao_tipo.value }}</div>
+  </div>
+</div>
+<div class="card">
+  <h2 class="card-title">Extrato</h2>
+  {% if page_result.items %}
+  <table class="table">
+    <thead><tr><th>Data</th><th>Descrição</th><th>Tipo</th><th>Valor</th><th>Conciliação</th></tr></thead>
+    <tbody>
+    {% for l in page_result.items %}
+    <tr>
+      <td>{{ l.data_movimento|date }}</td>
+      <td>{{ l.descricao }}</td>
+      <td>{{ l.tipo.value }}</td>
+      <td class="num">{{ l.valor|currency }}</td>
+      <td><span class="badge {% if l.status_conciliacao.value == 'conciliado' %}badge-success{% elif l.status_conciliacao.value == 'divergente' %}badge-danger{% endif %}">{{ l.status_conciliacao.value }}</span></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhuma linha de extrato.</div>{% endif %}
+  <a class="btn" href="/financeiro/bancos" style="margin-top:12px">Voltar</a>
+</div>
+{% endblock %}

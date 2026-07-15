@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+<div class="card">
+  <h2 class="card-title">{{ title }}</h2>
+  <form method="post" action="/financeiro/bancos/novo">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Código banco *</label><input class="form-input" name="banco_codigo" required></div>
+      <div class="form-group"><label class="form-label">Nome banco *</label><input class="form-input" name="banco_nome" required></div>
+      <div class="form-group"><label class="form-label">Agência *</label><input class="form-input" name="agencia" required></div>
+      <div class="form-group"><label class="form-label">Conta *</label><input class="form-input" name="conta" required></div>
+      <div class="form-group"><label class="form-label">Tipo</label>
+        <select class="form-input" name="tipo">{% for t in conta_tipos %}<option value="{{ t }}">{{ t }}</option>{% endfor %}</select>
+      </div>
+      <div class="form-group"><label class="form-label">Filial</label>
+        <select class="form-input" name="filial_id">
+          <option value="">(sem filial)</option>
+          {% for f in filiais %}<option value="{{ f.id }}">{{ f.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Saldo inicial</label><input class="form-input" name="saldo_atual" value="0"></div>
+      <div class="form-group"><label class="form-label">Integração</label>
+        <select class="form-input" name="integracao_tipo">{% for t in integracao_tipos %}<option value="{{ t }}">{{ t }}</option>{% endfor %}</select>
+      </div>
+    </div>
+    <div class="form-actions" style="margin-top:12px">
+      <button class="btn btn-primary" type="submit">Salvar</button>
+      <a class="btn" href="/financeiro/bancos">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

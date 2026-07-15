@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+{% if current_user.is_superuser or 'financeiro.pix.criar' in current_user.permissions %}
+<div class="card" style="margin-bottom:16px">
+  <h2 class="card-title">Nova Chave PIX</h2>
+  <form method="post" action="/financeiro/pix/chaves/novo">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Filial</label>
+        <select class="form-input" name="filial_id" required>
+          <option value="">Selecionar</option>
+          {% for f in filiais %}<option value="{{ f.id }}">{{ f.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Tipo</label>
+        <select class="form-input" name="tipo" required>{% for t in pix_tipos %}<option value="{{ t }}">{{ t }}</option>{% endfor %}</select>
+      </div>
+      <div class="form-group"><label class="form-label">Chave</label><input class="form-input" name="chave" required></div>
+      <div class="form-group"><label class="form-label">Descrição</label><input class="form-input" name="descricao"></div>
+    </div>
+    <div class="form-actions" style="margin-top:12px"><button class="btn btn-primary" type="submit">Cadastrar Chave</button></div>
+  </form>
+</div>
+{% endif %}
+
+<div class="card" style="margin-bottom:16px">
+  <h2 class="card-title">Chaves Cadastradas</h2>
+  {% if chaves %}
+  <table class="table">
+    <thead><tr><th>Tipo</th><th>Chave</th><th>Descrição</th><th>Ativa</th></tr></thead>
+    <tbody>
+    {% for k in chaves %}
+    <tr><td>{{ k.tipo.value }}</td><td>{{ k.chave }}</td><td>{{ k.descricao or '-' }}</td>
+      <td><span class="badge {% if k.ativa %}badge-success{% endif %}">{{ 'sim' if k.ativa else 'não' }}</span></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<div class="empty-state">Nenhuma chave cadastrada.</div>{% endif %}
+</div>
+
+<div class="card">
+  <h2 class="card-title">Cobranças</h2>
+  {% if page_result.items %}
+  <table class="table">
+    <thead><tr><th>TXID</th><th>Valor</th><th>Status</th><th>Expira</th><th>Pago em</th><th></th></tr></thead>
+    <tbody>
+    {% for c in page_result.items %}
+    <tr>
+      <td><code>{{ c.txid }}</code></td>
+      <td class="num">{{ c.valor|currency }}</td>
+      <td><span class="badge {% if c.status.value == 'pago' %}badge-success{% elif c.status.value == 'expirado' %}badge-danger{% endif %}">{{ c.status.value }}</span></td>
+      <td>{{ c.expires_at|datetime if c.expires_at else '-' }}</td>
+      <td>{{ c.pago_em|datetime if c.pago_em else '-' }}</td>
+      <td>
+        {% if c.status.value == 'aguardando' and (current_user.is_superuser or 'financeiro.pix.editar' in current_user.permissions) %}
+        <form method="post" action="/financeiro/pix/cobrancas/{{ c.id }}/confirmar" style="margin:0">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-sm btn-primary" type="submit">Confirmar</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhuma cobrança PIX.</div>{% endif %}
+</div>
+{% endblock %}

@@ -402,6 +402,150 @@ class MultaStatus(str, enum.Enum):
     CONTESTADA = "contestada"
 
 
+class FormaPagamento(str, enum.Enum):
+    """Formas de pagamento/recebimento usadas no financeiro (§9)."""
+
+    DINHEIRO = "dinheiro"
+    PIX = "pix"
+    CARTAO_DEBITO = "cartao_debito"
+    CARTAO_CREDITO = "cartao_credito"
+    BOLETO = "boleto"
+    TRANSFERENCIA = "transferencia"
+    FATURADO = "faturado"
+    OUTRO = "outro"
+
+
+class CaixaSessaoStatus(str, enum.Enum):
+    """Situação de uma sessão de caixa (§9.1)."""
+
+    ABERTA = "aberta"
+    FECHADA = "fechada"
+
+
+class CaixaLancamentoTipo(str, enum.Enum):
+    """Tipo de movimentação de caixa (§9.1)."""
+
+    ENTRADA = "entrada"
+    SAIDA = "saida"
+    SANGRIA = "sangria"
+    SUPRIMENTO = "suprimento"
+
+
+class ContaReceberOrigem(str, enum.Enum):
+    """Origem de um título a receber (§9.2)."""
+
+    CONTRATO = "contrato"
+    MULTA = "multa"
+    AVARIA = "avaria"
+    FATURA = "fatura"
+    AVULSO = "avulso"
+
+
+class ContaPagarOrigem(str, enum.Enum):
+    """Origem de um título a pagar (§9.3)."""
+
+    OS = "os"
+    FORNECEDOR = "fornecedor"
+    COMISSAO = "comissao"
+    AVULSO = "avulso"
+
+
+class TituloStatus(str, enum.Enum):
+    """Ciclo de vida de um título financeiro (a receber/a pagar) (§9.2/§9.3)."""
+
+    EM_ABERTO = "em_aberto"
+    VENCIDO = "vencido"
+    PAGO_PARCIAL = "pago_parcial"
+    PAGO = "pago"
+    CANCELADO = "cancelado"
+    ESTORNADO = "estornado"
+
+
+class PixChaveTipo(str, enum.Enum):
+    """Tipo de chave PIX (§9.4)."""
+
+    CPF = "cpf"
+    CNPJ = "cnpj"
+    EMAIL = "email"
+    TELEFONE = "telefone"
+    ALEATORIA = "aleatoria"
+
+
+class PixCobrancaStatus(str, enum.Enum):
+    """Situação de uma cobrança PIX (§9.4)."""
+
+    AGUARDANDO = "aguardando"
+    PAGO = "pago"
+    EXPIRADO = "expirado"
+    CANCELADO = "cancelado"
+
+
+class CartaoTipo(str, enum.Enum):
+    """Modalidade de transação em cartão (§9.5)."""
+
+    DEBITO = "debito"
+    CREDITO = "credito"
+    PRE_AUTORIZACAO = "pre_autorizacao"
+
+
+class CartaoTransacaoStatus(str, enum.Enum):
+    """Ciclo de vida de uma transação de cartão (§9.5)."""
+
+    AUTORIZADO = "autorizado"
+    CAPTURADO = "capturado"
+    LIQUIDADO = "liquidado"
+    CANCELADO = "cancelado"
+    ESTORNADO = "estornado"
+
+
+class ContaBancariaTipo(str, enum.Enum):
+    """Tipo de conta bancária (§9.6)."""
+
+    CORRENTE = "corrente"
+    POUPANCA = "poupanca"
+    PAGAMENTO = "pagamento"
+
+
+class BancoIntegracaoTipo(str, enum.Enum):
+    """Forma de integração da conta bancária (§9.6)."""
+
+    MANUAL = "manual"
+    OFX = "ofx"
+    API = "api"
+
+
+class ExtratoTipo(str, enum.Enum):
+    """Natureza da linha de extrato bancário (débito/crédito) (§9.6)."""
+
+    DEBITO = "D"
+    CREDITO = "C"
+
+
+class ConciliacaoStatus(str, enum.Enum):
+    """Situação de conciliação de uma linha de extrato (§9.7)."""
+
+    PENDENTE = "pendente"
+    CONCILIADO = "conciliado"
+    DIVERGENTE = "divergente"
+    IGNORADO = "ignorado"
+
+
+class FaturamentoCiclo(str, enum.Enum):
+    """Ciclo de fechamento de faturamento por cliente (§9.8)."""
+
+    MENSAL = "mensal"
+    QUINZENAL = "quinzenal"
+
+
+class FaturaStatus(str, enum.Enum):
+    """Ciclo de vida de uma fatura consolidada (§9.8)."""
+
+    RASCUNHO = "rascunho"
+    EMITIDA = "emitida"
+    PAGA = "paga"
+    CANCELADA = "cancelada"
+
+
 class AuditAction(str, enum.Enum):
     """Categorias de eventos registrados na trilha de auditoria."""
 

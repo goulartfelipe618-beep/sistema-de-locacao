@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+{% if current_user.is_superuser or 'financeiro.conciliacao.criar' in current_user.permissions %}
+<div class="card" style="margin-bottom:16px">
+  <h2 class="card-title">Importar Extrato (OFX/CSV)</h2>
+  <p class="hint">Uma linha por movimento no formato <code>data|valor|descrição|identificador</code> (ex.: <code>2026-07-10|150.00|Recebimento|TX123</code>)</p>
+  <form method="post" action="/financeiro/conciliacao/importar">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="form-group"><label class="form-label">Conta bancária</label>
+      <select class="form-input" name="conta_id" required>
+        <option value="">Selecionar</option>
+        {% for c in contas %}<option value="{{ c.id }}">{{ c.banco_nome }} — {{ c.conta }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="form-group" style="margin-top:8px"><label class="form-label">Conteúdo</label>
+      <textarea class="form-input" name="conteudo" rows="6" required placeholder="2026-07-10|150.00|Recebimento|TX123"></textarea>
+    </div>
+    <div class="form-actions" style="margin-top:12px"><button class="btn btn-primary" type="submit">Importar e Conciliar</button></div>
+  </form>
+</div>
+{% endif %}
+
+<div class="card">
+  <h2 class="card-title">Divergências / Pendências</h2>
+  {% if page_result.items %}
+  <table class="table">
+    <thead><tr><th>Data</th><th>Descrição</th><th>Valor</th><th>Tipo</th><th>Status</th><th>Conciliar</th></tr></thead>
+    <tbody>
+    {% for l in page_result.items %}
+    <tr>
+      <td>{{ l.data_movimento|date }}</td>
+      <td>{{ l.descricao }}</td>
+      <td class="num">{{ l.valor|currency }}</td>
+      <td>{{ l.tipo.value }}</td>
+      <td><span class="badge {% if l.status_conciliacao.value == 'divergente' %}badge-danger{% else %}badge-warning{% endif %}">{{ l.status_conciliacao.value }}</span></td>
+      <td>
+        {% if current_user.is_superuser or 'financeiro.conciliacao.editar' in current_user.permissions %}
+        <form method="post" action="/financeiro/conciliacao/match" style="display:flex;gap:4px;margin:0">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input type="hidden" name="extrato_id" value="{{ l.id }}">
+          <select class="form-input" name="titulo_tipo" style="width:auto">
+            <option value="receber">receber</option>
+            <option value="pagar">pagar</option>
+          </select>
+          <input class="form-input" name="titulo_id" placeholder="ID do título" style="width:auto" required>
+          <button class="btn btn-sm btn-primary" type="submit">Vincular</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhuma divergência pendente.</div>{% endif %}
+</div>
+{% endblock %}

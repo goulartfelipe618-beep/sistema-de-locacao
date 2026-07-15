@@ -35,4 +35,22 @@ BEAT_SCHEDULE: dict[str, dict] = {
         "schedule": crontab(minute=15),
         "options": {"queue": "default"},
     },
+    # Marca títulos a receber/pagar vencidos (§9.2/§9.3).
+    "financeiro-marcar-vencidos": {
+        "task": "financeiro.marcar_vencidos",
+        "schedule": crontab(hour=1, minute=0),
+        "options": {"queue": "default"},
+    },
+    # Expira cobranças PIX pendentes (§9.4).
+    "financeiro-expirar-pix": {
+        "task": "financeiro.expirar_pix",
+        "schedule": crontab(minute="*/20"),
+        "options": {"queue": "default"},
+    },
+    # Fecha ciclos de faturamento consolidado (§9.8).
+    "financeiro-fechar-faturamento": {
+        "task": "financeiro.fechar_faturamento",
+        "schedule": crontab(hour=2, minute=0),
+        "options": {"queue": "default"},
+    },
 }

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+<div class="card">
+  <h2 class="card-title">{{ title }}</h2>
+  <form method="post" action="/financeiro/receber/novo">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Filial *</label>
+        <select class="form-input" name="filial_id" required>
+          <option value="">Selecionar</option>
+          {% for f in filiais %}<option value="{{ f.id }}">{{ f.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Cliente</label>
+        <select class="form-input" name="cliente_id">
+          <option value="">(sem cliente)</option>
+          {% for c in clientes %}<option value="{{ c.id }}">{{ c.nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Descrição *</label><input class="form-input" name="descricao" required></div>
+      <div class="form-group"><label class="form-label">Valor original *</label><input class="form-input" name="valor_original" required></div>
+      <div class="form-group"><label class="form-label">Vencimento *</label><input class="form-input" type="date" name="vencimento" required></div>
+      <div class="form-group"><label class="form-label">Forma prevista</label>
+        <select class="form-input" name="forma_prevista">
+          <option value="">(não definida)</option>
+          {% for f in formas_pagamento %}<option value="{{ f }}">{{ f }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label"><input type="checkbox" name="gera_pix" value="on"> Gerar PIX automaticamente</label></div>
+      <div class="form-group"><label class="form-label">Observações</label><input class="form-input" name="observacoes"></div>
+    </div>
+    <div class="form-actions" style="margin-top:12px">
+      <button class="btn btn-primary" type="submit">Salvar</button>
+      <a class="btn" href="/financeiro/receber">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

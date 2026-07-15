@@ -620,6 +620,9 @@ class OrdemServicoService:
                         ),
                     )
 
+        if item.fornecedor_id is not None and item.custo_total and item.custo_total > 0:
+            await self._gerar_conta_pagar(item, filial_id)
+
         await audit_service.record(
             AuditAction.UPDATE,
             entity="man_ordem_servico",
@@ -627,6 +630,36 @@ class OrdemServicoService:
             description=f"OS concluída: {item.numero}",
         )
         return item
+
+    async def _gerar_conta_pagar(
+        self, item: ManOrdemServico, filial_id: uuid.UUID | None
+    ) -> None:
+        """Gera título a pagar ao fornecedor quando a OS terceirizada é concluída (§9.3)."""
+        if filial_id is None:
+            return
+        from app.modules.financeiro.models import FinContaPagar
+        from app.modules.financeiro.service import ContaPagarService
+        from app.shared.enums import ContaPagarOrigem
+
+        cp_svc = ContaPagarService(self.session)
+        dup_stmt = (
+            cp_svc.repo._base_query()
+            .where(
+                FinContaPagar.origem == ContaPagarOrigem.OS,
+                FinContaPagar.origem_id == item.id,
+            )
+            .limit(1)
+        )
+        if (await self.session.execute(dup_stmt)).scalar_one_or_none() is not None:
+            return
+        await cp_svc.from_os(
+            item.tenant_id,
+            os_id=item.id,
+            fornecedor_id=item.fornecedor_id,
+            filial_id=filial_id,
+            valor=item.custo_total,
+            descricao=f"OS {item.numero} (manutenção)",
+        )
 
     async def cancelar(
         self, os_id: uuid.UUID, data: OrdemServicoCancelar | None = None

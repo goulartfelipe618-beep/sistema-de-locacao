@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <h2 class="card-title" style="margin:0">Contas Bancárias</h2>
+    {% if current_user.is_superuser or 'financeiro.bancos.criar' in current_user.permissions %}
+    <a class="btn btn-primary" href="/financeiro/bancos/novo">+ Nova Conta</a>
+    {% endif %}
+  </div>
+  {% if page_result.items %}
+  <table class="table">
+    <thead><tr><th>Banco</th><th>Agência</th><th>Conta</th><th>Tipo</th><th>Saldo</th><th>Integração</th><th>Ativa</th><th></th></tr></thead>
+    <tbody>
+    {% for c in page_result.items %}
+    <tr>
+      <td>{{ c.banco_codigo }} — {{ c.banco_nome }}</td>
+      <td>{{ c.agencia }}</td>
+      <td>{{ c.conta }}</td>
+      <td>{{ c.tipo.value }}</td>
+      <td class="num">{{ c.saldo_atual|currency }}</td>
+      <td>{{ c.integracao_tipo.value }}</td>
+      <td><span class="badge {% if c.ativa %}badge-success{% endif %}">{{ 'sim' if c.ativa else 'não' }}</span></td>
+      <td style="display:flex;gap:4px">
+        <a class="btn btn-sm" href="/financeiro/bancos/{{ c.id }}/extrato">Extrato</a>
+        {% if current_user.is_superuser or 'financeiro.bancos.editar' in current_user.permissions %}
+        <form method="post" action="/financeiro/bancos/{{ c.id }}/toggle" style="margin:0">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-sm" type="submit">{{ 'Desativar' if c.ativa else 'Ativar' }}</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhuma conta bancária.</div>{% endif %}
+</div>
+{% endblock %}

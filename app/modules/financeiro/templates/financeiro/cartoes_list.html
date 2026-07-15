@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <h2 class="card-title" style="margin:0">Transações de Cartão</h2>
+    {% if current_user.is_superuser or 'financeiro.cartoes.criar' in current_user.permissions %}
+    <a class="btn btn-primary" href="/financeiro/cartoes/novo">+ Nova Transação</a>
+    {% endif %}
+  </div>
+  {% if page_result.items %}
+  <table class="table">
+    <thead><tr><th>Autorização</th><th>Tipo</th><th>Valor</th><th>Parcelas</th><th>Taxa</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for t in page_result.items %}
+    <tr>
+      <td>{{ t.autorizacao_codigo or '-' }}</td>
+      <td>{{ t.tipo.value }}</td>
+      <td class="num">{{ t.valor|currency }}</td>
+      <td>{{ t.parcelas }}x</td>
+      <td class="num">{{ t.taxa_adquirente|currency }}</td>
+      <td><span class="badge {% if t.status.value in ['capturado','liquidado'] %}badge-success{% elif t.status.value in ['cancelado','estornado'] %}badge-warning{% endif %}">{{ t.status.value }}</span></td>
+      <td style="display:flex;gap:4px">
+        {% if current_user.is_superuser or 'financeiro.cartoes.editar' in current_user.permissions %}
+          {% if t.status.value == 'autorizado' %}
+          <form method="post" action="/financeiro/cartoes/{{ t.id }}/capturar" style="margin:0">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-sm btn-primary" type="submit">Capturar</button>
+          </form>
+          <form method="post" action="/financeiro/cartoes/{{ t.id }}/cancelar" style="margin:0">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-sm btn-warning" type="submit">Cancelar</button>
+          </form>
+          {% elif t.status.value in ['capturado','liquidado'] %}
+          <form method="post" action="/financeiro/cartoes/{{ t.id }}/estornar" style="margin:0" onsubmit="return confirm('Estornar transação?')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-sm btn-danger" type="submit">Estornar</button>
+          </form>
+          {% endif %}
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhuma transação de cartão.</div>{% endif %}
+</div>
+{% endblock %}

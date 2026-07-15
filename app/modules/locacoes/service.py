@@ -1254,6 +1254,42 @@ class MultaService:
         multa = await self.get(multa_id)
         multa.status = MultaStatus.NOTIFICADO
         await self.repo.flush()
+        await self.gerar_cobranca(multa_id)
+        return multa
+
+    async def gerar_cobranca(self, multa_id: uuid.UUID) -> LocMulta:
+        """Gera título a receber para a multa vinculada a cliente/contrato (§9.2)."""
+        multa = await self.get(multa_id)
+        if not multa.contrato_id or not multa.cliente_id:
+            return multa
+        contrato = await self.contrato_repo.get(multa.contrato_id)
+        if contrato is None:
+            return multa
+        from app.modules.financeiro.models import FinContaReceber
+        from app.modules.financeiro.service import ContaReceberService
+        from app.shared.enums import ContaReceberOrigem
+
+        cr_svc = ContaReceberService(self.session)
+        dup_stmt = (
+            cr_svc.repo._base_query()
+            .where(
+                FinContaReceber.origem == ContaReceberOrigem.MULTA,
+                FinContaReceber.origem_id == multa.id,
+            )
+            .limit(1)
+        )
+        if (await self.session.execute(dup_stmt)).scalar_one_or_none() is not None:
+            return multa
+        valor = multa.valor + (multa.taxa_admin or Decimal("0"))
+        await cr_svc.from_origem(
+            multa.tenant_id,
+            origem=ContaReceberOrigem.MULTA,
+            origem_id=multa.id,
+            cliente_id=multa.cliente_id,
+            filial_id=contrato.filial_retirada_id,
+            valor=valor,
+            descricao=f"Multa {multa.codigo_infracao} ({multa.orgao})",
+        )
         return multa
 
     async def marcar_paga(self, multa_id: uuid.UUID) -> LocMulta:
@@ -1370,7 +1406,32 @@ class AvariaService:
             entity_id=avaria.id,
             description=f"Responsabilidade definida: {data.responsabilidade.value}",
         )
+        if (
+            data.responsabilidade == AvariaResponsabilidade.CLIENTE
+            and avaria.contrato_id
+            and avaria.valor_reparo
+            and avaria.valor_reparo > 0
+        ):
+            await self._gerar_cobranca_cliente(avaria)
         return avaria
+
+    async def _gerar_cobranca_cliente(self, avaria: LocAvaria) -> None:
+        """Gera um título a receber para a avaria de responsabilidade do cliente (§9.2)."""
+        contrato = await ContratoRepository(self.session).get(avaria.contrato_id)
+        if contrato is None:
+            return
+        from app.modules.financeiro.service import ContaReceberService
+        from app.shared.enums import ContaReceberOrigem
+
+        await ContaReceberService(self.session).from_origem(
+            avaria.tenant_id,
+            origem=ContaReceberOrigem.AVARIA,
+            origem_id=avaria.id,
+            cliente_id=contrato.cliente_id,
+            filial_id=contrato.filial_retirada_id,
+            valor=avaria.valor_reparo,
+            descricao=f"Avaria {avaria.localizacao} (contrato {contrato.numero})",
+        )
 
     async def gerar_os(self, avaria_id: uuid.UUID) -> LocAvaria:
         avaria = await self.get(avaria_id)

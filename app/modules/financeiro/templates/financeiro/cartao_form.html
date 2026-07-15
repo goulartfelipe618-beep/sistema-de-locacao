@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+<div class="card">
+  <h2 class="card-title">{{ title }}</h2>
+  <form method="post" action="/financeiro/cartoes/novo">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Tipo *</label>
+        <select class="form-input" name="tipo" required>{% for t in cartao_tipos %}<option value="{{ t }}">{{ t }}</option>{% endfor %}</select>
+      </div>
+      <div class="form-group"><label class="form-label">Valor *</label><input class="form-input" name="valor" required></div>
+      <div class="form-group"><label class="form-label">Parcelas</label><input class="form-input" type="number" name="parcelas" value="1" min="1"></div>
+      <div class="form-group"><label class="form-label">Taxa adquirente</label><input class="form-input" name="taxa_adquirente" value="0"></div>
+      <div class="form-group"><label class="form-label">Contrato (id opcional)</label><input class="form-input" name="contrato_id"></div>
+      <div class="form-group"><label class="form-label">Título a receber (id opcional)</label><input class="form-input" name="titulo_receber_id"></div>
+      <div class="form-group"><label class="form-label">Observações</label><input class="form-input" name="observacoes"></div>
+    </div>
+    <div class="form-actions" style="margin-top:12px">
+      <button class="btn btn-primary" type="submit">Autorizar</button>
+      <a class="btn" href="/financeiro/cartoes">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

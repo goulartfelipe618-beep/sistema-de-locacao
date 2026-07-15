@@ -22,6 +22,7 @@ celery_app = Celery(
     backend=settings.celery_result_backend,
     include=[
         "app.modules.audit.tasks",
+        "app.modules.financeiro.tasks",
         "app.modules.frota.tasks",
         "app.modules.manutencao.tasks",
         "app.modules.reservas.tasks",

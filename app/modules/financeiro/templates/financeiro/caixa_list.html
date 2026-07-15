@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+{% if current_user.is_superuser or 'financeiro.caixa.abrir' in current_user.permissions %}
+<div class="card" style="margin-bottom:16px">
+  <h2 class="card-title">Abrir Caixa</h2>
+  <form method="post" action="/financeiro/caixa/abrir">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Filial</label>
+        <select class="form-input" name="filial_id" required>
+          <option value="">Selecionar</option>
+          {% for f in filiais %}<option value="{{ f.id }}">{{ f.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Valor de abertura</label><input class="form-input" name="valor_abertura" value="0"></div>
+      <div class="form-group"><label class="form-label">Observações</label><input class="form-input" name="observacoes"></div>
+    </div>
+    <div class="form-actions" style="margin-top:12px"><button class="btn btn-primary" type="submit">Abrir Caixa</button></div>
+  </form>
+</div>
+{% endif %}
+<div class="card">
+  <div class="toolbar">
+    <form method="get" action="/financeiro/caixa" style="display:flex;gap:8px;margin:0">
+      <select class="form-input" name="status">
+        <option value="">Todos status</option>
+        {% for s in ['aberta','fechada'] %}<option value="{{ s }}" {% if status == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+      </select>
+      <button class="btn btn-sm" type="submit">Filtrar</button>
+    </form>
+  </div>
+  {% if page_result.items %}
+  <table class="table">
+    <thead><tr><th>Filial</th><th>Aberta em</th><th>Fechada em</th><th>Abertura</th><th>Divergência</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for s in page_result.items %}
+    <tr>
+      <td>{{ filial_nomes.get(s.filial_id|string, s.filial_id) }}</td>
+      <td>{{ s.aberta_em|datetime }}</td>
+      <td>{{ s.fechada_em|datetime }}</td>
+      <td class="num">{{ s.valor_abertura|currency }}</td>
+      <td class="num">{{ s.divergencia|currency if s.divergencia is not none else '-' }}</td>
+      <td><span class="badge {% if s.status.value == 'aberta' %}badge-success{% endif %}">{{ s.status.value }}</span></td>
+      <td><a class="btn btn-sm" href="/financeiro/caixa/{{ s.id }}">Abrir</a></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhuma sessão de caixa.</div>{% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <form method="get" action="/financeiro/pagar" style="display:flex;gap:8px;margin:0">
+      <select class="form-input" name="status">
+        <option value="">Todos status</option>
+        {% for s in ['em_aberto','vencido','pago_parcial','pago','cancelado','estornado'] %}
+        <option value="{{ s }}" {% if status == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+      </select>
+      <button class="btn btn-sm" type="submit">Filtrar</button>
+    </form>
+    {% if current_user.is_superuser or 'financeiro.pagar.criar' in current_user.permissions %}
+    <a class="btn btn-primary" href="/financeiro/pagar/novo">+ Novo Título</a>
+    {% endif %}
+  </div>
+  {% if page_result.items %}
+  <table class="table">
+    <thead><tr><th>Número</th><th>Beneficiário</th><th>Descrição</th><th>Original</th><th>Saldo</th><th>Vencimento</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for t in page_result.items %}
+    <tr>
+      <td>{{ t.numero }}</td>
+      <td>{{ fornecedor_nomes.get(t.fornecedor_id|string) if t.fornecedor_id else (t.beneficiario_nome or '-') }}</td>
+      <td>{{ t.descricao }}</td>
+      <td class="num">{{ t.valor_original|currency }}</td>
+      <td class="num">{{ t.valor_saldo|currency }}</td>
+      <td>{{ t.vencimento|date }}</td>
+      <td><span class="badge {% if t.status.value == 'pago' %}badge-success{% elif t.status.value == 'vencido' %}badge-danger{% elif t.status.value in ['cancelado','estornado'] %}badge-warning{% endif %}">{{ t.status.value }}</span></td>
+      <td><a class="btn btn-sm" href="/financeiro/pagar/{{ t.id }}">Abrir</a></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="pagination"><span>Página {{ page_result.page }} de {{ page_result.pages }}</span></div>
+  {% else %}<div class="empty-state">Nenhum título a pagar.</div>{% endif %}
+</div>
+{% endblock %}

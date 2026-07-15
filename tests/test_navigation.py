@@ -40,7 +40,22 @@ def test_operator_without_dashboard_permission_hides_it() -> None:
 
 def test_future_modules_visible_but_disabled() -> None:
     menu = build_menu(_make_user({"dashboard.painel.visualizar"}))
-    financeiro = next(s for s in menu if s["label"] == "Financeiro")
-    assert all(item["enabled"] is False for item in financeiro["children"])
+    fiscal = next(s for s in menu if s["label"] == "Fiscal")
+    assert all(item["enabled"] is False for item in fiscal["children"])
     crm = next(s for s in menu if s["label"] == "Comercial / CRM")
     assert all(item["enabled"] is False for item in crm["children"])
+
+
+def test_financeiro_enabled_with_permissions() -> None:
+    menu = build_menu(
+        _make_user(
+            {
+                "dashboard.painel.visualizar",
+                "financeiro.caixa.visualizar",
+                "financeiro.receber.visualizar",
+            }
+        )
+    )
+    financeiro = next(s for s in menu if s["label"] == "Financeiro")
+    enabled = {item["label"] for item in financeiro["children"] if item["enabled"]}
+    assert {"Caixa", "Contas a Receber"} <= enabled

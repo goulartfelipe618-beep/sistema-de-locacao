@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+<div class="card" style="margin-bottom:16px">
+  <h2 class="card-title">Título {{ titulo.numero }} · <span class="badge">{{ titulo.status.value }}</span></h2>
+  <div class="form-grid">
+    <div><strong>Cliente:</strong> {{ cliente_nomes.get(titulo.cliente_id|string, '-') if titulo.cliente_id else '-' }}</div>
+    <div><strong>Origem:</strong> {{ titulo.origem.value }}</div>
+    <div><strong>Descrição:</strong> {{ titulo.descricao }}</div>
+    <div><strong>Valor original:</strong> {{ titulo.valor_original|currency }}</div>
+    <div><strong>Pago:</strong> {{ titulo.valor_pago|currency }}</div>
+    <div><strong>Saldo:</strong> {{ titulo.valor_saldo|currency }}</div>
+    <div><strong>Vencimento:</strong> {{ titulo.vencimento|date }}</div>
+    <div><strong>Parcela:</strong> {{ titulo.parcela_num }}/{{ titulo.parcela_total }}</div>
+  </div>
+</div>
+
+{% set pode_baixar = titulo.status.value in ['em_aberto','vencido','pago_parcial'] %}
+{% if pode_baixar and (current_user.is_superuser or 'financeiro.receber.baixar' in current_user.permissions) %}
+<div class="card" style="margin-bottom:16px">
+  <h2 class="card-title">Registrar Baixa</h2>
+  <form method="post" action="/financeiro/receber/{{ titulo.id }}/baixar">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Valor</label><input class="form-input" name="valor" value="{{ titulo.valor_saldo }}" required></div>
+      <div class="form-group"><label class="form-label">Forma</label>
+        <select class="form-input" name="forma">{% for f in formas_pagamento %}<option value="{{ f }}">{{ f }}</option>{% endfor %}</select>
+      </div>
+      <div class="form-group"><label class="form-label">Caixa (opcional)</label>
+        <select class="form-input" name="sessao_id">
+          <option value="">(nenhum)</option>
+          {% for s in sessoes_abertas %}<option value="{{ s.id }}">{{ filial_nomes.get(s.filial_id|string, s.filial_id) }} — {{ s.aberta_em|date }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Observação</label><input class="form-input" name="observacao"></div>
+    </div>
+    <div class="form-actions" style="margin-top:12px"><button class="btn btn-primary" type="submit">Baixar</button></div>
+  </form>
+</div>
+{% endif %}
+
+<div class="card" style="margin-bottom:16px">
+  <h2 class="card-title">Baixas</h2>
+  {% if baixas %}
+  <table class="table">
+    <thead><tr><th>Valor</th><th>Forma</th><th>Pago em</th><th>Observação</th></tr></thead>
+    <tbody>
+    {% for b in baixas %}
+    <tr><td class="num">{{ b.valor|currency }}</td><td>{{ b.forma.value }}</td><td>{{ b.pago_em|datetime }}</td><td>{{ b.observacao or '-' }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<div class="empty-state">Nenhuma baixa registrada.</div>{% endif %}
+</div>
+
+<div class="card">
+  <div class="toolbar" style="gap:8px">
+    {% if titulo.gera_pix and titulo.status.value in ['em_aberto','vencido','pago_parcial'] and (current_user.is_superuser or 'financeiro.pix.criar' in current_user.permissions) %}
+    <form method="post" action="/financeiro/receber/{{ titulo.id }}/pix" style="margin:0">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn" type="submit">Gerar PIX</button>
+    </form>
+    {% endif %}
+    {% if titulo.status.value in ['pago','pago_parcial'] and (current_user.is_superuser or 'financeiro.receber.estornar' in current_user.permissions) %}
+    <form method="post" action="/financeiro/receber/{{ titulo.id }}/estornar" style="margin:0" onsubmit="return confirm('Estornar título?')">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-danger" type="submit">Estornar</button>
+    </form>
+    {% endif %}
+    {% if titulo.status.value in ['em_aberto','vencido'] and (current_user.is_superuser or 'financeiro.receber.editar' in current_user.permissions) %}
+    <form method="post" action="/financeiro/receber/{{ titulo.id }}/cancelar" style="margin:0" onsubmit="return confirm('Cancelar título?')">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-warning" type="submit">Cancelar</button>
+    </form>
+    {% endif %}
+    <a class="btn" href="/financeiro/receber">Voltar</a>
+  </div>
+</div>
+{% endblock %}

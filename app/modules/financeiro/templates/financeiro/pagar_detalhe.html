@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+<div class="card" style="margin-bottom:16px">
+  <h2 class="card-title">Título {{ titulo.numero }} · <span class="badge">{{ titulo.status.value }}</span></h2>
+  <div class="form-grid">
+    <div><strong>Beneficiário:</strong> {{ fornecedor_nomes.get(titulo.fornecedor_id|string) if titulo.fornecedor_id else (titulo.beneficiario_nome or '-') }}</div>
+    <div><strong>Origem:</strong> {{ titulo.origem.value }}</div>
+    <div><strong>Descrição:</strong> {{ titulo.descricao }}</div>
+    <div><strong>Valor original:</strong> {{ titulo.valor_original|currency }}</div>
+    <div><strong>Pago:</strong> {{ titulo.valor_pago|currency }}</div>
+    <div><strong>Saldo:</strong> {{ titulo.valor_saldo|currency }}</div>
+    <div><strong>Vencimento:</strong> {{ titulo.vencimento|date }}</div>
+    <div><strong>Aprovado em:</strong> {{ titulo.aprovado_em|datetime if titulo.aprovado_em else 'Não aprovado' }}</div>
+  </div>
+</div>
+
+{% if not titulo.aprovado_em and titulo.status.value in ['em_aberto','vencido'] and (current_user.is_superuser or 'financeiro.pagar.aprovar' in current_user.permissions) %}
+<div class="card" style="margin-bottom:16px">
+  <form method="post" action="/financeiro/pagar/{{ titulo.id }}/aprovar" style="margin:0">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button class="btn btn-primary" type="submit">Aprovar Pagamento</button>
+  </form>
+</div>
+{% endif %}
+
+{% if titulo.aprovado_em and titulo.status.value in ['em_aberto','vencido','pago_parcial'] and (current_user.is_superuser or 'financeiro.pagar.efetivar' in current_user.permissions) %}
+<div class="card" style="margin-bottom:16px">
+  <h2 class="card-title">Efetivar Pagamento</h2>
+  <form method="post" action="/financeiro/pagar/{{ titulo.id }}/efetivar">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Valor</label><input class="form-input" name="valor" value="{{ titulo.valor_saldo }}" required></div>
+      <div class="form-group"><label class="form-label">Forma</label>
+        <select class="form-input" name="forma">{% for f in formas_pagamento %}<option value="{{ f }}">{{ f }}</option>{% endfor %}</select>
+      </div>
+      <div class="form-group"><label class="form-label">Conta bancária</label>
+        <select class="form-input" name="conta_bancaria_id">
+          <option value="">(nenhuma)</option>
+          {% for c in contas_bancarias %}<option value="{{ c.id }}">{{ c.banco_nome }} — {{ c.conta }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Observação</label><input class="form-input" name="observacao"></div>
+    </div>
+    <div class="form-actions" style="margin-top:12px"><button class="btn btn-primary" type="submit">Pagar</button></div>
+  </form>
+</div>
+{% endif %}
+
+<div class="card" style="margin-bottom:16px">
+  <h2 class="card-title">Pagamentos</h2>
+  {% if baixas %}
+  <table class="table">
+    <thead><tr><th>Valor</th><th>Forma</th><th>Pago em</th><th>Observação</th></tr></thead>
+    <tbody>
+    {% for b in baixas %}
+    <tr><td class="num">{{ b.valor|currency }}</td><td>{{ b.forma.value }}</td><td>{{ b.pago_em|datetime }}</td><td>{{ b.observacao or '-' }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<div class="empty-state">Nenhum pagamento registrado.</div>{% endif %}
+</div>
+
+<div class="card">
+  <div class="toolbar" style="gap:8px">
+    {% if titulo.status.value in ['em_aberto','vencido'] and (current_user.is_superuser or 'financeiro.pagar.editar' in current_user.permissions) %}
+    <form method="post" action="/financeiro/pagar/{{ titulo.id }}/cancelar" style="margin:0" onsubmit="return confirm('Cancelar título?')">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-warning" type="submit">Cancelar</button>
+    </form>
+    {% endif %}
+    <a class="btn" href="/financeiro/pagar">Voltar</a>
+  </div>
+</div>
+{% endblock %}

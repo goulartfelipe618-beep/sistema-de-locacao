@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card" style="margin-bottom:16px">
+  <h2 class="card-title">Fatura {{ fatura.numero }} · <span class="badge">{{ fatura.status.value }}</span></h2>
+  <div class="form-grid">
+    <div><strong>Cliente:</strong> {{ cliente_nomes.get(fatura.cliente_id|string, '-') }}</div>
+    <div><strong>Período:</strong> {{ fatura.periodo_inicio|date }} — {{ fatura.periodo_fim|date }}</div>
+    <div><strong>Valor total:</strong> {{ fatura.valor_total|currency }}</div>
+    <div><strong>Emitida em:</strong> {{ fatura.emitida_em|datetime if fatura.emitida_em else '-' }}</div>
+    <div><strong>Vencimento:</strong> {{ fatura.vencimento|date if fatura.vencimento else '-' }}</div>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:16px">
+  <h2 class="card-title">Títulos incluídos</h2>
+  {% if titulos %}
+  <table class="table">
+    <thead><tr><th>Número</th><th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Status</th></tr></thead>
+    <tbody>
+    {% for t in titulos %}
+    <tr><td>{{ t.numero }}</td><td>{{ t.descricao }}</td><td class="num">{{ t.valor_original|currency }}</td>
+      <td>{{ t.vencimento|date }}</td><td><span class="badge">{{ t.status.value }}</span></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<div class="empty-state">Nenhum título vinculado.</div>{% endif %}
+</div>
+
+<div class="card">
+  <div class="toolbar" style="gap:8px">
+    {% if fatura.status.value == 'rascunho' and (current_user.is_superuser or 'financeiro.faturamento.editar' in current_user.permissions) %}
+    <form method="post" action="/financeiro/faturamento/{{ fatura.id }}/emitir" style="margin:0" onsubmit="return confirm('Emitir fatura e gerar título consolidado?')">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-primary" type="submit">Emitir Fatura</button>
+    </form>
+    {% endif %}
+    <a class="btn" href="/financeiro/faturamento">Voltar</a>
+  </div>
+</div>
+{% endblock %}
