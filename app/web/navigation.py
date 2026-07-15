@@ -269,13 +269,14 @@ def build_menu(user: AuthenticatedUser | None) -> list[dict]:
                     "icon": section.icon,
                     "url": section.url if section.implemented else None,
                     "enabled": section.implemented and allowed,
-                    "items": [],
+                    # Evitar chave "items": em Jinja dict.items é o método dict.items().
+                    "children": [],
                 }
             )
             continue
 
-        items = [state for item in section.items if (state := _item_state(item, user))]
-        if not items:
+        children = [state for item in section.items if (state := _item_state(item, user))]
+        if not children:
             continue
         sections.append(
             {
@@ -283,7 +284,7 @@ def build_menu(user: AuthenticatedUser | None) -> list[dict]:
                 "icon": section.icon,
                 "url": None,
                 "enabled": True,
-                "items": items,
+                "children": children,
             }
         )
     return sections

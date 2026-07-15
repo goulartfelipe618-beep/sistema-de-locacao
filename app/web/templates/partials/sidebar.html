@@ -13,9 +13,9 @@
   </div>
   <nav class="nav">
     {% for section in menu %}
-      {% if section.items %}
+      {% if section.children %}
         {% set ns = namespace(active=false) %}
-        {% for item in section.items %}
+        {% for item in section.children %}
           {% if item.enabled and item.url and (current_path == item.url or current_path.startswith(item.url + '/')) %}
             {% set ns.active = true %}
           {% endif %}
@@ -29,7 +29,7 @@
             <span class="nav-caret" :class="open ? 'is-open' : ''">›</span>
           </button>
           <ul class="nav-sub" x-show="open" x-cloak>
-            {% for item in section.items %}
+            {% for item in section.children %}
               <li>
                 {% if item.enabled %}
                   <a href="{{ item.url }}"
