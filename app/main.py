@@ -92,6 +92,11 @@ def create_app() -> FastAPI:
     # -------------------------------------------------------------- Estáticos
     app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
 
+    @app.get("/favicon.ico", include_in_schema=False)
+    async def favicon() -> RedirectResponse:
+        """Browsers pedem /favicon.ico por padrão."""
+        return RedirectResponse(url="/static/favicon.svg", status_code=302)
+
     # ---------------------------------------------------------------- Rotas
     app.include_router(api_router)
     app.include_router(web_router)
