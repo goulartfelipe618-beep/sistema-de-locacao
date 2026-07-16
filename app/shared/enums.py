@@ -838,3 +838,73 @@ class PagamentoWebhookEvento(str, enum.Enum):
     AUTORIZADO = "autorizado"
     CAPTURADO = "capturado"
 
+
+# =============================================================================
+# Automações (§13)
+# =============================================================================
+class AutoEventoGatilho(str, enum.Enum):
+    """Eventos que disparam regras de automação."""
+
+    CONTRATO_ENCERRADO = "contrato_encerrado"
+    DOCUMENTO_VENCER = "documento_vencer"
+    TITULO_VENCIDO = "titulo_vencido"
+    CLIENTE_INADIMPLENTE = "cliente_inadimplente"
+    ESTOQUE_MINIMO = "estoque_minimo"
+    RESERVA_NO_SHOW = "reserva_no_show"
+    MANUAL = "manual"
+
+
+class AutoAcaoTipo(str, enum.Enum):
+    """Ações executadas por regras de automação."""
+
+    NOTIFICAR = "notificar"
+    BLOQUEAR_CLIENTE = "bloquear_cliente"
+    BLOQUEAR_VEICULO = "bloquear_veiculo"
+    GERAR_OS = "gerar_os"
+    GERAR_COBRANCA = "gerar_cobranca"
+    REGISTRAR_ALERTA = "registrar_alerta"
+
+
+class AutoExecucaoTipo(str, enum.Enum):
+    """Origem de um registro no histórico de automações."""
+
+    REGRA = "regra"
+    WORKFLOW = "workflow"
+    BEAT = "beat"
+
+
+class AutoExecucaoStatus(str, enum.Enum):
+    """Resultado de uma execução automatizada."""
+
+    SUCESSO = "sucesso"
+    ERRO = "erro"
+    IGNORADO = "ignorado"
+    PENDENTE = "pendente"
+
+
+class AutoWorkflowInstanciaStatus(str, enum.Enum):
+    """Situação de uma instância de workflow."""
+
+    PENDENTE = "pendente"
+    EM_ANDAMENTO = "em_andamento"
+    APROVADO = "aprovado"
+    REJEITADO = "rejeitado"
+    EXPIRADO = "expirado"
+
+
+class AutoWorkflowTimeoutAcao(str, enum.Enum):
+    """Ação ao estourar SLA de uma etapa."""
+
+    ESCALAR = "escalar"
+    APROVAR_AUTO = "aprovar_auto"
+    REJEITAR_AUTO = "rejeitar_auto"
+
+
+class AutoAprovacaoStatus(str, enum.Enum):
+    """Decisão em uma etapa de aprovação."""
+
+    PENDENTE = "pendente"
+    APROVADO = "aprovado"
+    REJEITADO = "rejeitado"
+
+

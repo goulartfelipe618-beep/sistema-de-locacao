@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <h2 class="card-title">{{ title }}</h2>
+  <p class="text-muted">Jobs recorrentes registrados no Celery Beat — execução manual disponível para admins.</p>
+  <table class="table">
+    <thead><tr><th>Job</th><th>Task</th><th>Agenda</th><th>Fila</th><th>Última exec.</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for j in jobs %}
+    <tr>
+      <td><strong>{{ j.nome }}</strong><br><small>{{ j.descricao }}</small></td>
+      <td><code>{{ j.task }}</code></td>
+      <td>{{ j.schedule }}</td>
+      <td>{{ j.queue }}</td>
+      <td>{{ j.ultima.concluido_em|datetime if j.ultima and j.ultima.concluido_em else '-' }}</td>
+      <td>{{ j.ultima.status.value if j.ultima else '-' }}</td>
+      <td>
+        {% if current_user.is_superuser or 'automacoes.agendamentos.executar' in current_user.permissions %}
+        <form method="post" action="/automacoes/agendamentos/{{ j.key }}/disparar" style="margin:0">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button class="btn btn-sm btn-primary" type="submit">Rodar agora</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <h2 class="card-title">{{ title }}</h2>
+  <form method="get" class="form-grid" style="margin-bottom:12px">
+    <div class="form-group"><label>Tipo</label>
+      <select class="form-input" name="tipo" onchange="this.form.submit()">
+        <option value="">Todos</option>
+        {% for t in tipos %}<option value="{{ t.value }}" {% if tipo==t.value %}selected{% endif %}>{{ t.value }}</option>{% endfor %}
+      </select>
+    </div>
+  </form>
+  {% if execucoes %}
+  <table class="table">
+    <thead><tr><th>Tipo</th><th>Ref</th><th>Evento</th><th>Status</th><th>Duração</th><th>Quando</th></tr></thead>
+    <tbody>
+    {% for e in execucoes %}
+    <tr>
+      <td>{{ e.tipo.value }}</td>
+      <td>{{ e.referencia_codigo or '-' }}</td>
+      <td>{{ e.evento or '-' }}</td>
+      <td><span class="badge {% if e.status.value=='sucesso' %}badge-success{% elif e.status.value=='erro' %}badge-danger{% endif %}">{{ e.status.value }}</span></td>
+      <td>{{ e.duracao_ms ~ ' ms' if e.duracao_ms else '-' }}</td>
+      <td>{{ e.created_at|datetime }}</td>
+    </tr>
+    {% if e.erro_mensagem %}<tr><td colspan="6"><small class="text-danger">{{ e.erro_mensagem }}</small></td></tr>{% endif %}
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<div class="empty-state">Nenhuma execução registrada.</div>{% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <h2 class="card-title">{{ title }}</h2>
+  <p class="text-muted">Processos com etapas de aprovação e SLA.</p>
+
+  {% if current_user.is_superuser or 'automacoes.workflows.criar' in current_user.permissions %}
+  <form method="post" action="/automacoes/workflows/novo" class="form-grid" style="margin-bottom:16px">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="form-group"><label>Código</label><input class="form-input" name="codigo" placeholder="os_valor_alto" required></div>
+    <div class="form-group"><label>Nome</label><input class="form-input" name="nome" required></div>
+    <div class="form-group"><label>Etapa</label><input class="form-input" name="etapa_nome" value="Aprovação gerente"></div>
+    <div class="form-group"><label>Papel aprovador</label><input class="form-input" name="aprovador_papel_slug" value="gerente-filial"></div>
+    <div class="form-group" style="align-self:end"><button class="btn btn-primary" type="submit">Criar workflow</button></div>
+  </form>
+  {% endif %}
+
+  <h4>Definições</h4>
+  {% if workflows %}
+  <table class="table"><thead><tr><th>Código</th><th>Nome</th><th>Ativo</th><th>Etapas</th></tr></thead>
+  <tbody>{% for w in workflows %}<tr><td><code>{{ w.codigo }}</code></td><td>{{ w.nome }}</td><td>{{ 'sim' if w.ativo else 'não' }}</td><td>{{ w.etapas|length }}</td></tr>{% endfor %}</tbody></table>
+  {% else %}<div class="empty-state">Nenhum workflow.</div>{% endif %}
+
+  <h4 style="margin-top:24px">Instâncias em andamento</h4>
+  {% if instancias %}
+  <table class="table"><thead><tr><th>Entidade</th><th>Status</th><th>Vence em</th><th></th></tr></thead>
+  <tbody>
+  {% for i in instancias %}
+  <tr>
+    <td>{{ i.entidade_tipo }} / {{ i.entidade_id }}</td><td>{{ i.status.value }}</td>
+    <td>{{ i.etapa_vence_em|datetime if i.etapa_vence_em else '-' }}</td>
+    <td>
+      {% if i.status.value in ['pendente','em_andamento'] %}
+      <form method="post" action="/automacoes/workflows/instancias/{{ i.id }}/aprovar" style="display:inline"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-sm btn-primary" type="submit">Aprovar</button></form>
+      <form method="post" action="/automacoes/workflows/instancias/{{ i.id }}/rejeitar" style="display:inline"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-sm" type="submit">Rejeitar</button></form>
+      {% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+  </tbody></table>
+  {% else %}<div class="empty-state">Nenhuma instância ativa.</div>{% endif %}
+</div>
+{% endblock %}

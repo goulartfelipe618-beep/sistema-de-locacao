@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <h2 class="card-title">{{ title }}</h2>
+  <p class="text-muted">Motor condição → ação configurável (JSON logic simples).</p>
+
+  {% if current_user.is_superuser or 'automacoes.regras.criar' in current_user.permissions %}
+  <div class="card" style="margin:16px 0;padding:12px">
+    <h4>Nova regra</h4>
+    <form method="post" action="/automacoes/regras/novo">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="form-grid">
+        <div class="form-group"><label>Nome</label><input class="form-input" name="nome" required></div>
+        <div class="form-group"><label>Gatilho</label>
+          <select class="form-input" name="evento_gatilho">{% for e in eventos %}<option value="{{ e.value }}">{{ e.value }}</option>{% endfor %}</select>
+        </div>
+        <div class="form-group"><label>Ação</label>
+          <select class="form-input" name="acao_tipo">{% for a in acoes %}<option value="{{ a.value }}">{{ a.value }}</option>{% endfor %}</select>
+        </div>
+        <div class="form-group"><label>Prioridade</label><input class="form-input" name="prioridade" type="number" value="100"></div>
+      </div>
+      <div class="form-group"><label>Condição JSON</label><textarea class="form-input" name="condicao_json" rows="2">{"op":"always"}</textarea></div>
+      <div class="form-group"><label>Parâmetros ação JSON</label><textarea class="form-input" name="acao_params_json" rows="2">{"mensagem":"Alerta automático"}</textarea></div>
+      <button class="btn btn-primary btn-sm" type="submit">Salvar</button>
+    </form>
+  </div>
+  {% endif %}
+
+  {% if regras %}
+  <table class="table">
+    <thead><tr><th>Nome</th><th>Gatilho</th><th>Ação</th><th>Ativa</th><th>Última exec.</th><th></th></tr></thead>
+    <tbody>
+    {% for r in regras %}
+    <tr>
+      <td>{{ r.nome }}</td><td>{{ r.evento_gatilho.value }}</td><td>{{ r.acao_tipo.value }}</td>
+      <td>{{ 'sim' if r.ativo else 'não' }}</td>
+      <td>{{ r.ultima_execucao_em|datetime if r.ultima_execucao_em else '-' }}</td>
+      <td>
+        {% if current_user.is_superuser or 'automacoes.regras.executar' in current_user.permissions %}
+        <form method="post" action="/automacoes/regras/{{ r.id }}/executar" style="display:inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button class="btn btn-sm" type="submit">Executar</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<div class="empty-state">Nenhuma regra cadastrada.</div>{% endif %}
+</div>
+{% endblock %}

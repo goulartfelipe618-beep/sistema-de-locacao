@@ -40,8 +40,24 @@ def test_operator_without_dashboard_permission_hides_it() -> None:
 
 def test_future_modules_visible_but_disabled() -> None:
     menu = build_menu(_make_user({"dashboard.painel.visualizar"}))
-    automacoes = next(s for s in menu if s["label"] == "Automações")
-    assert all(item["enabled"] is False for item in automacoes["children"])
+    config = next(s for s in menu if s["label"] == "Configurações")
+    parametros = next(item for item in config["children"] if item["label"] == "Parâmetros")
+    assert parametros["enabled"] is False
+
+
+def test_automacoes_enabled_with_permissions() -> None:
+    menu = build_menu(
+        _make_user(
+            {
+                "dashboard.painel.visualizar",
+                "automacoes.regras.visualizar",
+                "automacoes.historico.visualizar",
+            }
+        )
+    )
+    auto = next(s for s in menu if s["label"] == "Automações")
+    enabled = {item["label"] for item in auto["children"] if item["enabled"]}
+    assert {"Regras", "Histórico"} <= enabled
 
 
 def test_integracoes_enabled_with_permissions() -> None:

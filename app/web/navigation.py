@@ -523,11 +523,32 @@ NAVIGATION: tuple[MenuSection, ...] = (
     MenuSection(
         label="Automações",
         icon="bolt",
+        implemented=True,
         items=(
-            MenuItem("Regras", url="/automacoes/regras"),
-            MenuItem("Workflows", url="/automacoes/workflows"),
-            MenuItem("Agendamentos", url="/automacoes/agendamentos"),
-            MenuItem("Histórico", url="/automacoes/historico"),
+            MenuItem(
+                "Regras",
+                url="/automacoes/regras",
+                permission="automacoes.regras.visualizar",
+                implemented=True,
+            ),
+            MenuItem(
+                "Workflows",
+                url="/automacoes/workflows",
+                permission="automacoes.workflows.visualizar",
+                implemented=True,
+            ),
+            MenuItem(
+                "Agendamentos",
+                url="/automacoes/agendamentos",
+                permission="automacoes.agendamentos.visualizar",
+                implemented=True,
+            ),
+            MenuItem(
+                "Histórico",
+                url="/automacoes/historico",
+                permission="automacoes.historico.visualizar",
+                implemented=True,
+            ),
         ),
     ),
     MenuSection(

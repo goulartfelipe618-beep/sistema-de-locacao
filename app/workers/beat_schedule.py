@@ -83,4 +83,16 @@ BEAT_SCHEDULE: dict[str, dict] = {
         "schedule": crontab(minute="*/15"),
         "options": {"queue": "integrations"},
     },
+    # Regras periódicas de automação (§13.1).
+    "automacoes-avaliar-regras": {
+        "task": "automacoes.avaliar_regras",
+        "schedule": crontab(hour=6, minute=0),
+        "options": {"queue": "default"},
+    },
+    # Timeout de etapas de workflow (§13.2).
+    "automacoes-workflows-timeout": {
+        "task": "automacoes.processar_workflows_timeout",
+        "schedule": crontab(minute="*/30"),
+        "options": {"queue": "default"},
+    },
 }
