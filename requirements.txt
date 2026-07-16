@@ -49,3 +49,6 @@ tenacity==9.0.0
 # --- Relatórios (§11) ---
 openpyxl==3.1.5
 xhtml2pdf==0.2.16
+
+# --- Integrações (§12) ---
+cryptography>=48.0.0

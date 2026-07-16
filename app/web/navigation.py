@@ -486,12 +486,38 @@ NAVIGATION: tuple[MenuSection, ...] = (
     MenuSection(
         label="Integrações",
         icon="plug",
+        implemented=True,
         items=(
-            MenuItem("Pagamentos", url="/integracoes/pagamentos"),
-            MenuItem("Trânsito (DETRAN)", url="/integracoes/transito"),
-            MenuItem("Crédito", url="/integracoes/credito"),
-            MenuItem("Telemetria", url="/integracoes/telemetria"),
-            MenuItem("API Pública", url="/integracoes/api"),
+            MenuItem(
+                "Pagamentos",
+                url="/integracoes/pagamentos",
+                permission="integracoes.pagamentos.visualizar",
+                implemented=True,
+            ),
+            MenuItem(
+                "Trânsito (DETRAN)",
+                url="/integracoes/transito",
+                permission="integracoes.transito.visualizar",
+                implemented=True,
+            ),
+            MenuItem(
+                "Crédito",
+                url="/integracoes/credito",
+                permission="integracoes.credito.visualizar",
+                implemented=True,
+            ),
+            MenuItem(
+                "Telemetria",
+                url="/integracoes/telemetria",
+                permission="integracoes.telemetria.visualizar",
+                implemented=True,
+            ),
+            MenuItem(
+                "API Pública",
+                url="/integracoes/api",
+                permission="integracoes.api_publica.visualizar",
+                implemented=True,
+            ),
         ),
     ),
     MenuSection(

@@ -13,6 +13,8 @@ from app.modules.cadastros.api import router as cadastros_router
 from app.modules.comercial.api import router as comercial_router
 from app.modules.financeiro.api import router as financeiro_router
 from app.modules.fiscal.api import router as fiscal_router
+from app.modules.integracoes.api import router as integracoes_router, webhooks_router
+from app.modules.integracoes.public_api import public_router
 from app.modules.relatorios.api import router as relatorios_router
 from app.modules.frota.api import router as frota_router
 from app.modules.identity.api import router as identity_router
@@ -36,4 +38,7 @@ api_router.include_router(locacoes_router)
 api_router.include_router(financeiro_router)
 api_router.include_router(comercial_router)
 api_router.include_router(fiscal_router)
+api_router.include_router(integracoes_router)
+api_router.include_router(webhooks_router)
+api_router.include_router(public_router)
 api_router.include_router(relatorios_router)

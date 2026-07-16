@@ -1,0 +1,62 @@
+<div class="card">
+  <h2 class="card-title">{{ title }}</h2>
+  <p class="text-muted">Conectores e credenciais (adapter pattern — provedor simulador disponível).</p>
+
+  {% if current_user.is_superuser or 'integracoes.pagamentos.criar' in current_user.permissions %}
+  <div class="card" style="margin:16px 0;padding:12px">
+    <h4>Novo conector</h4>
+    <form method="post" action="/integracoes/configs/novo">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="tipo" value="{{ tipo.value }}">
+      <div class="form-grid">
+        <div class="form-group"><label>Nome</label><input class="form-input" name="nome" required></div>
+        <div class="form-group"><label>Provedor</label><input class="form-input" name="provedor" value="simulador"></div>
+        <div class="form-group"><label>Client ID</label><input class="form-input" name="client_id"></div>
+        <div class="form-group"><label>Client Secret</label><input class="form-input" name="client_secret" type="password"></div>
+        <div class="form-group"><label>API Key</label><input class="form-input" name="api_key" type="password"></div>
+        <div class="form-group"><label>Webhook Secret</label><input class="form-input" name="webhook_secret" type="password"></div>
+      </div>
+      <button class="btn btn-primary btn-sm" type="submit" style="margin-top:8px">Salvar</button>
+    </form>
+  </div>
+  {% endif %}
+
+  <h4>Configurações</h4>
+  {% if configs %}
+  <table class="table">
+    <thead><tr><th>Nome</th><th>Provedor</th><th>Status</th>{% if tipo.value == 'pagamentos' %}<th>Webhook URL</th>{% endif %}<th></th></tr></thead>
+    <tbody>
+    {% for c in configs %}
+    <tr>
+      <td>{{ c.nome }}</td><td>{{ c.provedor }}</td><td>{{ c.status.value }}</td>
+      {% if tipo.value == 'pagamentos' %}
+      <td><code style="font-size:0.7em">POST /api/v1/webhooks/pagamentos/{{ c.provedor }}?tenant={{ tenant_slug }}&token=…</code></td>
+      {% endif %}
+      <td>
+        <form method="post" action="/integracoes/configs/{{ c.id }}/testar" style="display:inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input type="hidden" name="tipo" value="{{ tipo.value }}">
+          <button class="btn btn-sm" type="submit">Testar</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<div class="empty-state">Nenhum conector configurado.</div>{% endif %}
+
+  {% if webhooks is defined %}
+  <h4 style="margin-top:24px">Webhooks recentes</h4>
+  {% if webhooks %}
+  <table class="table"><thead><tr><th>Provedor</th><th>Evento</th><th>Status</th><th>Assinatura</th></tr></thead>
+  <tbody>{% for w in webhooks %}<tr><td>{{ w.provedor }}</td><td>{{ w.evento_tipo }}</td><td>{{ w.status.value }}</td><td>{{ 'ok' if w.assinatura_valida else 'inválida' }}</td></tr>{% endfor %}</tbody></table>
+  {% else %}<div class="empty-state">Nenhum webhook recebido.</div>{% endif %}
+  {% endif %}
+
+  {% if tipo.value == 'telemetria' %}
+  <form method="post" action="/integracoes/telemetria/sincronizar" style="margin-top:16px">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button class="btn btn-primary" type="submit">Sincronizar telemetria agora</button>
+  </form>
+  {% endif %}
+</div>

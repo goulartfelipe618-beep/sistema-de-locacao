@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <h2 class="card-title">API Key criada</h2>
+  <p class="alert alert-warning">Copie agora — a chave completa não será exibida novamente.</p>
+  <p><strong>{{ key.nome }}</strong></p>
+  <pre style="background:#f4f4f4;padding:12px;overflow:auto">{{ raw_key }}</pre>
+  <a class="btn" href="/integracoes/api">Voltar</a>
+</div>
+{% endblock %}

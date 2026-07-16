@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% include "integracoes/_config_section.html" %}
+<div class="card" style="margin-top:16px">
+  <h4>Consultar multas (importar para Locações)</h4>
+  <form method="post" action="/integracoes/transito/multas" class="form-grid">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="form-group"><label>Veículo</label>
+      <select class="form-input" name="veiculo_id" required>
+        {% for v in veiculos %}<option value="{{ v.id }}">{{ v.placa }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="form-group" style="align-self:end"><button class="btn btn-primary" type="submit">Consultar multas</button></div>
+  </form>
+  <h4 style="margin-top:16px">Consultar CNH</h4>
+  <form method="post" action="/integracoes/transito/cnh" class="form-grid">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="form-group"><label>Motorista</label>
+      <select class="form-input" name="motorista_id" required>
+        {% for m in motoristas %}<option value="{{ m.id }}">{{ m.nome }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="form-group" style="align-self:end"><button class="btn btn-primary" type="submit">Consultar CNH</button></div>
+  </form>
+  {% if consultas %}
+  <h4 style="margin-top:16px">Histórico</h4>
+  <table class="table"><thead><tr><th>Tipo</th><th>Status</th><th>Data</th></tr></thead>
+  <tbody>{% for c in consultas %}<tr><td>{{ c.tipo.value }}</td><td>{{ c.status.value }}</td><td>{{ c.created_at|datetime }}</td></tr>{% endfor %}</tbody></table>
+  {% endif %}
+</div>
+{% endblock %}

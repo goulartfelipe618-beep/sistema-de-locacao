@@ -782,3 +782,59 @@ class RelRecorrencia(str, enum.Enum):
     DIARIA = "diaria"
     SEMANAL = "semanal"
     MENSAL = "mensal"
+
+
+# =============================================================================
+# Integrações (§12)
+# =============================================================================
+class IntegracaoTipo(str, enum.Enum):
+    """Tipo de conector de integração."""
+
+    PAGAMENTOS = "pagamentos"
+    TRANSITO = "transito"
+    CREDITO = "credito"
+    TELEMETRIA = "telemetria"
+
+
+class IntegracaoProvedorStatus(str, enum.Enum):
+    """Situação operacional de um provedor configurado."""
+
+    ATIVO = "ativo"
+    INATIVO = "inativo"
+    ERRO = "erro"
+
+
+class WebhookEventoStatus(str, enum.Enum):
+    """Processamento de evento webhook recebido."""
+
+    RECEBIDO = "recebido"
+    PROCESSADO = "processado"
+    IGNORADO = "ignorado"
+    ERRO = "erro"
+
+
+class IntegracaoConsultaTipo(str, enum.Enum):
+    """Tipo de consulta externa registrada."""
+
+    TRANSITO_MULTAS = "transito_multas"
+    TRANSITO_CNH = "transito_cnh"
+    TRANSITO_DEBITOS = "transito_debitos"
+    CREDITO_SCORE = "credito_score"
+
+
+class IntegracaoConsultaStatus(str, enum.Enum):
+    """Resultado de consulta externa."""
+
+    SUCESSO = "sucesso"
+    ERRO = "erro"
+
+
+class PagamentoWebhookEvento(str, enum.Enum):
+    """Eventos de gateway de pagamento mapeados para financeiro."""
+
+    PAGO = "pago"
+    ESTORNADO = "estornado"
+    CHARGEBACK = "chargeback"
+    AUTORIZADO = "autorizado"
+    CAPTURADO = "capturado"
+

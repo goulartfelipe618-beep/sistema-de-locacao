@@ -77,4 +77,10 @@ BEAT_SCHEDULE: dict[str, dict] = {
         "schedule": crontab(minute=0),
         "options": {"queue": "reports"},
     },
+    # Sincronização de telemetria externa (§12.4).
+    "integracoes-sync-telemetria": {
+        "task": "integracoes.sync_telemetria",
+        "schedule": crontab(minute="*/15"),
+        "options": {"queue": "integrations"},
+    },
 }
