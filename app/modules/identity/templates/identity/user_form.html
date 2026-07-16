@@ -5,27 +5,42 @@
   <h2 class="card-title">{{ title }}</h2>
   {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
 
-  <form method="post" action="/configuracoes/usuarios/novo" autocomplete="off">
+  {% if user and user.locked_until %}
+  <div class="alert alert-warning">
+    Conta bloqueada até {{ user.locked_until|datetime }}.
+    <form method="post" action="/configuracoes/usuarios/{{ user.id }}/desbloquear" style="display:inline">
+      <button type="submit" class="btn btn-sm">Desbloquear agora</button>
+    </form>
+  </div>
+  {% endif %}
+
+  <form method="post" action="{{ action }}" autocomplete="off">
     <div class="form-grid">
       <div class="form-group">
         <label class="form-label" for="full_name">Nome completo</label>
         <input class="form-input" id="full_name" name="full_name"
-               value="{{ form.full_name if form else '' }}" required>
+               value="{{ form.full_name if form and form.full_name is defined else (user.full_name if user else '') }}" required>
       </div>
       <div class="form-group">
         <label class="form-label" for="email">E-mail</label>
+        {% if user %}
+        <input class="form-input" type="email" value="{{ user.email }}" disabled>
+        {% else %}
         <input class="form-input" type="email" id="email" name="email"
                value="{{ form.email if form else '' }}" required>
+        {% endif %}
       </div>
       <div class="form-group">
-        <label class="form-label" for="password">Senha</label>
-        <input class="form-input" type="password" id="password" name="password" required>
+        <label class="form-label" for="password">Senha{% if user %} (deixe em branco para manter){% endif %}</label>
+        <input class="form-input" type="password" id="password" name="password" {{ '' if user else 'required' }}>
         <span class="form-help">Mínimo de 8 caracteres.</span>
       </div>
       <div class="form-group">
         <label class="form-label">Situação</label>
         <label class="form-check">
-          <input type="checkbox" name="is_active" value="true" checked> Usuário ativo
+          <input type="checkbox" name="is_active" value="true"
+                 {% if user %}{% if user.is_active %}checked{% endif %}{% else %}checked{% endif %}>
+          Usuário ativo
         </label>
       </div>
       <div class="form-group">
@@ -33,7 +48,8 @@
         <div class="multi-list">
           {% for role in roles %}
           <label class="form-check">
-            <input type="checkbox" name="role_ids" value="{{ role.id }}"> {{ role.name }}
+            <input type="checkbox" name="role_ids" value="{{ role.id }}"
+                   {% if role.id in selected_roles %}checked{% endif %}> {{ role.name }}
           </label>
           {% else %}
           <span class="form-help">Nenhum papel cadastrado.</span>
@@ -45,7 +61,9 @@
         <div class="multi-list">
           {% for filial in filiais %}
           <label class="form-check">
-            <input type="checkbox" name="filial_ids" value="{{ filial.id }}"> {{ filial.code }} — {{ filial.name }}
+            <input type="checkbox" name="filial_ids" value="{{ filial.id }}"
+                   {% if filial.id in selected_filiais %}checked{% endif %}>
+            {{ filial.code }} — {{ filial.name }}
           </label>
           {% else %}
           <span class="form-help">Nenhuma filial cadastrada.</span>
@@ -55,8 +73,18 @@
     </div>
     <div class="form-actions">
       <button type="submit" class="btn btn-primary">Salvar</button>
+      {% if user %}
+      <a href="/configuracoes/usuarios/{{ user.id }}/acessos" class="btn">Log de acessos</a>
+      {% endif %}
       <a href="/configuracoes/usuarios" class="btn">Cancelar</a>
     </div>
   </form>
+
+  {% if user and (current_user.is_superuser or 'identidade.usuario.excluir' in current_user.permissions) and not user.is_superuser %}
+  <form method="post" action="/configuracoes/usuarios/{{ user.id }}/excluir" style="margin-top:12px"
+        onsubmit="return confirm('Remover este usuário?');">
+    <button type="submit" class="btn btn-danger">Excluir usuário</button>
+  </form>
+  {% endif %}
 </div>
 {% endblock %}

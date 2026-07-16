@@ -2,7 +2,12 @@
 {% block title %}Papéis e Permissões{% endblock %}
 {% block content %}
 <div class="card">
-  <h2 class="card-title">Papéis (RBAC)</h2>
+  <div class="toolbar">
+    <h2 class="card-title" style="margin:0">Papéis (RBAC)</h2>
+    {% if can_create %}
+    <a class="btn btn-primary" href="/configuracoes/papeis/novo">+ Novo Papel</a>
+    {% endif %}
+  </div>
   {% if roles %}
   <table class="table">
     <thead>
@@ -12,6 +17,7 @@
         <th>Descrição</th>
         <th>Tipo</th>
         <th class="num">Permissões</th>
+        <th></th>
       </tr>
     </thead>
     <tbody>
@@ -28,6 +34,11 @@
           {% endif %}
         </td>
         <td class="num">{{ role_perms[role.id] }}</td>
+        <td>
+          {% if can_edit %}
+          <a class="btn btn-sm" href="/configuracoes/papeis/{{ role.id }}/editar">Permissões</a>
+          {% endif %}
+        </td>
       </tr>
       {% endfor %}
     </tbody>

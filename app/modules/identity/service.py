@@ -25,9 +25,16 @@ from app.core.logging import get_logger
 from app.core.pagination import Page, PageParams
 from app.core.security import hash_password, verify_password
 from app.modules.audit.service import audit_service
-from app.modules.identity.models import User
-from app.modules.identity.repository import UserRepository
-from app.modules.identity.schemas import UserCreate, UserUpdate
+from app.modules.audit.models import AuditLog
+from app.modules.audit.repository import AuditRepository
+from app.modules.identity.models import Permission, Role, User
+from app.modules.identity.repository import (
+    PermissionRepository,
+    RolePermissionRepository,
+    RoleRepository,
+    UserRepository,
+)
+from app.modules.identity.schemas import RoleCreate, RoleUpdate, UserCreate, UserUpdate
 from app.shared.enums import AuditAction
 
 logger = get_logger(__name__)
@@ -260,3 +267,149 @@ class UserService:
             description=f"Usuário atualizado: {user.email}",
         )
         return user
+
+    async def unlock_user(self, user_id: uuid.UUID) -> User:
+        """Remove bloqueio temporário por tentativas de login."""
+        user = await self.get_user(user_id)
+        user.failed_login_attempts = 0
+        user.locked_until = None
+        await audit_service.record(
+            AuditAction.UPDATE,
+            entity="user",
+            entity_id=user.id,
+            description=f"Desbloqueio manual: {user.email}",
+        )
+        return user
+
+    async def delete_user(self, user_id: uuid.UUID, *, actor_id: uuid.UUID) -> None:
+        """Aplica soft delete em um usuário (não permite excluir a si mesmo)."""
+        if user_id == actor_id:
+            raise ValidationError("Não é possível excluir o próprio usuário.")
+        user = await self.get_user(user_id)
+        if user.is_superuser:
+            raise ValidationError("Usuários super-admin não podem ser excluídos.")
+        await self.users.delete(user)
+        await audit_service.record(
+            AuditAction.DELETE,
+            entity="user",
+            entity_id=user.id,
+            description=f"Usuário removido: {user.email}",
+        )
+
+    async def list_access_log(
+        self,
+        user_id: uuid.UUID,
+        params: PageParams,
+    ) -> Page[AuditLog]:
+        """Log de acessos (login e falhas) do usuário."""
+        user = await self.get_user(user_id)
+        return await AuditRepository(self.session).paginate(
+            params,
+            tenant_id=user.tenant_id,
+            user_id=user_id,
+            actions=[AuditAction.LOGIN.value, AuditAction.LOGIN_FAILED.value],
+        )
+
+
+def group_permissions_by_module(
+    permissions: list[Permission],
+) -> list[tuple[str, list[Permission]]]:
+    """Agrupa permissões por módulo para a matriz RBAC na UI."""
+    if not permissions:
+        return []
+    ordered = sorted(permissions, key=lambda p: (p.module, p.resource, p.action))
+    groups: list[tuple[str, list[Permission]]] = []
+    current_module: str | None = None
+    bucket: list[Permission] = []
+    for perm in ordered:
+        if perm.module != current_module:
+            if bucket:
+                groups.append((current_module or "", bucket))
+            current_module = perm.module
+            bucket = [perm]
+        else:
+            bucket.append(perm)
+    if bucket:
+        groups.append((current_module or "", bucket))
+    return groups
+
+
+class RoleService:
+    """CRUD de papéis e vínculo de permissões (§14.4)."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+        self.roles = RoleRepository(session)
+        self.permissions = PermissionRepository(session)
+        self.role_permissions = RolePermissionRepository(session)
+
+    async def list_permissions_grouped(self) -> list[tuple[str, list[Permission]]]:
+        return group_permissions_by_module(await self.permissions.list_ordered())
+
+    async def get_role(self, role_id: uuid.UUID) -> Role:
+        role = await self.roles.get(role_id)
+        if role is None:
+            raise NotFoundError("Papel não encontrado.")
+        return role
+
+    async def get_permission_ids(self, role_id: uuid.UUID) -> list[uuid.UUID]:
+        return await self.role_permissions.get_permission_ids(role_id)
+
+    async def create_role(self, data: RoleCreate, *, tenant_id: uuid.UUID) -> Role:
+        slug = data.slug.strip().lower()
+        if await self.roles.get_by_slug(tenant_id, slug):
+            raise ConflictError("Já existe um papel com este identificador.", code="slug_taken")
+        role = Role(
+            tenant_id=tenant_id,
+            slug=slug,
+            name=data.name.strip(),
+            description=data.description,
+            is_system=False,
+        )
+        self.roles.add(role)
+        await self.roles.flush()
+        await self._sync_permissions(role, data.permission_ids)
+        await audit_service.record(
+            AuditAction.CREATE,
+            entity="role",
+            entity_id=role.id,
+            description=f"Papel criado: {role.slug}",
+        )
+        return role
+
+    async def update_role(self, role_id: uuid.UUID, data: RoleUpdate) -> Role:
+        role = await self.get_role(role_id)
+        if data.name is not None:
+            role.name = data.name.strip()
+        if data.description is not None:
+            role.description = data.description
+        if data.permission_ids is not None:
+            await self._sync_permissions(role, data.permission_ids)
+        await audit_service.record(
+            AuditAction.UPDATE,
+            entity="role",
+            entity_id=role.id,
+            description=f"Papel atualizado: {role.slug}",
+        )
+        return role
+
+    async def delete_role(self, role_id: uuid.UUID) -> None:
+        role = await self.get_role(role_id)
+        if role.is_system:
+            raise ValidationError("Papéis de sistema não podem ser excluídos.")
+        await self.roles.delete(role)
+        await audit_service.record(
+            AuditAction.DELETE,
+            entity="role",
+            entity_id=role.id,
+            description=f"Papel removido: {role.slug}",
+        )
+
+    async def _sync_permissions(self, role: Role, permission_ids: list[uuid.UUID]) -> None:
+        unique_ids = list(dict.fromkeys(permission_ids))
+        valid = await self.permissions.get_by_ids(unique_ids)
+        if len(valid) != len(unique_ids):
+            raise ValidationError("Uma ou mais permissões informadas são inválidas.")
+        await self.role_permissions.clear(role.id)
+        for perm in valid:
+            self.role_permissions.link(role.tenant_id, role.id, perm.id)

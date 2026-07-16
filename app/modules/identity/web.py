@@ -16,8 +16,13 @@ from app.core.exceptions import AppError, AuthenticationError
 from app.core.pagination import PageParams
 from app.core.templating import render
 from app.modules.identity.repository import RoleRepository, UserRepository
-from app.modules.identity.schemas import UserCreate
-from app.modules.identity.service import AuthenticatedUser, AuthService, UserService
+from app.modules.identity.schemas import RoleCreate, RoleUpdate, UserCreate, UserUpdate
+from app.modules.identity.service import (
+    AuthenticatedUser,
+    AuthService,
+    RoleService,
+    UserService,
+)
 from app.modules.tenants.branding import branding_session_payload
 from app.modules.tenants.repository import TenantRepository
 from app.modules.tenants.service import FilialService
@@ -131,7 +136,16 @@ async def user_new_form(
     return render(
         request,
         "identity/user_form.html",
-        {"roles": roles, "filiais": filiais, "error": None, "title": "Novo Usuário"},
+        {
+            "roles": roles,
+            "filiais": filiais,
+            "selected_roles": [],
+            "selected_filiais": [],
+            "user": None,
+            "error": None,
+            "title": "Novo Usuário",
+            "action": "/configuracoes/usuarios/novo",
+        },
     )
 
 
@@ -171,13 +185,162 @@ async def user_create(
             {
                 "roles": roles,
                 "filiais": filiais,
+                "selected_roles": [],
+                "selected_filiais": [],
+                "user": None,
                 "error": message,
                 "title": "Novo Usuário",
+                "action": "/configuracoes/usuarios/novo",
                 "form": {"full_name": full_name, "email": email},
             },
             status_code=400,
         )
     return RedirectResponse(url="/configuracoes/usuarios", status_code=303)
+
+
+async def _user_form_context(
+    session: AsyncSession,
+    *,
+    user: object | None = None,
+    error: str | None = None,
+    title: str,
+    action: str,
+    form: dict | None = None,
+) -> dict:
+    roles = await RoleRepository(session).list_ordered()
+    filiais = await FilialService(session).list_all()
+    selected_roles: list[uuid.UUID] = []
+    selected_filiais: list[uuid.UUID] = []
+    if user is not None:
+        repo = UserRepository(session)
+        selected_roles = await repo.get_role_ids(user.id)
+        selected_filiais = await repo.get_filial_ids(user.id)
+    return {
+        "user": user,
+        "roles": roles,
+        "filiais": filiais,
+        "selected_roles": selected_roles,
+        "selected_filiais": selected_filiais,
+        "error": error,
+        "title": title,
+        "action": action,
+        "form": form,
+    }
+
+
+@router.get("/configuracoes/usuarios/{user_id}/editar", response_class=HTMLResponse)
+async def user_edit_form(
+    user_id: uuid.UUID,
+    request: Request,
+    session: SessionDep,
+    _user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("identidade.usuario.editar"))
+    ],
+) -> HTMLResponse:
+    """Formulário de edição de usuário."""
+    target = await UserService(session).get_user(user_id)
+    ctx = await _user_form_context(
+        session,
+        user=target,
+        title="Editar Usuário",
+        action=f"/configuracoes/usuarios/{user_id}/editar",
+    )
+    return render(request, "identity/user_form.html", ctx)
+
+
+@router.post("/configuracoes/usuarios/{user_id}/editar", response_class=HTMLResponse)
+async def user_update(
+    user_id: uuid.UUID,
+    request: Request,
+    session: SessionDep,
+    current_user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("identidade.usuario.editar"))
+    ],
+    full_name: Annotated[str, Form()],
+    password: Annotated[str, Form()] = "",
+    is_active: Annotated[bool, Form()] = False,
+    role_ids: Annotated[list[str] | None, Form()] = None,
+    filial_ids: Annotated[list[str] | None, Form()] = None,
+) -> HTMLResponse:
+    """Atualiza usuário, papéis e filiais."""
+    svc = UserService(session)
+    try:
+        data = UserUpdate(
+            full_name=full_name,
+            is_active=is_active,
+            password=password or None,
+            role_ids=[uuid.UUID(r) for r in (role_ids or [])],
+            filial_ids=[uuid.UUID(f) for f in (filial_ids or [])],
+        )
+        await svc.update_user(user_id, data)
+    except (AppError, ValueError) as exc:
+        await session.rollback()
+        target = await svc.get_user(user_id)
+        message = exc.message if isinstance(exc, AppError) else str(exc)
+        ctx = await _user_form_context(
+            session,
+            user=target,
+            error=message,
+            title="Editar Usuário",
+            action=f"/configuracoes/usuarios/{user_id}/editar",
+            form={"full_name": full_name},
+        )
+        return render(request, "identity/user_form.html", ctx, status_code=400)
+    return RedirectResponse(url="/configuracoes/usuarios", status_code=303)
+
+
+@router.post("/configuracoes/usuarios/{user_id}/desbloquear")
+async def user_unlock(
+    user_id: uuid.UUID,
+    session: SessionDep,
+    _user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("identidade.usuario.editar"))
+    ],
+) -> RedirectResponse:
+    """Remove bloqueio temporário do usuário."""
+    await UserService(session).unlock_user(user_id)
+    return RedirectResponse(url=f"/configuracoes/usuarios/{user_id}/editar", status_code=303)
+
+
+@router.post("/configuracoes/usuarios/{user_id}/excluir")
+async def user_delete(
+    user_id: uuid.UUID,
+    session: SessionDep,
+    current_user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("identidade.usuario.excluir"))
+    ],
+) -> RedirectResponse:
+    """Remove (soft delete) um usuário."""
+    try:
+        await UserService(session).delete_user(user_id, actor_id=current_user.id)
+    except (AppError, ValueError):
+        await session.rollback()
+    return RedirectResponse(url="/configuracoes/usuarios", status_code=303)
+
+
+@router.get("/configuracoes/usuarios/{user_id}/acessos", response_class=HTMLResponse)
+async def user_access_log(
+    user_id: uuid.UUID,
+    request: Request,
+    session: SessionDep,
+    _user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("identidade.usuario.visualizar"))
+    ],
+    page: int = 1,
+) -> HTMLResponse:
+    """Log de acessos (login e falhas) do usuário."""
+    svc = UserService(session)
+    target = await svc.get_user(user_id)
+    result = await svc.list_access_log(user_id, PageParams(page=page, size=25))
+    return render(
+        request,
+        "identity/user_access_log.html",
+        {
+            "user": target,
+            "page_result": result,
+            "title": f"Acessos — {target.full_name}",
+        },
+    )
 
 
 # ==============================================================  Papéis (UI)
@@ -204,8 +367,167 @@ async def roles_list(
         ).all()
     )
     role_perms = {role.id: int(counts.get(role.id, 0)) for role in roles}
+    can_create = (
+        _user.is_superuser or "identidade.papel.criar" in _user.permissions
+    )
     return render(
         request,
         "identity/roles_list.html",
-        {"roles": roles, "role_perms": role_perms, "title": "Papéis e Permissões"},
+        {
+            "roles": roles,
+            "role_perms": role_perms,
+            "title": "Papéis e Permissões",
+            "can_create": can_create,
+            "can_edit": _user.is_superuser or "identidade.papel.editar" in _user.permissions,
+        },
     )
+
+
+@router.get("/configuracoes/papeis/novo", response_class=HTMLResponse)
+async def role_new_form(
+    request: Request,
+    session: SessionDep,
+    _user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("identidade.papel.criar"))
+    ],
+) -> HTMLResponse:
+    """Formulário de criação de papel personalizado."""
+    svc = RoleService(session)
+    return render(
+        request,
+        "identity/role_form.html",
+        {
+            "role": None,
+            "permission_groups": await svc.list_permissions_grouped(),
+            "selected_permissions": [],
+            "error": None,
+            "title": "Novo Papel",
+            "action": "/configuracoes/papeis/novo",
+        },
+    )
+
+
+@router.post("/configuracoes/papeis/novo", response_class=HTMLResponse)
+async def role_create(
+    request: Request,
+    session: SessionDep,
+    current_user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("identidade.papel.criar"))
+    ],
+    slug: Annotated[str, Form()],
+    name: Annotated[str, Form()],
+    description: Annotated[str, Form()] = "",
+    permission_ids: Annotated[list[str] | None, Form()] = None,
+) -> HTMLResponse:
+    """Cria papel personalizado com matriz de permissões."""
+    svc = RoleService(session)
+    try:
+        data = RoleCreate(
+            slug=slug.strip().lower(),
+            name=name,
+            description=description or None,
+            permission_ids=[uuid.UUID(p) for p in (permission_ids or [])],
+        )
+        await svc.create_role(data, tenant_id=current_user.tenant_id)
+    except (AppError, ValueError) as exc:
+        await session.rollback()
+        message = exc.message if isinstance(exc, AppError) else str(exc)
+        return render(
+            request,
+            "identity/role_form.html",
+            {
+                "role": None,
+                "permission_groups": await svc.list_permissions_grouped(),
+                "selected_permissions": [uuid.UUID(p) for p in (permission_ids or [])],
+                "error": message,
+                "title": "Novo Papel",
+                "action": "/configuracoes/papeis/novo",
+                "form": {"slug": slug, "name": name, "description": description},
+            },
+            status_code=400,
+        )
+    return RedirectResponse(url="/configuracoes/papeis", status_code=303)
+
+
+@router.get("/configuracoes/papeis/{role_id}/editar", response_class=HTMLResponse)
+async def role_edit_form(
+    role_id: uuid.UUID,
+    request: Request,
+    session: SessionDep,
+    _user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("identidade.papel.editar"))
+    ],
+) -> HTMLResponse:
+    """Formulário de edição de papel e permissões."""
+    svc = RoleService(session)
+    role = await svc.get_role(role_id)
+    return render(
+        request,
+        "identity/role_form.html",
+        {
+            "role": role,
+            "permission_groups": await svc.list_permissions_grouped(),
+            "selected_permissions": await svc.get_permission_ids(role_id),
+            "error": None,
+            "title": f"Editar Papel — {role.name}",
+            "action": f"/configuracoes/papeis/{role_id}/editar",
+        },
+    )
+
+
+@router.post("/configuracoes/papeis/{role_id}/editar", response_class=HTMLResponse)
+async def role_update(
+    role_id: uuid.UUID,
+    request: Request,
+    session: SessionDep,
+    _user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("identidade.papel.editar"))
+    ],
+    name: Annotated[str, Form()],
+    description: Annotated[str, Form()] = "",
+    permission_ids: Annotated[list[str] | None, Form()] = None,
+) -> HTMLResponse:
+    """Atualiza papel e matriz de permissões."""
+    svc = RoleService(session)
+    try:
+        data = RoleUpdate(
+            name=name,
+            description=description or None,
+            permission_ids=[uuid.UUID(p) for p in (permission_ids or [])],
+        )
+        await svc.update_role(role_id, data)
+    except (AppError, ValueError) as exc:
+        await session.rollback()
+        role = await svc.get_role(role_id)
+        message = exc.message if isinstance(exc, AppError) else str(exc)
+        return render(
+            request,
+            "identity/role_form.html",
+            {
+                "role": role,
+                "permission_groups": await svc.list_permissions_grouped(),
+                "selected_permissions": [uuid.UUID(p) for p in (permission_ids or [])],
+                "error": message,
+                "title": f"Editar Papel — {role.name}",
+                "action": f"/configuracoes/papeis/{role_id}/editar",
+                "form": {"name": name, "description": description},
+            },
+            status_code=400,
+        )
+    return RedirectResponse(url="/configuracoes/papeis", status_code=303)
+
+
+@router.post("/configuracoes/papeis/{role_id}/excluir")
+async def role_delete(
+    role_id: uuid.UUID,
+    session: SessionDep,
+    _user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("identidade.papel.excluir"))
+    ],
+) -> RedirectResponse:
+    """Remove papel personalizado (papéis de sistema são protegidos)."""
+    try:
+        await RoleService(session).delete_role(role_id)
+    except (AppError, ValueError):
+        await session.rollback()
+    return RedirectResponse(url="/configuracoes/papeis", status_code=303)

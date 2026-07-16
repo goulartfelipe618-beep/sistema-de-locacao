@@ -57,6 +57,23 @@ class RoleRead(BaseModel):
     is_system: bool
 
 
+class RoleCreate(BaseModel):
+    """Dados para criação de papel personalizado."""
+
+    slug: str = Field(min_length=2, max_length=60, pattern=r"^[a-z0-9][a-z0-9-]*$")
+    name: str = Field(min_length=2, max_length=120)
+    description: str | None = Field(default=None, max_length=255)
+    permission_ids: list[uuid.UUID] = Field(default_factory=list)
+
+
+class RoleUpdate(BaseModel):
+    """Dados para atualização de papel e permissões."""
+
+    name: str | None = Field(default=None, min_length=2, max_length=120)
+    description: str | None = Field(default=None, max_length=255)
+    permission_ids: list[uuid.UUID] | None = None
+
+
 class UserBase(BaseModel):
     """Campos comuns de usuário."""
 

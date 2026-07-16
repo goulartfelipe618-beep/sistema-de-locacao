@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width: 960px;">
+  <h2 class="card-title">{{ title }}</h2>
+  {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+
+  <form method="post" action="{{ action }}">
+    <div class="form-grid">
+      {% if not role %}
+      <div class="form-group">
+        <label class="form-label" for="slug">Identificador (slug)</label>
+        <input class="form-input" id="slug" name="slug" pattern="[a-z0-9][a-z0-9-]*"
+               value="{{ form.slug if form else '' }}" placeholder="ex: atendente-nivel-2" required>
+        <span class="form-help">Letras minúsculas, números e hífens.</span>
+      </div>
+      {% else %}
+      <div class="form-group">
+        <label class="form-label">Identificador</label>
+        <input class="form-input" value="{{ role.slug }}" disabled>
+        {% if role.is_system %}<span class="form-help">Papel de sistema — não pode ser excluído.</span>{% endif %}
+      </div>
+      {% endif %}
+      <div class="form-group">
+        <label class="form-label" for="name">Nome do papel</label>
+        <input class="form-input" id="name" name="name"
+               value="{{ form.name if form and form.name is defined else (role.name if role else '') }}" required>
+      </div>
+      <div class="form-group" style="grid-column: 1 / -1">
+        <label class="form-label" for="description">Descrição</label>
+        <input class="form-input" id="description" name="description"
+               value="{{ form.description if form and form.description is defined else (role.description or '') }}">
+      </div>
+    </div>
+
+    <h3 style="margin-top:24px">Matriz de permissões</h3>
+    <p class="form-help">Marque as permissões concedidas a este papel. Alterações afetam todos os usuários vinculados.</p>
+
+    {% for module, perms in permission_groups %}
+    <details class="perm-group" style="margin-bottom:12px" open>
+      <summary style="cursor:pointer;font-weight:600;text-transform:capitalize">{{ module }}</summary>
+      <div class="multi-list" style="margin-top:8px;columns:2">
+        {% for perm in perms %}
+        <label class="form-check" title="{{ perm.description }}">
+          <input type="checkbox" name="permission_ids" value="{{ perm.id }}"
+                 {% if perm.id in selected_permissions %}checked{% endif %}>
+          <code>{{ perm.code }}</code>
+        </label>
+        {% endfor %}
+      </div>
+    </details>
+    {% endfor %}
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Salvar</button>
+      <a href="/configuracoes/papeis" class="btn">Cancelar</a>
+    </div>
+  </form>
+
+  {% if role and not role.is_system and (current_user.is_superuser or 'identidade.papel.excluir' in current_user.permissions) %}
+  <form method="post" action="/configuracoes/papeis/{{ role.id }}/excluir" style="margin-top:12px"
+        onsubmit="return confirm('Remover este papel? Usuários vinculados perderão estas permissões.');">
+    <button type="submit" class="btn btn-danger">Excluir papel</button>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

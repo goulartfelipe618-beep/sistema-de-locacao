@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <h2 class="card-title" style="margin:0">{{ title }}</h2>
+    <a class="btn" href="/configuracoes/usuarios/{{ user.id }}/editar">Voltar ao usuário</a>
+  </div>
+  <p class="form-help">Registros de login bem-sucedido e tentativas falhas (trilha de auditoria §15).</p>
+
+  {% if page_result.items %}
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Data/hora</th>
+        <th>Evento</th>
+        <th>Descrição</th>
+        <th>IP</th>
+        <th>Dispositivo</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for entry in page_result.items %}
+      <tr>
+        <td>{{ entry.created_at|datetime }}</td>
+        <td>
+          {% if entry.action == 'login' %}
+            <span class="badge badge-success">Login</span>
+          {% else %}
+            <span class="badge badge-danger">Falha</span>
+          {% endif %}
+        </td>
+        <td>{{ entry.description or '—' }}</td>
+        <td>{{ entry.ip_address or '—' }}</td>
+        <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis">{{ entry.user_agent or '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="pagination">
+    {% if page_result.has_prev %}
+      <a class="btn btn-sm" href="?page={{ page_result.page - 1 }}">Anterior</a>
+    {% endif %}
+    <span>Página {{ page_result.page }} de {{ page_result.pages }} ({{ page_result.total }} registros)</span>
+    {% if page_result.has_next %}
+      <a class="btn btn-sm" href="?page={{ page_result.page + 1 }}">Próxima</a>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="empty-state">Nenhum acesso registrado para este usuário.</div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -33,6 +33,23 @@ class PermissionRepository(BaseRepository[Permission]):
         stmt = select(Permission).where(Permission.code.in_(codes))
         return list((await self.session.execute(stmt)).scalars().all())
 
+    async def get_by_ids(self, permission_ids: list[uuid.UUID]) -> list[Permission]:
+        if not permission_ids:
+            return []
+        stmt = select(Permission).where(
+            Permission.id.in_(permission_ids),
+            Permission.deleted_at.is_(None),
+        )
+        return list((await self.session.execute(stmt)).scalars().all())
+
+    async def list_ordered(self) -> list[Permission]:
+        stmt = (
+            select(Permission)
+            .where(Permission.deleted_at.is_(None))
+            .order_by(Permission.module, Permission.resource, Permission.action)
+        )
+        return list((await self.session.execute(stmt)).scalars().all())
+
 
 class RoleRepository(BaseRepository[Role]):
     """Acesso a papéis (roles) do tenant."""

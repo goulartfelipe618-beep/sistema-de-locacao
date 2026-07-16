@@ -21,11 +21,15 @@ from app.modules.identity.schemas import (
     CurrentUserRead,
     LoginRequest,
     RefreshRequest,
+    RoleCreate,
+    RoleRead,
+    RoleUpdate,
     TokenPair,
     UserCreate,
     UserRead,
+    UserUpdate,
 )
-from app.modules.identity.service import AuthenticatedUser, AuthService, UserService
+from app.modules.identity.service import AuthenticatedUser, AuthService, RoleService, UserService
 from app.modules.tenants.repository import TenantRepository
 
 router = APIRouter()
@@ -35,6 +39,18 @@ ViewUsersDep = Annotated[
 ]
 CreateUsersDep = Annotated[
     AuthenticatedUser, Depends(require_api_permission("identidade.usuario.criar"))
+]
+EditUsersDep = Annotated[
+    AuthenticatedUser, Depends(require_api_permission("identidade.usuario.editar"))
+]
+ViewRolesDep = Annotated[
+    AuthenticatedUser, Depends(require_api_permission("identidade.papel.visualizar"))
+]
+EditRolesDep = Annotated[
+    AuthenticatedUser, Depends(require_api_permission("identidade.papel.editar"))
+]
+CreateRolesDep = Annotated[
+    AuthenticatedUser, Depends(require_api_permission("identidade.papel.criar"))
 ]
 
 
@@ -172,3 +188,56 @@ async def create_user(
     user = await UserService(session).create_user(payload, tenant_id=current_user.tenant_id)
     await session.flush()
     return UserRead.model_validate(user)
+
+
+@router.patch("/users/{user_id}", response_model=UserRead, tags=["Usuários"])
+async def update_user(
+    user_id: uuid.UUID,
+    payload: UserUpdate,
+    session: ApiSessionDep,
+    _user: EditUsersDep,
+) -> UserRead:
+    """Atualiza um usuário existente."""
+    user = await UserService(session).update_user(user_id, payload)
+    return UserRead.model_validate(user)
+
+
+# -------------------------------------------------------------------- Papéis
+@router.get("/roles", response_model=list[RoleRead], tags=["Papéis"])
+async def list_roles(
+    session: ApiSessionDep,
+    _user: ViewRolesDep,
+) -> list[RoleRead]:
+    """Lista papéis do tenant."""
+    from app.modules.identity.repository import RoleRepository
+
+    roles = await RoleRepository(session).list_ordered()
+    return [RoleRead.model_validate(r) for r in roles]
+
+
+@router.post(
+    "/roles",
+    response_model=RoleRead,
+    status_code=status.HTTP_201_CREATED,
+    tags=["Papéis"],
+)
+async def create_role(
+    payload: RoleCreate,
+    session: ApiSessionDep,
+    current_user: CreateRolesDep,
+) -> RoleRead:
+    """Cria papel personalizado."""
+    role = await RoleService(session).create_role(payload, tenant_id=current_user.tenant_id)
+    return RoleRead.model_validate(role)
+
+
+@router.patch("/roles/{role_id}", response_model=RoleRead, tags=["Papéis"])
+async def update_role(
+    role_id: uuid.UUID,
+    payload: RoleUpdate,
+    session: ApiSessionDep,
+    _user: EditRolesDep,
+) -> RoleRead:
+    """Atualiza papel e permissões."""
+    role = await RoleService(session).update_role(role_id, payload)
+    return RoleRead.model_validate(role)

@@ -27,6 +27,7 @@ class AuditRepository:
         *,
         tenant_id: uuid.UUID | None,
         action: str | None,
+        actions: list[str] | None = None,
         entity: str | None,
         user_id: uuid.UUID | None,
     ) -> Select[tuple[AuditLog]]:
@@ -35,6 +36,8 @@ class AuditRepository:
             stmt = stmt.where(AuditLog.tenant_id == tenant_id)
         if action:
             stmt = stmt.where(AuditLog.action == action)
+        if actions:
+            stmt = stmt.where(AuditLog.action.in_(actions))
         if entity:
             stmt = stmt.where(AuditLog.entity == entity)
         if user_id is not None:
@@ -47,11 +50,18 @@ class AuditRepository:
         *,
         tenant_id: uuid.UUID | None = None,
         action: str | None = None,
+        actions: list[str] | None = None,
         entity: str | None = None,
         user_id: uuid.UUID | None = None,
     ) -> Page[AuditLog]:
         """Lista registros de auditoria paginados e filtrados."""
-        stmt = self._query(tenant_id=tenant_id, action=action, entity=entity, user_id=user_id)
+        stmt = self._query(
+            tenant_id=tenant_id,
+            action=action,
+            actions=actions,
+            entity=entity,
+            user_id=user_id,
+        )
         from sqlalchemy import func  # local para evitar import não usado em outros pontos
 
         count_stmt = select(func.count()).select_from(stmt.order_by(None).subquery())
