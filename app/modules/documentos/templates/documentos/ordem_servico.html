@@ -1,0 +1,20 @@
+{% extends "documentos/base_pdf.html" %}
+{% block doc_body %}
+<h2>Ordem de Serviço</h2>
+<p><strong>OS:</strong> {{ os.numero }}</p>
+<p><strong>Veículo:</strong> {{ veiculo_label }}</p>
+<p><strong>Filial:</strong> {{ filial_nome }}</p>
+<p><strong>Tipo:</strong> {{ os.tipo.value }} / {{ os.origem.value }}</p>
+<p><strong>Status:</strong> {{ os.status.value }}</p>
+<p><strong>Observações:</strong> {{ os.observacoes or '—' }}</p>
+{% if itens %}
+<table class="doc-table">
+  <thead><tr><th>Tipo</th><th>Descrição</th><th>Qtd</th><th>Total</th></tr></thead>
+  <tbody>
+  {% for i in itens %}
+  <tr><td>{{ i.tipo_item.value }}</td><td>{{ i.descricao }}</td><td>{{ i.quantidade }}</td><td>{{ i.valor_total|currency }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

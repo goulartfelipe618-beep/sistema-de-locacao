@@ -1,0 +1,14 @@
+{% extends "documentos/base_pdf.html" %}
+{% block doc_body %}
+<h2>{{ doc_titulo }}</h2>
+<p><strong>Contrato:</strong> {{ contrato.numero }}</p>
+<p><strong>Cliente:</strong> {{ cliente_nome }}</p>
+<p><strong>Veículo:</strong> {{ veiculo_label }}</p>
+{% if vistoria %}
+<p><strong>KM:</strong> {{ vistoria.km }}</p>
+<p><strong>Combustível:</strong> {{ vistoria.combustivel_nivel }}/8</p>
+<p><strong>Observações:</strong> {{ vistoria.observacoes or '—' }}</p>
+{% else %}
+<p><em>Vistoria ainda não registrada no sistema.</em></p>
+{% endif %}
+{% endblock %}

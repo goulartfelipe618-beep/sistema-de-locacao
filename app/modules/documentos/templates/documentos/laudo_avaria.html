@@ -1,0 +1,10 @@
+{% extends "documentos/base_pdf.html" %}
+{% block doc_body %}
+<h2>Laudo de Avaria</h2>
+<p><strong>Veículo:</strong> {{ veiculo_label }}</p>
+{% if contrato_numero %}<p><strong>Contrato:</strong> {{ contrato_numero }}</p>{% endif %}
+<p><strong>Localização:</strong> {{ avaria.localizacao }}</p>
+<p><strong>Severidade:</strong> {{ avaria.severidade.value }}</p>
+<p><strong>Valor reparo:</strong> {{ avaria.valor_reparo|currency }}</p>
+<p><strong>Laudo:</strong> {{ avaria.laudo or avaria.observacoes or '—' }}</p>
+{% endblock %}

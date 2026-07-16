@@ -1,0 +1,15 @@
+{% extends "documentos/base_pdf.html" %}
+{% block doc_body %}
+<h2>Contrato de Locação de Veículo</h2>
+<p><strong>Contrato:</strong> {{ contrato.numero }} (v{{ contrato.versao }})</p>
+<p><strong>Cliente:</strong> {{ cliente_nome }}</p>
+<p><strong>Veículo:</strong> {{ veiculo_label }}</p>
+<p><strong>Retirada prevista:</strong> {{ contrato.retirada_prevista_em|datetime }} — {{ filial_retirada }}</p>
+<p><strong>Devolução prevista:</strong> {{ contrato.devolucao_prevista_em|datetime }} — {{ filial_devolucao }}</p>
+<p><strong>Valor total:</strong> {{ contrato.valor_total|currency }}</p>
+<p><strong>Caução:</strong> {{ contrato.valor_caucao|currency }}</p>
+<p class="legal">O locatário declara ciência das condições gerais de locação e responsabilidade pelo veículo durante o período contratado.</p>
+{% if assinatura_b64 %}
+<div class="assinatura"><img src="data:image/png;base64,{{ assinatura_b64 }}" alt="Assinatura" style="max-height:80px"></div>
+{% endif %}
+{% endblock %}

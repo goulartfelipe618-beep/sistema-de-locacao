@@ -16,6 +16,7 @@ from app.modules.fiscal.api import router as fiscal_router
 from app.modules.automacoes.api import router as automacoes_router
 from app.modules.integracoes.api import router as integracoes_router, webhooks_router
 from app.modules.integracoes.public_api import public_router
+from app.modules.documentos.api import router as documentos_router
 from app.modules.relatorios.api import router as relatorios_router
 from app.modules.frota.api import router as frota_router
 from app.modules.identity.api import router as identity_router
@@ -46,3 +47,4 @@ api_router.include_router(integracoes_router)
 api_router.include_router(webhooks_router)
 api_router.include_router(public_router)
 api_router.include_router(relatorios_router)
+api_router.include_router(documentos_router)

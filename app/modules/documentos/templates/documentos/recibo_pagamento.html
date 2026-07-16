@@ -1,0 +1,10 @@
+{% extends "documentos/base_pdf.html" %}
+{% block doc_body %}
+<h2>Recibo de Pagamento</h2>
+<p><strong>Título:</strong> {{ titulo.numero }}</p>
+<p><strong>Cliente:</strong> {{ cliente_nome }}</p>
+<p><strong>Descrição:</strong> {{ titulo.descricao }}</p>
+<p><strong>Valor pago:</strong> {{ titulo.valor_pago|currency }}</p>
+<p><strong>Saldo:</strong> {{ titulo.valor_saldo|currency }}</p>
+<p><strong>Filial:</strong> {{ filial_nome }}</p>
+{% endblock %}

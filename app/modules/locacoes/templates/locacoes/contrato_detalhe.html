@@ -43,6 +43,15 @@
   {% endif %}
 
   <div class="form-actions" style="margin-top:16px;flex-wrap:wrap;gap:8px">
+    {% if current_user.is_superuser or 'locacoes.contrato.visualizar' in current_user.permissions %}
+    <form method="post" action="/documentos/emitir/contrato_locacao/{{ contrato.id }}" style="display:inline"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn" type="submit">PDF Contrato</button></form>
+    {% endif %}
+    {% if current_user.is_superuser or 'locacoes.checkout.visualizar' in current_user.permissions %}
+    <form method="post" action="/documentos/emitir/vistoria_checkout/{{ contrato.id }}" style="display:inline"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn" type="submit">PDF Vistoria Saída</button></form>
+    {% endif %}
+    {% if current_user.is_superuser or 'locacoes.checkin.visualizar' in current_user.permissions %}
+    <form method="post" action="/documentos/emitir/vistoria_checkin/{{ contrato.id }}" style="display:inline"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn" type="submit">PDF Devolução</button></form>
+    {% endif %}
     {% if contrato.status.value in ['rascunho','aguardando_checkout'] and (current_user.is_superuser or 'locacoes.checkout.visualizar' in current_user.permissions) %}
     <a class="btn btn-primary" href="/locacoes/checkout/{{ contrato.id }}">Check-out</a>
     {% endif %}

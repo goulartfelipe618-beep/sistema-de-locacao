@@ -40,6 +40,11 @@
 {% if can_edit %}
 <div class="card">
   <div class="toolbar" style="gap:8px">
+    {% if current_user.is_superuser or 'comercial.proposta.visualizar' in current_user.permissions %}
+    <form method="post" action="/documentos/emitir/proposta_comercial/{{ proposta.id }}" style="margin:0">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn" type="submit">PDF Proposta</button>
+    </form>
+    {% endif %}
     {% if proposta.status.value == 'rascunho' %}
     <form method="post" action="/comercial/propostas/{{ proposta.id }}/enviar" style="margin:0">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-primary" type="submit">Enviar</button>

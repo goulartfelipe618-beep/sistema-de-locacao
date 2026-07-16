@@ -1,0 +1,11 @@
+{% extends "documentos/base_pdf.html" %}
+{% block doc_body %}
+<h2>Voucher de Reserva</h2>
+<p>Apresente este voucher na retirada do veículo.</p>
+<p><strong>Reserva:</strong> {{ reserva.numero }}</p>
+<p><strong>Cliente:</strong> {{ cliente_nome }}</p>
+<p><strong>Veículo:</strong> {{ veiculo_label }}</p>
+<p><strong>Local retirada:</strong> {{ filial_retirada }}</p>
+<p><strong>Data/Hora:</strong> {{ reserva.retirada_em|datetime }}</p>
+<p><strong>Total:</strong> {{ reserva.valor_total|currency }}</p>
+{% endblock %}

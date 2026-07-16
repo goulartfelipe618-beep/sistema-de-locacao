@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Documentos PDF{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <span class="form-help">{{ page_result.total }} documento(s) gerado(s)</span>
+  </div>
+  {% if page_result.items %}
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Data</th>
+        <th>Título</th>
+        <th>Template</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for doc in page_result.items %}
+      <tr>
+        <td>{{ doc.created_at|datetime }}</td>
+        <td>{{ doc.titulo }}</td>
+        <td><code>{{ doc.template_id }}</code></td>
+        <td>
+          {% if doc.status.value == 'concluido' %}
+          <span class="badge badge-success">Concluído</span>
+          {% elif doc.status.value == 'erro' %}
+          <span class="badge badge-danger">Erro</span>
+          {% else %}
+          <span class="badge badge-warning">{{ doc.status.value }}</span>
+          {% endif %}
+        </td>
+        <td class="num">
+          {% if doc.status.value == 'concluido' %}
+          <a class="btn btn-sm" href="/documentos/{{ doc.id }}/download">Download</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="pagination">
+    {% if page_result.has_prev %}
+    <a class="btn btn-sm" href="?page={{ page_result.page - 1 }}">Anterior</a>
+    {% endif %}
+    <span>Página {{ page_result.page }} de {{ page_result.pages }}</span>
+    {% if page_result.has_next %}
+    <a class="btn btn-sm" href="?page={{ page_result.page + 1 }}">Próxima</a>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="empty-state">Nenhum documento PDF gerado ainda.</div>
+  {% endif %}
+</div>
+{% endblock %}

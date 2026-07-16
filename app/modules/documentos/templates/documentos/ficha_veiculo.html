@@ -1,0 +1,14 @@
+{% extends "documentos/base_pdf.html" %}
+{% block doc_body %}
+<h2>Ficha Técnica do Veículo</h2>
+<p><strong>Placa:</strong> {{ veiculo.placa }}</p>
+<p><strong>Marca/Modelo:</strong> {{ marca_nome }} / {{ modelo_nome }}</p>
+<p><strong>Categoria:</strong> {{ categoria_nome }}</p>
+<p><strong>Ano:</strong> {{ veiculo.ano_fabricacao }}/{{ veiculo.ano_modelo }}</p>
+<p><strong>Cor:</strong> {{ veiculo.cor or '—' }}</p>
+<p><strong>Chassi:</strong> {{ veiculo.chassi or '—' }}</p>
+<p><strong>RENAVAM:</strong> {{ veiculo.renavam or '—' }}</p>
+<p><strong>Filial:</strong> {{ filial_nome }}</p>
+<p><strong>Status:</strong> {{ veiculo.status.value }}</p>
+<p><strong>KM atual:</strong> {{ veiculo.km_atual or '—' }}</p>
+{% endblock %}

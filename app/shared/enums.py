@@ -934,3 +934,23 @@ class ParametroTipo(str, enum.Enum):
     JSON = "json"
 
 
+# =============================================================================
+# Motor de PDF / Documentos (§16)
+# =============================================================================
+class DocFamilia(str, enum.Enum):
+    """Família de documento gerado."""
+
+    TRANSACIONAL = "transacional"
+    ANALITICO = "analitico"
+    FISCAL = "fiscal"
+
+
+class DocGeradoStatus(str, enum.Enum):
+    """Status de geração de um PDF."""
+
+    PENDENTE = "pendente"
+    PROCESSANDO = "processando"
+    CONCLUIDO = "concluido"
+    ERRO = "erro"
+
+

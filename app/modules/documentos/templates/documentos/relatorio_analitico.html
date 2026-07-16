@@ -1,0 +1,18 @@
+{% extends "documentos/base_pdf.html" %}
+{% block doc_body %}
+<table class="doc-table">
+  <thead><tr>{% for c in columns %}<th>{{ c }}</th>{% endfor %}</tr></thead>
+  <tbody>
+  {% for row in rows %}
+  <tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% if summary %}
+<div class="summary">
+  {% for k, v in summary.items() %}
+  <p><strong>{{ k }}:</strong> {{ v }}</p>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

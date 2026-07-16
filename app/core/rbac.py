@@ -299,6 +299,8 @@ SYSTEM_PERMISSIONS: tuple[PermissionDef, ...] = (
     _perm("relatorios", "agendamento", "visualizar", "Visualizar agendamentos de relatórios"),
     _perm("relatorios", "agendamento", "criar", "Criar agendamentos de relatórios"),
     _perm("relatorios", "agendamento", "editar", "Editar agendamentos de relatórios"),
+    # ---- Motor de PDF (§16) ----
+    _perm("documentos", "historico", "visualizar", "Visualizar histórico de documentos PDF"),
     # ---- Integrações (§12) ----
     _perm("integracoes", "pagamentos", "visualizar", "Visualizar integrações de pagamento"),
     _perm("integracoes", "pagamentos", "criar", "Configurar integrações de pagamento"),
@@ -534,6 +536,7 @@ GERENTE_FILIAL = RoleTemplate(
         "relatorios.gerencial.visualizar",
         "relatorios.gerencial.exportar",
         "relatorios.historico.visualizar",
+        "documentos.historico.visualizar",
         "relatorios.agendamento.visualizar",
         "relatorios.agendamento.criar",
         "relatorios.agendamento.editar",
@@ -653,6 +656,7 @@ OPERADOR = RoleTemplate(
         "relatorios.frota.visualizar",
         "relatorios.locacao.visualizar",
         "relatorios.historico.visualizar",
+        "documentos.historico.visualizar",
         "integracoes.transito.visualizar",
         "integracoes.credito.consultar",
         "automacoes.historico.visualizar",
@@ -729,6 +733,7 @@ AUDITOR = RoleTemplate(
         "relatorios.fiscal.visualizar",
         "relatorios.gerencial.visualizar",
         "relatorios.historico.visualizar",
+        "documentos.historico.visualizar",
         "relatorios.agendamento.visualizar",
         "integracoes.pagamentos.visualizar",
         "integracoes.transito.visualizar",

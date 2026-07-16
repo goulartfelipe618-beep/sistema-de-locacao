@@ -39,6 +39,10 @@
   {% endif %}
 
   <div class="form-actions" style="margin-top:16px;flex-wrap:wrap;gap:8px">
+    {% if current_user.is_superuser or 'reservas.reserva.visualizar' in current_user.permissions %}
+    <form method="post" action="/documentos/emitir/reserva_confirmacao/{{ reserva.id }}" style="display:inline"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn" type="submit">PDF Confirmação</button></form>
+    <form method="post" action="/documentos/emitir/reserva_voucher/{{ reserva.id }}" style="display:inline"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn" type="submit">PDF Voucher</button></form>
+    {% endif %}
     {% if reserva.status.value == 'pendente' %}
       {% if reserva.requer_aprovacao and (current_user.is_superuser or 'reservas.reserva.aprovar' in current_user.permissions) %}
       <form method="post" action="/reservas/{{ reserva.id }}/aprovar" style="display:inline"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-warning" type="submit">Aprovar cliente bloqueado</button></form>

@@ -470,6 +470,12 @@ NAVIGATION: tuple[MenuSection, ...] = (
                 implemented=True,
             ),
             MenuItem(
+                "Documentos PDF",
+                url="/documentos/historico",
+                permission="documentos.historico.visualizar",
+                implemented=True,
+            ),
+            MenuItem(
                 "Histórico",
                 url="/relatorios/historico",
                 permission="relatorios.historico.visualizar",

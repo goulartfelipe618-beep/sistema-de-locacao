@@ -7,7 +7,7 @@ import hashlib
 import io
 from typing import Any
 
-from app.core.templating import templates
+from app.modules.documentos.pdf_engine import sha256_bytes
 
 
 def render_csv(columns: list[str], rows: list[list[Any]]) -> bytes:
@@ -34,20 +34,23 @@ def render_xlsx(columns: list[str], rows: list[list[Any]]) -> bytes:
 
 
 def render_pdf_html(titulo: str, columns: list[str], rows: list[list[Any]], summary: dict) -> bytes:
-    html = templates.env.get_template("relatorios/report_print.html").render(
-        titulo=titulo,
-        columns=columns,
-        rows=rows,
-        summary=summary,
-    )
-    try:
-        from xhtml2pdf import pisa
+    from app.modules.documentos.pdf_engine import render_pdf
 
-        out = io.BytesIO()
-        pisa.CreatePDF(html, dest=out, encoding="utf-8")
-        return out.getvalue()
-    except Exception:
-        return html.encode("utf-8")
+    return render_pdf(
+        "documentos/relatorio_analitico.html",
+        {
+            "doc_titulo": titulo,
+            "empresa_nome": "Relatório",
+            "empresa_razao": "",
+            "empresa_cnpj": "—",
+            "empresa_email": "—",
+            "empresa_phone": "—",
+            "columns": columns,
+            "rows": rows,
+            "summary": summary,
+            "watermark": None,
+        },
+    )
 
 
 def sha256_bytes(data: bytes) -> str:

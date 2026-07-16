@@ -1,0 +1,10 @@
+{% extends "documentos/base_pdf.html" %}
+{% block doc_body %}
+<h2>Cotação / Orçamento</h2>
+<p><strong>Número:</strong> {{ cotacao.numero }}</p>
+<p><strong>Cliente:</strong> {{ cliente_nome }}</p>
+<p><strong>Veículo:</strong> {{ veiculo_label }}</p>
+<p><strong>Período:</strong> {{ cotacao.retirada_em|datetime }} até {{ cotacao.devolucao_em|datetime }}</p>
+<p><strong>Valor estimado:</strong> {{ cotacao.valor_total|currency }}</p>
+<p><strong>Válida até:</strong> {{ cotacao.validade_em|datetime }}</p>
+{% endblock %}

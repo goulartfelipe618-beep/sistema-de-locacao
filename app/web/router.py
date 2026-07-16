@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
+from app.modules.documentos.web import router as documentos_router
 from app.modules.audit.web import router as audit_router
 from app.modules.cadastros.web import router as cadastros_router
 from app.modules.comercial.web import router as comercial_router
@@ -44,4 +45,5 @@ web_router.include_router(fiscal_router)
 web_router.include_router(automacoes_router)
 web_router.include_router(integracoes_router)
 web_router.include_router(relatorios_router)
+web_router.include_router(documentos_router)
 web_router.include_router(audit_router)
