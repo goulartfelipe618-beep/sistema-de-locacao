@@ -31,6 +31,9 @@
       <td><span class="badge {% if c.status.value == 'aberta' %}badge-warning{% elif c.status.value == 'convertida' %}badge-success{% else %}badge-danger{% endif %}">{{ c.status.value }}</span></td>
       <td class="num">{{ c.valor_total|currency }}</td>
       <td class="num">
+        {% if current_user.is_superuser or 'reservas.cotacao.visualizar' in current_user.permissions %}
+        <form method="post" action="/documentos/emitir/cotacao/{{ c.id }}" style="display:inline"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-sm" type="submit">PDF</button></form>
+        {% endif %}
         {% if c.status.value == 'aberta' and (current_user.is_superuser or 'reservas.cotacao.editar' in current_user.permissions) %}
         <details>
           <summary class="btn btn-sm">Converter</summary>

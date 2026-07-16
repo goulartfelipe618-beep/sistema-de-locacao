@@ -11,9 +11,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db_session
 from app.core.deps import require_web_permission
+from app.core.pagination import PageParams
 from app.core.templating import render
 from app.modules.dashboard.service import DashboardService
 from app.modules.identity.service import AuthenticatedUser
+from app.modules.tenants.service import FilialService
 
 router = APIRouter()
 
@@ -38,8 +40,14 @@ async def dashboard_home(
         is_superuser=current_user.is_superuser,
         filial_id=parsed_filial,
     )
+    filiais = await FilialService(session).list_filiais(PageParams(page=1, size=100))
     return render(
         request,
         "dashboard/home.html",
-        {"snapshot": snapshot, "title": "Visão Geral", "filial_id": parsed_filial},
+        {
+            "snapshot": snapshot,
+            "title": "Visão Geral",
+            "filial_id": parsed_filial,
+            "filiais": filiais.items,
+        },
     )

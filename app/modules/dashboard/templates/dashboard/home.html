@@ -1,6 +1,19 @@
 {% extends "base.html" %}
 {% block title %}Visão Geral{% endblock %}
 {% block content %}
+<div class="toolbar" style="margin-bottom:1rem;flex-wrap:wrap">
+  <h2 class="card-title" style="margin:0">Visão Geral</h2>
+  <form method="get" action="/" style="display:flex;gap:8px;margin:0;align-items:center">
+    <label class="form-label" for="filial_id" style="margin:0">Filial</label>
+    <select class="form-input" id="filial_id" name="filial_id" onchange="this.form.submit()">
+      <option value="">Todas as filiais</option>
+      {% for f in filiais %}
+      <option value="{{ f.id }}" {% if filial_id and filial_id == f.id %}selected{% endif %}>{{ f.name }}</option>
+      {% endfor %}
+    </select>
+  </form>
+</div>
+
 <div class="kpi-grid">
   <div class="kpi">
     <div class="kpi-label">Usuários</div>
@@ -45,6 +58,11 @@
     <div class="kpi-sub">Hoje: R$ {{ "%.2f"|format(snapshot.financeiro.faturamento_dia) }}</div>
   </div>
   <div class="kpi">
+    <div class="kpi-label">Saldo de caixa</div>
+    <div class="kpi-value">R$ {{ "%.2f"|format(snapshot.financeiro.saldo_caixa) }}</div>
+    <div class="kpi-sub">Sessões abertas{% if filial_id %} (filial selecionada){% endif %}</div>
+  </div>
+  <div class="kpi">
     <div class="kpi-label">A receber</div>
     <div class="kpi-value">R$ {{ "%.2f"|format(snapshot.financeiro.receber_aberto) }}</div>
     <div class="kpi-sub">Vencido: R$ {{ "%.2f"|format(snapshot.financeiro.receber_vencido) }}</div>
@@ -61,6 +79,16 @@
     <div class="kpi-value">{{ snapshot.manutencao.os_abertas }}</div>
     <div class="kpi-sub">{{ snapshot.manutencao.aguardando_aprovacao }} aguardando aprovação</div>
   </div>
+  <div class="kpi">
+    <div class="kpi-label">Preventivas</div>
+    <div class="kpi-value">{{ snapshot.manutencao.preventiva_pendente }}</div>
+    <div class="kpi-sub">vencidas ou próximas (≥80%)</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Pneus</div>
+    <div class="kpi-value">{{ snapshot.manutencao.pneus_alerta }}</div>
+    <div class="kpi-sub">sulco &lt; 2 mm</div>
+  </div>
   {% endif %}
   {% if snapshot.comercial %}
   <div class="kpi">
@@ -68,8 +96,58 @@
     <div class="kpi-value">{{ snapshot.comercial.oportunidades_abertas }}</div>
     <div class="kpi-sub">{{ snapshot.comercial.propostas_abertas }} propostas · {{ snapshot.comercial.propostas_aceitas_mes }} aceitas no mês</div>
   </div>
+  <div class="kpi">
+    <div class="kpi-label">Conversão (mês)</div>
+    <div class="kpi-value">{{ snapshot.comercial.taxa_conversao_pct }}%</div>
+    <div class="kpi-sub">propostas aceitas vs. recusadas</div>
+  </div>
   {% endif %}
 </div>
+
+{% if snapshot.ocupacao_30 or snapshot.ocupacao_90 %}
+<div class="dashboard-charts" style="margin-top:1rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem">
+  {% if snapshot.ocupacao_30 %}
+  <div class="card">
+    <h2 class="card-title">Ocupação — 30 dias</h2>
+    <div class="chart-bars">
+      {% for p in snapshot.ocupacao_30 %}
+      <div class="chart-bar" title="{{ p.label }}: {{ p.pct }}%">
+        <div class="chart-bar-fill" style="height:{{ p.pct }}%"></div>
+        {% if loop.index0 % 5 == 0 %}<span class="chart-bar-label">{{ p.label }}</span>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+  {% if snapshot.ocupacao_90 %}
+  <div class="card">
+    <h2 class="card-title">Ocupação — 90 dias (semanal)</h2>
+    <div class="chart-bars">
+      {% for p in snapshot.ocupacao_90 %}
+      <div class="chart-bar" title="{{ p.label }}: {{ p.pct }}%">
+        <div class="chart-bar-fill" style="height:{{ p.pct }}%"></div>
+        <span class="chart-bar-label">{{ p.label }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if snapshot.comercial and snapshot.comercial.funil_por_estagio %}
+<div class="card" style="margin-top:1rem">
+  <h2 class="card-title">Funil comercial</h2>
+  <div class="funil-grid">
+    {% for estagio, qtd in snapshot.comercial.funil_por_estagio.items() %}
+    <div class="funil-item">
+      <div class="funil-label">{{ estagio }}</div>
+      <div class="funil-value">{{ qtd }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
 
 {% if snapshot.alertas %}
 <div class="card" style="margin-top: 1rem;">
@@ -105,7 +183,7 @@
     <a class="btn" href="/cadastros/clientes/novo">Novo Cliente</a>
     {% endif %}
     {% if current_user.is_superuser or 'manutencao.os.criar' in current_user.permissions %}
-    <a class="btn" href="/manutencao/os/nova">Nova OS</a>
+    <a class="btn" href="/manutencao/os/novo">Nova OS</a>
     {% endif %}
   </div>
 </div>

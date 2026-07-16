@@ -41,6 +41,9 @@
         <form method="post" action="/locacoes/avarias/{{ a.id }}/gerar-os" style="display:inline"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-sm" type="submit">OS</button></form>
         <form method="post" action="/locacoes/avarias/{{ a.id }}/encerrar" style="display:inline"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-sm" type="submit">Encerrar</button></form>
         {% endif %}
+        {% if current_user.is_superuser or 'locacoes.avaria.visualizar' in current_user.permissions %}
+        <form method="post" action="/documentos/emitir/laudo_avaria/{{ a.id }}" style="display:inline"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-sm" type="submit">PDF</button></form>
+        {% endif %}
       </td>
     </tr>
     {% endfor %}

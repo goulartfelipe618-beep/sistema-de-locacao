@@ -62,8 +62,16 @@
       <div class="form-group"><label class="form-label" for="nivel_combustivel_atual">Nível combustível (0-8)</label><input class="form-input" type="number" min="0" max="8" id="nivel_combustivel_atual" name="nivel_combustivel_atual" value="{{ veiculo.nivel_combustivel_atual if veiculo else 8 }}"></div>
     </div>
     <div class="form-group" style="margin-top:12px"><label class="form-label" for="observacoes">Observações</label><textarea class="form-input" id="observacoes" name="observacoes" rows="3">{{ veiculo.observacoes if veiculo else '' }}</textarea></div>
-    <div class="form-actions" style="margin-top:16px"><button class="btn btn-primary" type="submit">Salvar</button><a class="btn" href="/frota/veiculos">Cancelar</a></div>
+    <div class="form-actions" style="margin-top:16px">
+      <button class="btn btn-primary" type="submit">Salvar</button>
+      <a class="btn" href="/frota/veiculos">Cancelar</a>
+    </div>
   </form>
+  {% if veiculo and (current_user.is_superuser or 'frota.veiculo.visualizar' in current_user.permissions) %}
+  <form method="post" action="/documentos/emitir/ficha_veiculo/{{ veiculo.id }}" style="display:inline;margin-top:8px">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn" type="submit">PDF Ficha</button>
+  </form>
+  {% endif %}
 
   {% if veiculo %}
   <div style="margin-top:24px;border-top:1px solid var(--border);padding-top:16px">

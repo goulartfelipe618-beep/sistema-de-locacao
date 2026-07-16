@@ -65,8 +65,16 @@
       <div class="form-group"><label class="form-label" for="garantia_km">Garantia (km)</label><input class="form-input" type="number" id="garantia_km" name="garantia_km" value="{{ os.garantia_km if os and os.garantia_km else '' }}"></div>
     </div>
     <div class="form-group" style="margin-top:12px"><label class="form-label" for="observacoes">Observações</label><textarea class="form-input" id="observacoes" name="observacoes" rows="3">{{ os.observacoes if os else '' }}</textarea></div>
-    <div class="form-actions" style="margin-top:16px"><button class="btn btn-primary" type="submit">Salvar</button><a class="btn" href="{% if corretiva_mode %}/manutencao/corretiva{% else %}/manutencao/os{% endif %}">Cancelar</a></div>
+    <div class="form-actions" style="margin-top:16px">
+      <button class="btn btn-primary" type="submit">Salvar</button>
+      <a class="btn" href="{% if corretiva_mode %}/manutencao/corretiva{% else %}/manutencao/os{% endif %}">Cancelar</a>
+    </div>
   </form>
+  {% if os and (current_user.is_superuser or 'manutencao.os.visualizar' in current_user.permissions) %}
+  <form method="post" action="/documentos/emitir/ordem_servico/{{ os.id }}" style="display:inline;margin-top:8px">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn" type="submit">PDF OS</button>
+  </form>
+  {% endif %}
 
   {% if os and os.status.value not in ['concluida','cancelada'] %}
   <div style="margin-top:24px;border-top:1px solid var(--border);padding-top:16px">

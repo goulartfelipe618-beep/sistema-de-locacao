@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 
-from sqlalchemy import func, select
+from sqlalchemy import and_, case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.rbac import has_permission
@@ -23,11 +23,14 @@ from app.modules.fiscal.models import FisNfe, FisNfse
 from app.modules.frota.models import FrotaDocumento, FrotaVeiculo
 from app.modules.identity.models import User
 from app.modules.locacoes.models import LocContrato, LocMulta
-from app.modules.manutencao.models import ManOrdemServico
+from app.modules.manutencao.models import ManOrdemServico, ManPneu, ManPlanoPreventivo, ManVeiculoPlano
+from app.modules.manutencao.service import _calc_preventiva_urgencia
 from app.modules.reservas.models import ResReserva
 from app.modules.tenants.models import Filial
 from app.shared.enums import (
     CaixaLancamentoTipo,
+    CaixaSessaoStatus,
+    CadastroStatus,
     ContratoStatus,
     CrmEstagio,
     CrmPropostaStatus,
@@ -35,10 +38,17 @@ from app.shared.enums import (
     NfeStatus,
     NfseStatus,
     OrdemServicoStatus,
+    PneuStatus,
     ReservaStatus,
     TituloStatus,
     VeiculoStatus,
 )
+
+
+@dataclass(slots=True)
+class OcupacaoPonto:
+    label: str
+    pct: float
 
 
 @dataclass(slots=True)
@@ -73,12 +83,15 @@ class FinanceiroKpis:
     receber_vencido: Decimal
     pagar_aberto: Decimal
     pagar_vencido: Decimal
+    saldo_caixa: Decimal
 
 
 @dataclass(slots=True)
 class ManutencaoKpis:
     os_abertas: int
     aguardando_aprovacao: int
+    preventiva_pendente: int
+    pneus_alerta: int
 
 
 @dataclass(slots=True)
@@ -86,6 +99,8 @@ class ComercialKpis:
     oportunidades_abertas: int
     propostas_abertas: int
     propostas_aceitas_mes: int
+    taxa_conversao_pct: float
+    funil_por_estagio: dict[str, int]
 
 
 @dataclass(slots=True)
@@ -109,6 +124,8 @@ class DashboardSnapshot:
     financeiro: FinanceiroKpis | None = None
     manutencao: ManutencaoKpis | None = None
     comercial: ComercialKpis | None = None
+    ocupacao_30: list[OcupacaoPonto] = field(default_factory=list)
+    ocupacao_90: list[OcupacaoPonto] = field(default_factory=list)
     alertas: list[AlertaItem] = field(default_factory=list)
 
 
@@ -158,6 +175,9 @@ class DashboardService:
         if self._can(permissions, "frota.veiculo.visualizar", is_superuser):
             snap.frota = await self._frota_kpis(filial_id)
             snap.alertas.extend(await self._alertas_frota(filial_id))
+            if self._can(permissions, "locacoes.contrato.visualizar", is_superuser):
+                snap.ocupacao_30 = await self._ocupacao_serie(filial_id, days=30, step=1)
+                snap.ocupacao_90 = await self._ocupacao_serie(filial_id, days=90, step=7)
 
         if self._can(permissions, "reservas.reserva.visualizar", is_superuser):
             snap.reservas = await self._reservas_kpis(filial_id)
@@ -165,6 +185,7 @@ class DashboardService:
         if self._can(permissions, "locacoes.contrato.visualizar", is_superuser):
             snap.locacoes = await self._locacoes_kpis(filial_id)
             snap.alertas.extend(await self._alertas_locacoes(filial_id))
+            snap.alertas.extend(await self._alertas_contratos_atrasados(filial_id))
 
         if self._can(permissions, "financeiro.receber.visualizar", is_superuser):
             snap.financeiro = await self._financeiro_kpis(filial_id)
@@ -327,6 +348,7 @@ class DashboardService:
         pagar_vencido = await self._sum_decimal(
             cp_base.where(FinContaPagar.status == TituloStatus.VENCIDO)
         )
+        saldo_caixa = await self._saldo_caixa_aberto(filial_id)
 
         return FinanceiroKpis(
             faturamento_dia=faturamento_dia,
@@ -335,6 +357,7 @@ class DashboardService:
             receber_vencido=receber_vencido,
             pagar_aberto=pagar_aberto,
             pagar_vencido=pagar_vencido,
+            saldo_caixa=saldo_caixa,
         )
 
     async def _manutencao_kpis(self, filial_id: uuid.UUID | None) -> ManutencaoKpis:
@@ -351,7 +374,14 @@ class DashboardService:
         aprovacao = await self._count(
             base.where(ManOrdemServico.status == OrdemServicoStatus.AGUARDANDO_APROVACAO)
         )
-        return ManutencaoKpis(os_abertas=abertas, aguardando_aprovacao=aprovacao)
+        preventiva = await self._count_preventivas_pendentes(filial_id)
+        pneus = await self._count_pneus_alerta(filial_id)
+        return ManutencaoKpis(
+            os_abertas=abertas,
+            aguardando_aprovacao=aprovacao,
+            preventiva_pendente=preventiva,
+            pneus_alerta=pneus,
+        )
 
     async def _comercial_kpis(self) -> ComercialKpis:
         mes_ini = date.today().replace(day=1)
@@ -388,10 +418,37 @@ class DashboardService:
                 func.date(CrmProposta.updated_at) >= mes_ini,
             )
         )
+        recusadas_mes = await self._count(
+            select(func.count())
+            .select_from(CrmProposta)
+            .where(
+                CrmProposta.deleted_at.is_(None),
+                CrmProposta.status == CrmPropostaStatus.RECUSADA,
+                func.date(CrmProposta.updated_at) >= mes_ini,
+            )
+        )
+        funil_rows = (
+            await self.session.execute(
+                select(CrmOportunidade.estagio, func.count())
+                .select_from(CrmOportunidade)
+                .where(
+                    CrmOportunidade.deleted_at.is_(None),
+                    CrmOportunidade.estagio.not_in(
+                        (CrmEstagio.FECHADO_GANHO, CrmEstagio.PERDIDO)
+                    ),
+                )
+                .group_by(CrmOportunidade.estagio)
+            )
+        ).all()
+        funil = {row[0].value: int(row[1]) for row in funil_rows}
+        finalizadas = aceitas_mes + recusadas_mes
+        taxa = round((aceitas_mes / finalizadas) * 100, 1) if finalizadas else 0.0
         return ComercialKpis(
             oportunidades_abertas=oportunidades,
             propostas_abertas=propostas_abertas,
             propostas_aceitas_mes=aceitas_mes,
+            taxa_conversao_pct=taxa,
+            funil_por_estagio=funil,
         )
 
     async def _alertas_frota(self, filial_id: uuid.UUID | None) -> list[AlertaItem]:
@@ -488,6 +545,165 @@ class DashboardService:
                 )
             )
         return alertas
+
+    async def _saldo_caixa_aberto(self, filial_id: uuid.UUID | None) -> Decimal:
+        credit_types = (CaixaLancamentoTipo.ENTRADA, CaixaLancamentoTipo.SUPRIMENTO)
+        mov_expr = func.coalesce(
+            func.sum(
+                case(
+                    (FinCaixaLancamento.tipo.in_(credit_types), FinCaixaLancamento.valor),
+                    else_=-FinCaixaLancamento.valor,
+                )
+            ),
+            0,
+        )
+        stmt = (
+            select(FinCaixaSessao.valor_abertura, mov_expr.label("movimentos"))
+            .outerjoin(
+                FinCaixaLancamento,
+                and_(
+                    FinCaixaLancamento.sessao_id == FinCaixaSessao.id,
+                    FinCaixaLancamento.deleted_at.is_(None),
+                ),
+            )
+            .where(
+                FinCaixaSessao.deleted_at.is_(None),
+                FinCaixaSessao.status == CaixaSessaoStatus.ABERTA,
+            )
+            .group_by(FinCaixaSessao.id, FinCaixaSessao.valor_abertura)
+        )
+        if filial_id:
+            stmt = stmt.where(FinCaixaSessao.filial_id == filial_id)
+        rows = (await self.session.execute(stmt)).all()
+        total = Decimal("0")
+        for abertura, movimentos in rows:
+            total += Decimal(str(abertura or 0)) + Decimal(str(movimentos or 0))
+        return total
+
+    async def _count_preventivas_pendentes(self, filial_id: uuid.UUID | None) -> int:
+        stmt = (
+            select(ManVeiculoPlano, ManPlanoPreventivo, FrotaVeiculo)
+            .join(
+                ManPlanoPreventivo,
+                and_(
+                    ManPlanoPreventivo.id == ManVeiculoPlano.plano_id,
+                    ManPlanoPreventivo.deleted_at.is_(None),
+                    ManPlanoPreventivo.status == CadastroStatus.ACTIVE,
+                ),
+            )
+            .join(
+                FrotaVeiculo,
+                and_(
+                    FrotaVeiculo.id == ManVeiculoPlano.veiculo_id,
+                    FrotaVeiculo.deleted_at.is_(None),
+                ),
+            )
+            .where(ManVeiculoPlano.deleted_at.is_(None))
+        )
+        if filial_id:
+            stmt = stmt.where(FrotaVeiculo.filial_id == filial_id)
+        rows = (await self.session.execute(stmt)).all()
+        count = 0
+        for vp, plano, veiculo in rows:
+            _, _, urgencia = _calc_preventiva_urgencia(
+                km_atual=veiculo.km_atual,
+                km_ultima=vp.km_ultima_execucao,
+                data_ultima=vp.data_ultima_execucao,
+                intervalo_km=plano.intervalo_km,
+                intervalo_meses=plano.intervalo_meses,
+            )
+            if urgencia >= 0.8:
+                count += 1
+        return count
+
+    async def _count_pneus_alerta(self, filial_id: uuid.UUID | None) -> int:
+        stmt = (
+            select(func.count())
+            .select_from(ManPneu)
+            .outerjoin(FrotaVeiculo, ManPneu.veiculo_id == FrotaVeiculo.id)
+            .where(
+                ManPneu.deleted_at.is_(None),
+                ManPneu.sulco_mm.is_not(None),
+                ManPneu.sulco_mm < 2,
+                ManPneu.status != PneuStatus.DESCARTADO,
+            )
+        )
+        if filial_id:
+            stmt = stmt.where(FrotaVeiculo.filial_id == filial_id)
+        return await self._count(stmt)
+
+    async def _ocupacao_serie(
+        self,
+        filial_id: uuid.UUID | None,
+        *,
+        days: int,
+        step: int,
+    ) -> list[OcupacaoPonto]:
+        frota = await self._frota_kpis(filial_id)
+        if frota.total <= 0:
+            return []
+        hoje = date.today()
+        pontos: list[OcupacaoPonto] = []
+        for offset in range(days - 1, -1, -step):
+            ref = hoje - timedelta(days=offset)
+            day_start = datetime.combine(ref, time.min, tzinfo=UTC)
+            day_end = datetime.combine(ref, time.max, tzinfo=UTC)
+            locados = await self._count_locados_no_dia(filial_id, day_start, day_end)
+            pct = round((locados / frota.total) * 100, 1)
+            label = ref.strftime("%d/%m") if step > 1 else ref.strftime("%d/%m")
+            pontos.append(OcupacaoPonto(label=label, pct=pct))
+        return pontos
+
+    async def _count_locados_no_dia(
+        self,
+        filial_id: uuid.UUID | None,
+        day_start: datetime,
+        day_end: datetime,
+    ) -> int:
+        inicio = func.coalesce(LocContrato.checkout_em, LocContrato.retirada_prevista_em)
+        fim = func.coalesce(LocContrato.checkin_em, LocContrato.devolucao_prevista_em)
+        stmt = (
+            select(func.count(func.distinct(LocContrato.veiculo_id)))
+            .select_from(LocContrato)
+            .where(
+            LocContrato.deleted_at.is_(None),
+            LocContrato.status.not_in(
+                (
+                    ContratoStatus.RASCUNHO,
+                    ContratoStatus.CANCELADO,
+                    ContratoStatus.AGUARDANDO_CHECKOUT,
+                )
+            ),
+            inicio <= day_end,
+                fim >= day_start,
+            )
+        )
+        if filial_id:
+            stmt = stmt.where(LocContrato.filial_retirada_id == filial_id)
+        return await self._count(stmt)
+
+    async def _alertas_contratos_atrasados(
+        self, filial_id: uuid.UUID | None
+    ) -> list[AlertaItem]:
+        now = datetime.now(UTC)
+        stmt = select(func.count()).select_from(LocContrato).where(
+            LocContrato.deleted_at.is_(None),
+            LocContrato.status == ContratoStatus.ATIVO,
+            LocContrato.devolucao_prevista_em < now,
+            LocContrato.checkin_em.is_(None),
+        )
+        if filial_id:
+            stmt = stmt.where(LocContrato.filial_retirada_id == filial_id)
+        qtd = await self._count(stmt)
+        if qtd:
+            return [
+                AlertaItem(
+                    tipo="checkin",
+                    mensagem=f"{qtd} contrato(s) ativo(s) com devolução vencida sem check-in",
+                    url="/locacoes/contratos",
+                )
+            ]
+        return []
 
     async def get_overview(
         self,

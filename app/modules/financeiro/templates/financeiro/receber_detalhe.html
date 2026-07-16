@@ -71,6 +71,11 @@
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-warning" type="submit">Cancelar</button>
     </form>
     {% endif %}
+    {% if titulo.status.value in ['pago','pago_parcial'] and (current_user.is_superuser or 'financeiro.receber.visualizar' in current_user.permissions) %}
+    <form method="post" action="/documentos/emitir/recibo_pagamento/{{ titulo.id }}" style="margin:0">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn" type="submit">PDF Recibo</button>
+    </form>
+    {% endif %}
     <a class="btn" href="/financeiro/receber">Voltar</a>
   </div>
 </div>
