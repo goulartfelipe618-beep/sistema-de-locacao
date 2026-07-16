@@ -21,6 +21,7 @@ from app.modules.integracoes.schemas import (
     ProvedorConfigRead,
     ProvedorConfigUpdate,
     TransitoCnhInput,
+    TransitoDebitosInput,
     TransitoMultasInput,
     WebhookEventoRead,
 )
@@ -114,6 +115,18 @@ async def consultar_cnh(
     ],
 ) -> ConsultaRead:
     item = await TransitoService(session).consultar_cnh(current_user.tenant_id, payload)
+    return ConsultaRead.model_validate(item)
+
+
+@router.post("/transito/debitos", response_model=ConsultaRead)
+async def consultar_debitos(
+    session: ApiSessionDep,
+    payload: TransitoDebitosInput,
+    current_user: Annotated[
+        AuthenticatedUser, Depends(require_api_permission("integracoes.transito.consultar"))
+    ],
+) -> ConsultaRead:
+    item = await TransitoService(session).consultar_debitos(current_user.tenant_id, payload)
     return ConsultaRead.model_validate(item)
 
 

@@ -66,6 +66,44 @@ def test_simulador_transito_multas() -> None:
     assert multas[0].orgao == "DETRAN-SIM"
 
 
+def test_simulador_transito_debitos() -> None:
+    debitos = SimuladorTransito().consultar_debitos_veiculo(
+        placa="ABC1D23", renavam=None, credenciais={}
+    )
+    assert len(debitos) >= 2
+    tipos = {d.tipo for d in debitos}
+    assert "IPVA" in tipos
+    assert "LICENCIAMENTO" in tipos
+
+
+def test_provedores_por_tipo_catalogo() -> None:
+    from app.modules.integracoes.adapters.registry import PROVEDORES_POR_TIPO
+
+    assert "mercadopago" in PROVEDORES_POR_TIPO["pagamentos"]
+    assert "sintegra" in PROVEDORES_POR_TIPO["transito"]
+    assert "serasa" in PROVEDORES_POR_TIPO["credito"]
+    assert "http" in PROVEDORES_POR_TIPO["telemetria"]
+
+
+def test_mercadopago_parse_webhook_refund() -> None:
+    from app.modules.integracoes.adapters.registry import MercadoPagoAdapter
+    from app.shared.enums import PagamentoWebhookEvento
+
+    body = b'{"action":"payment.refunded","data":{"id":"TX123","transaction_amount":99.9}}'
+    payload = MercadoPagoAdapter().parse_webhook(body=body)
+    assert payload.evento == PagamentoWebhookEvento.ESTORNADO
+    assert payload.referencia_externa == "TX123"
+
+
+def test_permissoes_integracoes_criar_editar() -> None:
+    for code in (
+        "integracoes.transito.criar",
+        "integracoes.credito.criar",
+        "integracoes.telemetria.criar",
+    ):
+        assert code in PERMISSIONS_BY_CODE
+
+
 def test_simulador_credito_score() -> None:
     r = SimuladorCredito().consultar_score(
         documento="12345678901", tipo_pessoa="pf", credenciais={}

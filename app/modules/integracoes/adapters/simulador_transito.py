@@ -53,5 +53,11 @@ class SimuladorTransito:
                 descricao=f"IPVA {placa.upper()}",
                 valor=Decimal("850.00"),
                 vencimento=datetime.now(tz=UTC) + timedelta(days=90),
-            )
+            ),
+            DebitoVeicular(
+                tipo="LICENCIAMENTO",
+                descricao=f"Licenciamento {placa.upper()}",
+                valor=Decimal("120.00"),
+                vencimento=datetime.now(tz=UTC) + timedelta(days=45),
+            ),
         ]

@@ -9,8 +9,10 @@ from app.modules.fiscal.adapters.certificado import CertBundle, assinar_xml
 from app.modules.fiscal.adapters.simulador_nfe import SimuladorSefaz
 from app.modules.fiscal.adapters.simulador_nfse import SimuladorNfse
 from app.modules.integracoes.adapters.registry import (
+    HttpTelemetriaAdapter,
     MercadoPagoAdapter,
     PagSeguroAdapter,
+    PROVEDORES_POR_TIPO,
     SerasaAdapter,
     get_payment_adapter,
 )
@@ -32,7 +34,7 @@ def test_registry_mercadopago_valida_credencial() -> None:
 def test_registry_pagseguro_valida_credencial() -> None:
     gw = get_payment_adapter("pagseguro")
     assert isinstance(gw, PagSeguroAdapter)
-    assert gw.testar_conexao(credenciais={"email": "a@b.com", "token": "xyz"}) is True
+    assert gw.testar_conexao(credenciais={"email": "a@b.com", "token": "xyz12345678"}) is True
 
 
 def test_registry_serasa_exige_credencial() -> None:
@@ -43,6 +45,19 @@ def test_registry_serasa_exige_credencial() -> None:
     except ValueError:
         raised = True
     assert raised
+
+
+def test_registry_telemetria_http_adapter() -> None:
+    from app.modules.integracoes.adapters.registry import get_telemetria_adapter
+
+    adapter = get_telemetria_adapter("http")
+    assert isinstance(adapter, HttpTelemetriaAdapter)
+    pos, ev = adapter.sincronizar(credenciais={}, equipamentos=["EQ-1"])
+    assert len(pos) >= 1
+
+
+def test_provedores_catalogo_completo() -> None:
+    assert len(PROVEDORES_POR_TIPO) == 4
 
 
 def test_assinar_xml_com_cert_bundle_fake() -> None:

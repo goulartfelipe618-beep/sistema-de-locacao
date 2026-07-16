@@ -1,8 +1,10 @@
 <div class="card">
   <h2 class="card-title">{{ title }}</h2>
-  <p class="text-muted">Conectores e credenciais (adapter pattern — provedor simulador disponível).</p>
+  <p class="text-muted">Conectores e credenciais (adapter pattern — simulador + provedores HTTP reais).</p>
 
-  {% if current_user.is_superuser or 'integracoes.pagamentos.criar' in current_user.permissions %}
+  {% set perm_criar = 'integracoes.' ~ tipo.value ~ '.criar' %}
+  {% set perm_editar = 'integracoes.' ~ tipo.value ~ '.editar' %}
+  {% if current_user.is_superuser or perm_criar in current_user.permissions %}
   <div class="card" style="margin:16px 0;padding:12px">
     <h4>Novo conector</h4>
     <form method="post" action="/integracoes/configs/novo">
@@ -10,12 +12,20 @@
       <input type="hidden" name="tipo" value="{{ tipo.value }}">
       <div class="form-grid">
         <div class="form-group"><label>Nome</label><input class="form-input" name="nome" required></div>
-        <div class="form-group"><label>Provedor</label><input class="form-input" name="provedor" value="simulador"></div>
+        <div class="form-group"><label>Provedor</label>
+          <select class="form-input" name="provedor">
+            {% for p in provedores %}<option value="{{ p }}">{{ p }}</option>{% endfor %}
+          </select>
+        </div>
         <div class="form-group"><label>Client ID</label><input class="form-input" name="client_id"></div>
         <div class="form-group"><label>Client Secret</label><input class="form-input" name="client_secret" type="password"></div>
-        <div class="form-group"><label>API Key</label><input class="form-input" name="api_key" type="password"></div>
+        <div class="form-group"><label>API Key / Token</label><input class="form-input" name="api_key" type="password"></div>
+        <div class="form-group"><label>Base URL (HTTP)</label><input class="form-input" name="base_url" placeholder="https://api.provedor.com"></div>
+        {% if tipo.value == 'pagamentos' %}
         <div class="form-group"><label>Webhook Secret</label><input class="form-input" name="webhook_secret" type="password"></div>
+        {% endif %}
       </div>
+      <p class="form-help" style="margin-top:8px">Provedores HTTP (Sintegra, Serasa, telemetria): informe a Base URL da API. Mercado Pago/PagSeguro usam token nativo.</p>
       <button class="btn btn-primary btn-sm" type="submit" style="margin-top:8px">Salvar</button>
     </form>
   </div>
@@ -30,14 +40,16 @@
     <tr>
       <td>{{ c.nome }}</td><td>{{ c.provedor }}</td><td>{{ c.status.value }}</td>
       {% if tipo.value == 'pagamentos' %}
-      <td><code style="font-size:0.7em">POST /api/v1/webhooks/pagamentos/{{ c.provedor }}?tenant={{ tenant_slug }}&token=…</code></td>
+      <td><code style="font-size:0.65em">POST /api/v1/webhooks/pagamentos/{{ c.provedor }}?tenant={{ tenant_slug }}&token={{ c.webhook_token }}</code></td>
       {% endif %}
       <td>
+        {% if current_user.is_superuser or perm_editar in current_user.permissions %}
         <form method="post" action="/integracoes/configs/{{ c.id }}/testar" style="display:inline">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <input type="hidden" name="tipo" value="{{ tipo.value }}">
           <button class="btn btn-sm" type="submit">Testar</button>
         </form>
+        {% endif %}
       </td>
     </tr>
     {% endfor %}

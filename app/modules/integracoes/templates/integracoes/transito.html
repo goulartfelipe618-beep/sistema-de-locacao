@@ -23,6 +23,16 @@
     </div>
     <div class="form-group" style="align-self:end"><button class="btn btn-primary" type="submit">Consultar CNH</button></div>
   </form>
+  <h4 style="margin-top:16px">Consultar débitos veiculares (IPVA / licenciamento)</h4>
+  <form method="post" action="/integracoes/transito/debitos" class="form-grid">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="form-group"><label>Veículo</label>
+      <select class="form-input" name="veiculo_id" required>
+        {% for v in veiculos %}<option value="{{ v.id }}">{{ v.placa }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="form-group" style="align-self:end"><button class="btn btn-primary" type="submit">Consultar débitos</button></div>
+  </form>
   {% if consultas %}
   <h4 style="margin-top:16px">Histórico</h4>
   <table class="table"><thead><tr><th>Tipo</th><th>Status</th><th>Data</th></tr></thead>

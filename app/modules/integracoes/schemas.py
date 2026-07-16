@@ -24,6 +24,7 @@ class ProvedorConfigCreate(BaseModel):
     client_id: str | None = None
     client_secret: str | None = None
     api_key: str | None = None
+    base_url: str | None = None
     webhook_secret: str | None = None
     config_json: dict | None = None
 
@@ -33,6 +34,7 @@ class ProvedorConfigUpdate(BaseModel):
     client_id: str | None = None
     client_secret: str | None = None
     api_key: str | None = None
+    base_url: str | None = None
     webhook_secret: str | None = None
     config_json: dict | None = None
     status: IntegracaoProvedorStatus | None = None
@@ -88,6 +90,11 @@ class TransitoCnhInput(BaseModel):
     motorista_id: uuid.UUID
     config_id: uuid.UUID | None = None
     atualizar_pontuacao: bool = True
+
+
+class TransitoDebitosInput(BaseModel):
+    veiculo_id: uuid.UUID
+    config_id: uuid.UUID | None = None
 
 
 class CreditoConsultaInput(BaseModel):

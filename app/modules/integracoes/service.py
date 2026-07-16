@@ -19,7 +19,7 @@ from app.core.security import hash_password, verify_password
 from app.modules.audit.service import audit_service
 from app.modules.cadastros.service_extra import MotoristaService
 from app.modules.financeiro.models import FinPixCobranca
-from app.modules.financeiro.service import CartaoService, PixService
+from app.modules.financeiro.service import CartaoService, ContaReceberService, PixService
 from app.modules.frota.models import FrotaTelemetriaDispositivo, FrotaVeiculo
 from app.modules.frota.schemas import TelemetriaDispositivoUpsert, TelemetriaEventoCreate
 from app.modules.frota.service import TelemetriaService, VeiculoService
@@ -31,6 +31,7 @@ from app.modules.integracoes.schemas import (
     ProvedorConfigCreate,
     ProvedorConfigUpdate,
     TransitoCnhInput,
+    TransitoDebitosInput,
     TransitoMultasInput,
 )
 from app.modules.locacoes.schemas import MultaCreate
@@ -42,6 +43,7 @@ from app.shared.enums import (
     IntegracaoProvedorStatus,
     IntegracaoTipo,
     PagamentoWebhookEvento,
+    PixCobrancaStatus,
     TelemetriaConnStatus,
     TelemetriaEventoTipo,
     WebhookEventoStatus,
@@ -70,6 +72,7 @@ def _credenciais_from_form(
     client_id: str | None,
     client_secret: str | None,
     api_key: str | None,
+    base_url: str | None = None,
 ) -> dict[str, str]:
     cred: dict[str, str] = {}
     if client_id:
@@ -78,6 +81,8 @@ def _credenciais_from_form(
         cred["client_secret"] = client_secret
     if api_key:
         cred["api_key"] = api_key
+    if base_url:
+        cred["base_url"] = base_url
     return cred
 
 
@@ -160,6 +165,7 @@ class ProvedorConfigService:
             getattr(data, "client_id", None),
             getattr(data, "client_secret", None),
             getattr(data, "api_key", None),
+            getattr(data, "base_url", None),
         )
         if not cred and existing:
             return existing.credenciais_cripto
@@ -222,6 +228,14 @@ class ProvedorConfigService:
             ok = adapter.testar_conexao(credenciais=self.credenciais(config))
         elif config.tipo == IntegracaoTipo.TELEMETRIA:
             ok = bool(adapter.sincronizar(credenciais=self.credenciais(config), equipamentos=[])[0] is not None)
+        elif config.tipo == IntegracaoTipo.TRANSITO:
+            adapter = get_adapter(config.tipo, config.provedor)
+            testar = getattr(adapter, "testar_conexao", None)
+            ok = testar(credenciais=self.credenciais(config)) if callable(testar) else True
+        elif config.tipo == IntegracaoTipo.CREDITO:
+            adapter = get_adapter(config.tipo, config.provedor)
+            testar = getattr(adapter, "testar_conexao", None)
+            ok = testar(credenciais=self.credenciais(config)) if callable(testar) else True
         else:
             ok = True
         config.ultimo_sync_em = _now() if ok else config.ultimo_sync_em
@@ -302,6 +316,23 @@ class PagamentoWebhookService:
             try:
                 transacao_id = uuid.UUID(ref)
                 await CartaoService(self.session).capturar(transacao_id)
+            except ValueError:
+                pass
+        elif payload.evento in {PagamentoWebhookEvento.ESTORNADO, PagamentoWebhookEvento.CHARGEBACK}:
+            stmt = select(FinPixCobranca).where(
+                FinPixCobranca.tenant_id == tenant_id,
+                FinPixCobranca.txid == ref,
+                FinPixCobranca.deleted_at.is_(None),
+            )
+            cobranca = (await self.session.execute(stmt)).scalar_one_or_none()
+            if cobranca:
+                if cobranca.titulo_receber_id:
+                    await ContaReceberService(self.session).estornar(cobranca.titulo_receber_id)
+                cobranca.status = PixCobrancaStatus.CANCELADO
+                await self.session.flush()
+            try:
+                transacao_id = uuid.UUID(ref)
+                await CartaoService(self.session).estornar(transacao_id)
             except ValueError:
                 pass
 
@@ -414,6 +445,36 @@ class TransitoService:
         except Exception as exc:  # noqa: BLE001
             consulta.status = IntegracaoConsultaStatus.ERRO
             consulta.erro_mensagem = str(exc)[:2000]
+        await self.consulta_repo.flush()
+        return consulta
+
+    async def consultar_debitos(
+        self, tenant_id: uuid.UUID, data: TransitoDebitosInput
+    ) -> IntConsulta:
+        veiculo = await VeiculoService(self.session).get(data.veiculo_id)
+        config = await self._resolve_config(tenant_id, data.config_id)
+        cred = self.config_svc.credenciais(config)
+        req = {"placa": veiculo.placa, "renavam": veiculo.renavam}
+        consulta = IntConsulta(
+            tenant_id=tenant_id,
+            config_id=config.id,
+            tipo=IntegracaoConsultaTipo.TRANSITO_DEBITOS,
+            referencia_tipo="veiculo",
+            referencia_id=veiculo.id,
+            request_json=_json_dumps(req),
+        )
+        self.consulta_repo.add(consulta)
+        try:
+            debitos = get_adapter(IntegracaoTipo.TRANSITO, config.provedor).consultar_debitos_veiculo(
+                placa=veiculo.placa, renavam=veiculo.renavam, credenciais=cred
+            )
+            consulta.response_json = _json_dumps({"debitos": [d.__dict__ for d in debitos]})
+            consulta.status = IntegracaoConsultaStatus.SUCESSO
+            config.ultimo_sync_em = _now()
+        except Exception as exc:  # noqa: BLE001
+            consulta.status = IntegracaoConsultaStatus.ERRO
+            consulta.erro_mensagem = str(exc)[:2000]
+            config.ultimo_erro = consulta.erro_mensagem
         await self.consulta_repo.flush()
         return consulta
 

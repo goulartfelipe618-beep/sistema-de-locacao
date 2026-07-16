@@ -11,19 +11,22 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_db_session
-from app.core.deps import require_web_permission
+from app.core.deps import require_web_permission, require_web_user
 from app.core.exceptions import AppError
 from app.core.pagination import PageParams
+from app.core.rbac import has_permission
 from app.core.templating import render
 from app.modules.cadastros.service import ClienteService
 from app.modules.cadastros.service_extra import MotoristaService
 from app.modules.frota.service import VeiculoService
 from app.modules.identity.service import AuthenticatedUser
+from app.modules.integracoes.adapters.registry import PROVEDORES_POR_TIPO
 from app.modules.integracoes.schemas import (
     ApiKeyCreate,
     CreditoConsultaInput,
     ProvedorConfigCreate,
     TransitoCnhInput,
+    TransitoDebitosInput,
     TransitoMultasInput,
 )
 from app.modules.integracoes.outbound import OUTBOUND_EVENTOS, OutboundWebhookService
@@ -40,6 +43,26 @@ from app.shared.enums import IntegracaoTipo
 
 router = APIRouter()
 SessionDep = Annotated[AsyncSession, Depends(get_db_session)]
+
+_CREATE_PERMS: dict[str, str] = {
+    "pagamentos": "integracoes.pagamentos.criar",
+    "transito": "integracoes.transito.criar",
+    "credito": "integracoes.credito.criar",
+    "telemetria": "integracoes.telemetria.criar",
+}
+
+_EDIT_PERMS: dict[str, str] = {
+    "pagamentos": "integracoes.pagamentos.editar",
+    "transito": "integracoes.transito.editar",
+    "credito": "integracoes.credito.editar",
+    "telemetria": "integracoes.telemetria.editar",
+}
+
+
+def _can_manage_config(user: AuthenticatedUser, tipo: str, *, edit: bool = False) -> bool:
+    perm_map = _EDIT_PERMS if edit else _CREATE_PERMS
+    perm = perm_map.get(tipo, "integracoes.pagamentos.criar")
+    return has_permission(user.permissions, perm, is_superuser=user.is_superuser)
 
 
 async def _filiais(session: AsyncSession) -> list:
@@ -63,6 +86,7 @@ async def _render_hub(
         "configs": configs.items,
         "filiais": await _filiais(session),
         "tenant_slug": settings.default_tenant_slug,
+        "provedores": PROVEDORES_POR_TIPO.get(tipo.value, ("simulador",)),
     }
     webhooks = None
     if tipo == IntegracaoTipo.PAGAMENTOS:
@@ -167,9 +191,7 @@ async def api_publica_hub(
 @router.post("/integracoes/configs/novo")
 async def config_novo(
     session: SessionDep,
-    current_user: Annotated[
-        AuthenticatedUser, Depends(require_web_permission("integracoes.pagamentos.criar"))
-    ],
+    current_user: Annotated[AuthenticatedUser, Depends(require_web_user)],
     tipo: Annotated[str, Form()],
     provedor: Annotated[str, Form()] = "simulador",
     nome: Annotated[str, Form()] = "",
@@ -177,8 +199,11 @@ async def config_novo(
     client_id: Annotated[str, Form()] = "",
     client_secret: Annotated[str, Form()] = "",
     api_key: Annotated[str, Form()] = "",
+    base_url: Annotated[str, Form()] = "",
     webhook_secret: Annotated[str, Form()] = "",
 ):
+    if not _can_manage_config(current_user, tipo):
+        raise AppError("Sem permissão para configurar integrações.", code="forbidden")
     data = ProvedorConfigCreate(
         tipo=IntegracaoTipo(tipo),
         provedor=provedor,
@@ -187,6 +212,7 @@ async def config_novo(
         client_id=client_id or None,
         client_secret=client_secret or None,
         api_key=api_key or None,
+        base_url=base_url or None,
         webhook_secret=webhook_secret or None,
     )
     await ProvedorConfigService(session).create(current_user.tenant_id, data)
@@ -198,11 +224,11 @@ async def config_novo(
 async def config_testar(
     config_id: uuid.UUID,
     session: SessionDep,
-    _user: Annotated[
-        AuthenticatedUser, Depends(require_web_permission("integracoes.pagamentos.editar"))
-    ],
+    current_user: Annotated[AuthenticatedUser, Depends(require_web_user)],
     tipo: Annotated[str, Form()] = "pagamentos",
 ):
+    if not _can_manage_config(current_user, tipo, edit=True):
+        raise AppError("Sem permissão para testar integrações.", code="forbidden")
     await ProvedorConfigService(session).testar(config_id)
     return RedirectResponse(f"/integracoes/{tipo}", status_code=303)
 
@@ -233,6 +259,21 @@ async def transito_cnh(
     await TransitoService(session).consultar_cnh(
         current_user.tenant_id,
         TransitoCnhInput(motorista_id=uuid.UUID(motorista_id), atualizar_pontuacao=True),
+    )
+    return RedirectResponse("/integracoes/transito", status_code=303)
+
+
+@router.post("/integracoes/transito/debitos")
+async def transito_debitos(
+    session: SessionDep,
+    current_user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("integracoes.transito.consultar"))
+    ],
+    veiculo_id: Annotated[str, Form()],
+):
+    await TransitoService(session).consultar_debitos(
+        current_user.tenant_id,
+        TransitoDebitosInput(veiculo_id=uuid.UUID(veiculo_id)),
     )
     return RedirectResponse("/integracoes/transito", status_code=303)
 
