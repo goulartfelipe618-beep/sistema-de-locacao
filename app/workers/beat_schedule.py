@@ -95,4 +95,10 @@ BEAT_SCHEDULE: dict[str, dict] = {
         "schedule": crontab(minute="*/30"),
         "options": {"queue": "default"},
     },
+    # Materialização/refresh dos KPIs do Dashboard (§1).
+    "dashboard-materializar-kpis": {
+        "task": "dashboard.materializar_kpis",
+        "schedule": crontab(minute="*/15"),
+        "options": {"queue": "default"},
+    },
 }

@@ -4,32 +4,109 @@
 <div class="kpi-grid">
   <div class="kpi">
     <div class="kpi-label">Usuários</div>
-    <div class="kpi-value">{{ metrics.total_users }}</div>
-    <div class="kpi-sub">{{ metrics.active_users }} ativos</div>
+    <div class="kpi-value">{{ snapshot.total_users }}</div>
+    <div class="kpi-sub">{{ snapshot.active_users }} ativos</div>
   </div>
   <div class="kpi">
     <div class="kpi-label">Filiais</div>
-    <div class="kpi-value">{{ metrics.total_filiais }}</div>
-    <div class="kpi-sub">{{ metrics.active_filiais }} ativas</div>
+    <div class="kpi-value">{{ snapshot.total_filiais }}</div>
+    <div class="kpi-sub">{{ snapshot.active_filiais }} ativas</div>
+  </div>
+  {% if snapshot.frota %}
+  <div class="kpi">
+    <div class="kpi-label">Frota</div>
+    <div class="kpi-value">{{ snapshot.frota.total }}</div>
+    <div class="kpi-sub">{{ snapshot.frota.locados }} locados · {{ snapshot.frota.ocupacao_pct }}% ocupação</div>
   </div>
   <div class="kpi">
-    <div class="kpi-label">Empresa</div>
-    <div class="kpi-value">1</div>
-    <div class="kpi-sub">Multiempresa (SaaS) preparado</div>
+    <div class="kpi-label">Disponíveis</div>
+    <div class="kpi-value">{{ snapshot.frota.disponiveis }}</div>
+    <div class="kpi-sub">{{ snapshot.frota.manutencao }} manutenção · {{ snapshot.frota.bloqueados }} bloqueados</div>
+  </div>
+  {% endif %}
+  {% if snapshot.reservas %}
+  <div class="kpi">
+    <div class="kpi-label">Reservas hoje</div>
+    <div class="kpi-value">{{ snapshot.reservas.hoje }}</div>
+    <div class="kpi-sub">{{ snapshot.reservas.proximas_48h }} em 48h · {{ snapshot.reservas.pendentes }} pendentes</div>
+  </div>
+  {% endif %}
+  {% if snapshot.locacoes %}
+  <div class="kpi">
+    <div class="kpi-label">Contratos ativos</div>
+    <div class="kpi-value">{{ snapshot.locacoes.ativos }}</div>
+    <div class="kpi-sub">{{ snapshot.locacoes.vencendo_24h }} em 24h · {{ snapshot.locacoes.vencendo_48h }} em 48h</div>
+  </div>
+  {% endif %}
+  {% if snapshot.financeiro %}
+  <div class="kpi">
+    <div class="kpi-label">Faturamento (mês)</div>
+    <div class="kpi-value">R$ {{ "%.2f"|format(snapshot.financeiro.faturamento_mes) }}</div>
+    <div class="kpi-sub">Hoje: R$ {{ "%.2f"|format(snapshot.financeiro.faturamento_dia) }}</div>
   </div>
   <div class="kpi">
-    <div class="kpi-label">Ambiente</div>
-    <div class="kpi-value" style="font-size:18px">{{ environment|capitalize }}</div>
-    <div class="kpi-sub">Fase 0 · Fundação</div>
+    <div class="kpi-label">A receber</div>
+    <div class="kpi-value">R$ {{ "%.2f"|format(snapshot.financeiro.receber_aberto) }}</div>
+    <div class="kpi-sub">Vencido: R$ {{ "%.2f"|format(snapshot.financeiro.receber_vencido) }}</div>
   </div>
+  <div class="kpi">
+    <div class="kpi-label">A pagar</div>
+    <div class="kpi-value">R$ {{ "%.2f"|format(snapshot.financeiro.pagar_aberto) }}</div>
+    <div class="kpi-sub">Vencido: R$ {{ "%.2f"|format(snapshot.financeiro.pagar_vencido) }}</div>
+  </div>
+  {% endif %}
+  {% if snapshot.manutencao %}
+  <div class="kpi">
+    <div class="kpi-label">OS abertas</div>
+    <div class="kpi-value">{{ snapshot.manutencao.os_abertas }}</div>
+    <div class="kpi-sub">{{ snapshot.manutencao.aguardando_aprovacao }} aguardando aprovação</div>
+  </div>
+  {% endif %}
+  {% if snapshot.comercial %}
+  <div class="kpi">
+    <div class="kpi-label">Comercial</div>
+    <div class="kpi-value">{{ snapshot.comercial.oportunidades_abertas }}</div>
+    <div class="kpi-sub">{{ snapshot.comercial.propostas_abertas }} propostas · {{ snapshot.comercial.propostas_aceitas_mes }} aceitas no mês</div>
+  </div>
+  {% endif %}
 </div>
 
-<div class="card">
+{% if snapshot.alertas %}
+<div class="card" style="margin-top: 1rem;">
+  <h2 class="card-title">Alertas críticos</h2>
+  <ul>
+    {% for alerta in snapshot.alertas %}
+    <li>
+      {% if alerta.url %}
+      <a href="{{ alerta.url }}">{{ alerta.mensagem }}</a>
+      {% else %}
+      {{ alerta.mensagem }}
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<div class="card" style="margin-top: 1rem;">
   <h2 class="card-title">Bem-vindo(a), {{ current_user.full_name }}</h2>
   <p class="form-help">
-    Este é o painel administrativo do ERP de Locação de Veículos. A estrutura de
-    navegação à esquerda contempla todos os módulos previstos na arquitetura.
-    Os módulos operacionais serão habilitados nas próximas fases do roadmap.
+    Visão executiva consolidada do ERP. Os indicadores exibidos respeitam suas permissões
+    de acesso aos módulos de origem.
   </p>
+  <div class="toolbar" style="margin-top: 1rem;">
+    {% if current_user.is_superuser or 'reservas.reserva.criar' in current_user.permissions %}
+    <a class="btn btn-primary" href="/reservas/nova">Nova Reserva</a>
+    {% endif %}
+    {% if current_user.is_superuser or 'locacoes.contrato.criar' in current_user.permissions %}
+    <a class="btn" href="/locacoes/contratos/novo">Novo Contrato</a>
+    {% endif %}
+    {% if current_user.is_superuser or 'cadastros.cliente.criar' in current_user.permissions %}
+    <a class="btn" href="/cadastros/clientes/novo">Novo Cliente</a>
+    {% endif %}
+    {% if current_user.is_superuser or 'manutencao.os.criar' in current_user.permissions %}
+    <a class="btn" href="/manutencao/os/nova">Nova OS</a>
+    {% endif %}
+  </div>
 </div>
 {% endblock %}

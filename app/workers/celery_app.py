@@ -29,6 +29,7 @@ celery_app = Celery(
         "app.modules.automacoes.tasks",
         "app.modules.automacoes.tasks",
         "app.modules.relatorios.tasks",
+        "app.modules.dashboard.tasks",
         "app.modules.frota.tasks",
         "app.modules.manutencao.tasks",
         "app.modules.reservas.tasks",

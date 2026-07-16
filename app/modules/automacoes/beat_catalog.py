@@ -20,6 +20,7 @@ _LABELS: dict[str, tuple[str, str]] = {
     "integracoes-sync-telemetria": ("Sync telemetria", "Sincroniza telemetria externa (§12.4)"),
     "automacoes-avaliar-regras": ("Avaliar regras", "Executa regras periódicas de automação (§13.1)"),
     "automacoes-workflows-timeout": ("Timeout workflows", "Processa SLAs expirados de workflows (§13.2)"),
+    "dashboard-materializar-kpis": ("Dashboard KPIs", "Atualiza agregações do painel executivo (§1)"),
 }
 
 

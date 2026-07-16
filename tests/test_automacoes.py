@@ -47,7 +47,7 @@ def test_engine_condicao_gte() -> None:
 
 def test_beat_catalogo_inclui_jobs() -> None:
     jobs = list_beat_jobs()
-    assert len(jobs) >= 14
+    assert len(jobs) >= 15
     tasks = {j["task"] for j in jobs}
     assert "automacoes.avaliar_regras" in tasks
     assert "financeiro.marcar_vencidos" in tasks

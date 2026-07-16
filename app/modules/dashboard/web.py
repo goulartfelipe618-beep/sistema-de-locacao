@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request
@@ -23,14 +24,22 @@ SessionDep = Annotated[AsyncSession, Depends(get_db_session)]
 async def dashboard_home(
     request: Request,
     session: SessionDep,
-    _user: Annotated[
+    current_user: Annotated[
         AuthenticatedUser, Depends(require_web_permission("dashboard.painel.visualizar"))
     ],
+    filial_id: uuid.UUID | None = None,
 ) -> HTMLResponse:
-    """Renderiza a visão geral com os indicadores do tenant atual."""
-    metrics = await DashboardService(session).get_overview()
+    """Renderiza a visão geral com KPIs condicionados às permissões do usuário."""
+    filial_param = request.query_params.get("filial_id")
+    parsed_filial = uuid.UUID(filial_param) if filial_param else filial_id
+
+    snapshot = await DashboardService(session).get_snapshot(
+        permissions=current_user.permissions,
+        is_superuser=current_user.is_superuser,
+        filial_id=parsed_filial,
+    )
     return render(
         request,
         "dashboard/home.html",
-        {"metrics": metrics, "title": "Visão Geral"},
+        {"snapshot": snapshot, "title": "Visão Geral", "filial_id": parsed_filial},
     )
