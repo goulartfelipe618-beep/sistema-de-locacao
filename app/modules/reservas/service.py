@@ -535,6 +535,20 @@ class ReservaService:
             entity_id=reserva.id,
             description=f"Reserva criada: {reserva.numero}",
         )
+        if requer_aprovacao:
+            from app.modules.automacoes.hooks import try_start_workflow
+
+            await try_start_workflow(
+                self.session,
+                tenant_id,
+                workflow_codigo="reserva_cliente_bloqueado",
+                entidade_tipo="reserva",
+                entidade_id=reserva.id,
+                contexto={
+                    "numero": reserva.numero,
+                    "cliente_id": str(data.cliente_id),
+                },
+            )
         return reserva
 
     async def update(self, reserva_id: uuid.UUID, data: ReservaUpdate) -> ResReserva:
@@ -734,6 +748,23 @@ class ReservaService:
             entity_id=reserva.id,
             description=f"No-show registrado: {reserva.numero}",
         )
+        try:
+            from app.modules.automacoes.hooks import fire_regra_event
+            from app.shared.enums import AutoEventoGatilho
+
+            await fire_regra_event(
+                self.session,
+                reserva.tenant_id,
+                AutoEventoGatilho.RESERVA_NO_SHOW,
+                {
+                    "reserva_id": str(reserva.id),
+                    "numero": reserva.numero,
+                    "cliente_id": str(reserva.cliente_id),
+                    "valor_retencao": float(valor_retencao),
+                },
+            )
+        except Exception:  # noqa: BLE001
+            pass
         return reserva
 
     async def create_contrato(self, reserva_id: uuid.UUID):

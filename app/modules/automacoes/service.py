@@ -245,11 +245,47 @@ class RegraService:
             )
         return execucao
 
+    async def _avaliar_evento(
+        self,
+        tenant_id: uuid.UUID,
+        evento: AutoEventoGatilho,
+        context: dict[str, Any],
+        *,
+        referencia_id: uuid.UUID | None = None,
+    ) -> bool:
+        execucao = await self.execucoes.registrar(
+            tenant_id,
+            tipo=AutoExecucaoTipo.REGRA,
+            referencia_id=referencia_id,
+            evento=evento.value,
+            payload=context,
+        )
+        t0 = _now()
+        try:
+            res = await self.engine.dispatch(tenant_id, evento, context)
+            await self.execucoes.concluir(
+                execucao,
+                status=AutoExecucaoStatus.SUCESSO if res else AutoExecucaoStatus.IGNORADO,
+                resultado={"disparos": len(res)},
+                iniciado=t0,
+            )
+            return bool(res)
+        except Exception as exc:  # noqa: BLE001
+            await self.execucoes.concluir(
+                execucao, status=AutoExecucaoStatus.ERRO, erro=str(exc), iniciado=t0
+            )
+            return False
+
     async def avaliar_periodicas(self, tenant_id: uuid.UUID) -> int:
-        """Avalia gatilhos temporais (títulos vencidos, documentos a vencer)."""
-        count = 0
+        """Avalia gatilhos temporais (títulos, documentação, estoque)."""
+        from datetime import date, timedelta
+
+        from app.modules.frota.models import FrotaAcessorio, FrotaDocumento
         from app.modules.financeiro.models import FinContaReceber
+        from app.modules.parametros.service import ParametroService
         from app.shared.enums import TituloStatus
+
+        count = 0
 
         stmt = select(FinContaReceber).where(
             FinContaReceber.tenant_id == tenant_id,
@@ -257,38 +293,96 @@ class RegraService:
             FinContaReceber.status == TituloStatus.VENCIDO,
         ).limit(50)
         titulos = list((await self.session.execute(stmt)).scalars().all())
+        clientes_inad: set[str] = set()
         for t in titulos:
             dias = (_now().date() - t.vencimento).days
-            execucao = await self.execucoes.registrar(
-                tenant_id,
-                tipo=AutoExecucaoTipo.REGRA,
-                evento=AutoEventoGatilho.TITULO_VENCIDO.value,
-                payload={"titulo_id": str(t.id), "dias_vencido": dias, "cliente_id": str(t.cliente_id)},
+            ctx = {
+                "titulo_id": str(t.id),
+                "dias_vencido": dias,
+                "cliente_id": str(t.cliente_id) if t.cliente_id else None,
+                "filial_id": str(t.filial_id),
+                "valor": float(t.valor_saldo),
+            }
+            if await self._avaliar_evento(
+                tenant_id, AutoEventoGatilho.TITULO_VENCIDO, ctx, referencia_id=t.id
+            ):
+                count += 1
+            if t.cliente_id and dias >= 30:
+                cid = str(t.cliente_id)
+                if cid not in clientes_inad:
+                    clientes_inad.add(cid)
+                    if await self._avaliar_evento(
+                        tenant_id,
+                        AutoEventoGatilho.CLIENTE_INADIMPLENTE,
+                        {**ctx, "cliente_id": cid},
+                        referencia_id=t.cliente_id,
+                    ):
+                        count += 1
+
+        try:
+            dias_raw = await ParametroService(self.session).get_valor(
+                "automacoes.dias_alerta_documento", tenant_id
             )
-            t0 = _now()
-            try:
-                res = await self.engine.dispatch(
-                    tenant_id,
-                    AutoEventoGatilho.TITULO_VENCIDO,
-                    {
-                        "titulo_id": str(t.id),
-                        "dias_vencido": dias,
-                        "cliente_id": str(t.cliente_id),
-                        "valor": float(t.valor_saldo),
-                    },
+            alerta_dias = max(int(x.strip()) for x in str(dias_raw).split(",") if x.strip())
+        except (ValueError, TypeError):
+            alerta_dias = 30
+
+        limite_doc = date.today() + timedelta(days=alerta_dias)
+        docs = list(
+            (
+                await self.session.execute(
+                    select(FrotaDocumento).where(
+                        FrotaDocumento.tenant_id == tenant_id,
+                        FrotaDocumento.deleted_at.is_(None),
+                        FrotaDocumento.data_validade.is_not(None),
+                        FrotaDocumento.data_validade <= limite_doc,
+                    ).limit(50)
                 )
-                await self.execucoes.concluir(
-                    execucao,
-                    status=AutoExecucaoStatus.SUCESSO if res else AutoExecucaoStatus.IGNORADO,
-                    resultado={"disparos": len(res)},
-                    iniciado=t0,
+            )
+            .scalars()
+            .all()
+        )
+        for d in docs:
+            dias_para = (d.data_validade - date.today()).days if d.data_validade else 0
+            if await self._avaliar_evento(
+                tenant_id,
+                AutoEventoGatilho.DOCUMENTO_VENCER,
+                {
+                    "documento_id": str(d.id),
+                    "veiculo_id": str(d.veiculo_id),
+                    "tipo": d.tipo.value,
+                    "dias_para_vencer": dias_para,
+                },
+                referencia_id=d.id,
+            ):
+                count += 1
+
+        acessorios = list(
+            (
+                await self.session.execute(
+                    select(FrotaAcessorio).where(
+                        FrotaAcessorio.tenant_id == tenant_id,
+                        FrotaAcessorio.deleted_at.is_(None),
+                        FrotaAcessorio.estoque_disponivel <= 0,
+                    ).limit(50)
                 )
-                if res:
-                    count += 1
-            except Exception as exc:  # noqa: BLE001
-                await self.execucoes.concluir(
-                    execucao, status=AutoExecucaoStatus.ERRO, erro=str(exc), iniciado=t0
-                )
+            )
+            .scalars()
+            .all()
+        )
+        for a in acessorios:
+            if await self._avaliar_evento(
+                tenant_id,
+                AutoEventoGatilho.ESTOQUE_MINIMO,
+                {
+                    "acessorio_id": str(a.id),
+                    "nome": a.nome,
+                    "estoque_disponivel": a.estoque_disponivel,
+                },
+                referencia_id=a.id,
+            ):
+                count += 1
+
         return count
 
 

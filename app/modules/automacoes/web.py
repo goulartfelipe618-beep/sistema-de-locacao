@@ -16,6 +16,7 @@ from app.core.pagination import PageParams
 from app.core.templating import render
 from app.modules.automacoes.schemas import (
     RegraCreate,
+    RegraUpdate,
     WorkflowCreate,
     WorkflowDecisaoInput,
     WorkflowEtapaInput,
@@ -93,6 +94,32 @@ async def regra_executar(
 ):
     await RegraService(session).executar_manual(current_user.tenant_id, regra_id, {})
     return RedirectResponse("/automacoes/historico", status_code=303)
+
+
+@router.post("/automacoes/regras/{regra_id}/toggle")
+async def regra_toggle(
+    regra_id: uuid.UUID,
+    session: SessionDep,
+    current_user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("automacoes.regras.editar"))
+    ],
+):
+    svc = RegraService(session)
+    regra = await svc.get(regra_id)
+    await svc.update(regra_id, RegraUpdate(ativo=not regra.ativo))
+    return RedirectResponse("/automacoes/regras", status_code=303)
+
+
+@router.post("/automacoes/regras/{regra_id}/excluir")
+async def regra_excluir(
+    regra_id: uuid.UUID,
+    session: SessionDep,
+    _user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("automacoes.regras.editar"))
+    ],
+):
+    await RegraService(session).delete(regra_id)
+    return RedirectResponse("/automacoes/regras", status_code=303)
 
 
 @router.get("/automacoes/workflows", response_class=HTMLResponse)

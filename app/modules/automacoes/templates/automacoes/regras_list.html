@@ -21,6 +21,7 @@
         <div class="form-group"><label>Prioridade</label><input class="form-input" name="prioridade" type="number" value="100"></div>
       </div>
       <div class="form-group"><label>Condição JSON</label><textarea class="form-input" name="condicao_json" rows="2">{"op":"always"}</textarea></div>
+      <p class="form-help">Exemplos: título vencido ≥30 dias <code>{"op":"gte","field":"dias_vencido","value":30}</code> · doc. a vencer ≤7 dias <code>{"op":"lte","field":"dias_para_vencer","value":7}</code></p>
       <div class="form-group"><label>Parâmetros ação JSON</label><textarea class="form-input" name="acao_params_json" rows="2">{"mensagem":"Alerta automático"}</textarea></div>
       <button class="btn btn-primary btn-sm" type="submit">Salvar</button>
     </form>
@@ -41,6 +42,16 @@
         <form method="post" action="/automacoes/regras/{{ r.id }}/executar" style="display:inline">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <button class="btn btn-sm" type="submit">Executar</button>
+        </form>
+        {% endif %}
+        {% if current_user.is_superuser or 'automacoes.regras.editar' in current_user.permissions %}
+        <form method="post" action="/automacoes/regras/{{ r.id }}/toggle" style="display:inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button class="btn btn-sm" type="submit">{{ 'Desativar' if r.ativo else 'Ativar' }}</button>
+        </form>
+        <form method="post" action="/automacoes/regras/{{ r.id }}/excluir" style="display:inline" onsubmit="return confirm('Excluir regra?')">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button class="btn btn-sm btn-danger" type="submit">Excluir</button>
         </form>
         {% endif %}
       </td>

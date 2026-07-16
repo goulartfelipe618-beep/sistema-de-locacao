@@ -458,6 +458,22 @@ class OrdemServicoService:
             raise NotFoundError("Ordem de serviço não encontrada.")
         return item
 
+    async def _iniciar_workflow_aprovacao(self, item: ManOrdemServico) -> None:
+        from app.modules.automacoes.hooks import try_start_workflow
+
+        await try_start_workflow(
+            self.session,
+            item.tenant_id,
+            workflow_codigo="os_valor_alto",
+            entidade_tipo="ordem_servico",
+            entidade_id=item.id,
+            contexto={
+                "numero": item.numero,
+                "custo_total": str(item.custo_total),
+                "veiculo_id": str(item.veiculo_id),
+            },
+        )
+
     async def create(self, tenant_id: uuid.UUID, data: OrdemServicoCreate) -> ManOrdemServico:
         veiculo = await self.veiculo_svc.get(data.veiculo_id)
         numero = await self.next_numero(tenant_id)
@@ -525,6 +541,7 @@ class OrdemServicoService:
             if item.custo_total > limite and item.aprovado_em is None:
                 item.requer_aprovacao = True
                 new_status = OrdemServicoStatus.AGUARDANDO_APROVACAO
+                await self._iniciar_workflow_aprovacao(item)
 
         allowed = OS_TRANSITIONS.get(current, set())
         if new_status not in allowed and not (
@@ -578,6 +595,7 @@ class OrdemServicoService:
             item.requer_aprovacao = True
             item.status = OrdemServicoStatus.AGUARDANDO_APROVACAO
             await self.repo.flush()
+            await self._iniciar_workflow_aprovacao(item)
             raise ConflictError(
                 "OS requer aprovação antes da conclusão.",
                 code="os_requer_aprovacao",

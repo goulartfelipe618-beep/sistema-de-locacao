@@ -984,6 +984,24 @@ class CheckinService:
                 )
             except Exception:  # noqa: BLE001
                 pass
+            try:
+                from app.modules.automacoes.hooks import fire_regra_event
+                from app.shared.enums import AutoEventoGatilho
+
+                await fire_regra_event(
+                    self.session,
+                    contrato.tenant_id,
+                    AutoEventoGatilho.CONTRATO_ENCERRADO,
+                    {
+                        "contrato_id": str(contrato.id),
+                        "numero": contrato.numero,
+                        "cliente_id": str(contrato.cliente_id),
+                        "veiculo_id": str(contrato.veiculo_id),
+                        "valor_final": float(contrato.valor_final or contrato.valor_total),
+                    },
+                )
+            except Exception:  # noqa: BLE001
+                pass
         return contrato
 
     async def _calcular_ajustes(

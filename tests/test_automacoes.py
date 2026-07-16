@@ -55,5 +55,26 @@ def test_beat_catalogo_inclui_jobs() -> None:
 
 def test_enums_automacoes() -> None:
     assert AutoEventoGatilho.TITULO_VENCIDO.value == "titulo_vencido"
+    assert AutoEventoGatilho.DOCUMENTO_VENCER.value == "documento_vencer"
+    assert AutoEventoGatilho.CLIENTE_INADIMPLENTE.value == "cliente_inadimplente"
     assert AutoAcaoTipo.BLOQUEAR_CLIENTE.value == "bloquear_cliente"
     assert AutoExecucaoTipo.BEAT.value == "beat"
+
+
+def test_engine_condicao_and() -> None:
+    cond = {
+        "op": "and",
+        "conditions": [
+            {"op": "gte", "field": "dias_vencido", "value": 30},
+            {"op": "gt", "field": "valor", "value": 100},
+        ],
+    }
+    assert evaluate_condition(cond, {"dias_vencido": 45, "valor": 200}) is True
+    assert evaluate_condition(cond, {"dias_vencido": 10, "valor": 200}) is False
+
+
+def test_hooks_module_exports() -> None:
+    from app.modules.automacoes import hooks
+
+    assert callable(hooks.fire_regra_event)
+    assert callable(hooks.try_start_workflow)

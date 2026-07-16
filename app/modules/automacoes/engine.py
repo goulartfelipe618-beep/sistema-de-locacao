@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import uuid
 from datetime import UTC, datetime
+from decimal import Decimal
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -122,10 +123,57 @@ class AcaoExecutor:
             return {"veiculo_id": str(veiculo.id), "bloqueado": True}
 
         if acao == AutoAcaoTipo.GERAR_COBRANCA:
-            return {"simulado": True, "mensagem": "Cobrança enfileirada (integração financeiro)"}
+            from datetime import date, timedelta
+
+            from app.modules.financeiro.schemas import ContaReceberCreate
+            from app.modules.financeiro.service import ContaReceberService
+            from app.shared.enums import ContaReceberOrigem
+
+            cliente_id = context.get("cliente_id") or params.get("cliente_id")
+            filial_id = context.get("filial_id") or params.get("filial_id")
+            valor = context.get("valor") or params.get("valor")
+            if not cliente_id or not filial_id or not valor:
+                return {"skipped": True, "reason": "cliente_id/filial_id/valor ausentes"}
+            dias = int(params.get("dias_vencimento", 7))
+            titulo = await ContaReceberService(self.session).create(
+                tenant_id,
+                ContaReceberCreate(
+                    cliente_id=uuid.UUID(str(cliente_id)),
+                    filial_id=uuid.UUID(str(filial_id)),
+                    descricao=params.get("descricao", "Cobrança gerada por automação"),
+                    valor_original=Decimal(str(valor)),
+                    vencimento=date.today() + timedelta(days=dias),
+                    origem=ContaReceberOrigem.AVULSO,
+                    origem_id=uuid.UUID(str(context["titulo_id"]))
+                    if context.get("titulo_id")
+                    else None,
+                    gera_pix=bool(params.get("gera_pix", False)),
+                ),
+            )
+            return {"titulo_id": str(titulo.id), "numero": titulo.numero}
 
         if acao == AutoAcaoTipo.GERAR_OS:
-            return {"simulado": True, "mensagem": "OS enfileirada (integração manutenção)"}
+            from app.modules.manutencao.schemas import OrdemServicoCreate
+            from app.modules.manutencao.service import OrdemServicoService
+            from app.shared.enums import OrdemServicoOrigem, OrdemServicoTipo
+
+            veiculo_id = context.get("veiculo_id") or params.get("veiculo_id")
+            if not veiculo_id:
+                return {"skipped": True, "reason": "veiculo_id ausente"}
+            tipo_raw = params.get("tipo", "preventiva")
+            os = await OrdemServicoService(self.session).create(
+                tenant_id,
+                OrdemServicoCreate(
+                    veiculo_id=uuid.UUID(str(veiculo_id)),
+                    tipo=OrdemServicoTipo(tipo_raw),
+                    origem=OrdemServicoOrigem.PLANO_PREVENTIVO,
+                    filial_id=uuid.UUID(str(context["filial_id"]))
+                    if context.get("filial_id")
+                    else None,
+                    observacoes=params.get("observacao", "OS gerada por regra de automação"),
+                ),
+            )
+            return {"os_id": str(os.id), "numero": os.numero}
 
         return {"skipped": True}
 
