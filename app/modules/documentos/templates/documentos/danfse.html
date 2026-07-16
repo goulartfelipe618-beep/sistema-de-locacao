@@ -1,0 +1,14 @@
+{% extends "documentos/base_pdf.html" %}
+{% block doc_body %}
+<h2>DANFSE — Nota Fiscal de Serviço Eletrônica</h2>
+<p><strong>Número:</strong> {{ nfse.numero }} · <strong>Série:</strong> {{ nfse.serie }} · <strong>Status:</strong> {{ nfse.status.value }}</p>
+<p><strong>Chave de acesso:</strong> {{ nfse.chave_acesso or '—' }}</p>
+<p><strong>Protocolo:</strong> {{ nfse.protocolo or '—' }}{% if nfse.autorizada_em %} · <strong>Autorizada em:</strong> {{ nfse.autorizada_em|datetime }}{% endif %}</p>
+<p><strong>Prestador (filial):</strong> {{ filial_nome }}</p>
+<p><strong>Tomador:</strong> {{ cliente_nome }}</p>
+<p><strong>Município incidência:</strong> {{ nfse.municipio_nome or '—' }} ({{ nfse.municipio_ibge or '—' }})</p>
+<p><strong>Discriminação:</strong> {{ nfse.discriminacao or '—' }}</p>
+<p><strong>Valor do serviço:</strong> {{ nfse.valor_servico|currency }}</p>
+<p><strong>Alíquota ISS:</strong> {{ nfse.aliquota_iss }}% · <strong>Valor ISS:</strong> {{ nfse.valor_iss|currency }}</p>
+<p><strong>ISS retido:</strong> {{ nfse.valor_iss_retido|currency }}</p>
+{% endblock %}

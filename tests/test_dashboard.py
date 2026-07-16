@@ -4,10 +4,12 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+from app.modules.dashboard.cache import decode_snapshot_dict, encode_snapshot, snapshot_asdict
 from app.modules.dashboard.service import (
     ComercialKpis,
     DashboardSnapshot,
     FinanceiroKpis,
+    FrotaKpis,
     ManutencaoKpis,
     OcupacaoPonto,
 )
@@ -61,3 +63,57 @@ def test_dashboard_kpi_dataclasses_extendidos() -> None:
     )
     assert len(snap.ocupacao_30) == 1
     assert snap.ocupacao_90[0].pct == 65.0
+
+
+def test_dashboard_cache_roundtrip() -> None:
+    original = DashboardSnapshot(
+        total_users=5,
+        frota=FrotaKpis(
+            total=10,
+            disponiveis=4,
+            locados=5,
+            manutencao=1,
+            bloqueados=0,
+            ocupacao_pct=62.5,
+        ),
+        financeiro=FinanceiroKpis(
+            faturamento_dia=Decimal("100"),
+            faturamento_mes=Decimal("5000"),
+            receber_aberto=Decimal("200"),
+            receber_vencido=Decimal("50"),
+            pagar_aberto=Decimal("80"),
+            pagar_vencido=Decimal("10"),
+            saldo_caixa=Decimal("1500.50"),
+        ),
+        ocupacao_30=[OcupacaoPonto(label="01/07", pct=70.0)],
+    )
+    encoded = encode_snapshot(original)
+    restored = decode_snapshot_dict(encoded, DashboardSnapshot)
+    assert restored.total_users == 5
+    assert restored.frota is not None
+    assert restored.frota.locados == 5
+    assert restored.financeiro is not None
+    assert restored.financeiro.saldo_caixa == Decimal("1500.50")
+    assert restored.ocupacao_30[0].pct == 70.0
+
+
+def test_dashboard_filter_snapshot() -> None:
+    from app.modules.dashboard.service import DashboardService
+
+    snap = DashboardSnapshot(
+        total_users=1,
+        frota=FrotaKpis(1, 1, 0, 0, 0, 0.0),
+        financeiro=FinanceiroKpis(
+            Decimal(0),
+            Decimal(0),
+            Decimal(0),
+            Decimal(0),
+            Decimal(0),
+            Decimal(0),
+            Decimal(100),
+        ),
+    )
+    svc = DashboardService.__new__(DashboardService)
+    filtered = svc.filter_snapshot(snap, permissions={"frota.veiculo.visualizar"})
+    assert filtered.frota is not None
+    assert filtered.financeiro is None

@@ -35,10 +35,11 @@ async def dashboard_home(
     filial_param = request.query_params.get("filial_id")
     parsed_filial = uuid.UUID(filial_param) if filial_param else filial_id
 
-    snapshot = await DashboardService(session).get_snapshot(
+    snapshot, materialized_at = await DashboardService(session).get_snapshot(
         permissions=current_user.permissions,
         is_superuser=current_user.is_superuser,
         filial_id=parsed_filial,
+        tenant_id=current_user.tenant_id,
     )
     filiais = await FilialService(session).list_filiais(PageParams(page=1, size=100))
     return render(
@@ -49,5 +50,6 @@ async def dashboard_home(
             "title": "Visão Geral",
             "filial_id": parsed_filial,
             "filiais": filiais.items,
+            "materialized_at": materialized_at,
         },
     )

@@ -14,9 +14,11 @@ def test_permissoes_documentos_registradas() -> None:
 
 
 def test_catalogo_templates_completo() -> None:
-    assert len(TEMPLATES) >= 12
+    assert len(TEMPLATES) >= 14
     assert "contrato_locacao" in TEMPLATES_BY_ID
     assert "reserva_confirmacao" in TEMPLATES_BY_ID
+    assert "danfe" in TEMPLATES_BY_ID
+    assert "danfse" in TEMPLATES_BY_ID
     assert TEMPLATES_BY_ID["relatorio_analitico"].pesado is True
 
 

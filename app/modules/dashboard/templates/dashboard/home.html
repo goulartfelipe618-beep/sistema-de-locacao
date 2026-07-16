@@ -13,6 +13,9 @@
     </select>
   </form>
 </div>
+{% if materialized_at %}
+<p class="form-help" style="margin-bottom:1rem">Indicadores em cache · atualizados em {{ materialized_at|datetime }}</p>
+{% endif %}
 
 <div class="kpi-grid">
   <div class="kpi">

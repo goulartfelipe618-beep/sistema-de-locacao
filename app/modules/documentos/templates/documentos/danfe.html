@@ -1,0 +1,18 @@
+{% extends "documentos/base_pdf.html" %}
+{% block doc_body %}
+<h2>DANFE — Documento Auxiliar da NF-e</h2>
+<p><strong>Número:</strong> {{ nfe.numero }} · <strong>Série:</strong> {{ nfe.serie }} · <strong>Operação:</strong> {{ nfe.operacao.value }}</p>
+<p><strong>Chave de acesso:</strong> {{ nfe.chave_acesso or '—' }}</p>
+<p><strong>Protocolo:</strong> {{ nfe.protocolo or '—' }} · <strong>Natureza:</strong> {{ nfe.natureza_operacao or '—' }}</p>
+<p><strong>Emitente (filial):</strong> {{ filial_nome }}</p>
+<p><strong>Destinatário:</strong> {{ nfe.destinatario_nome }} — {{ nfe.destinatario_doc or '—' }}</p>
+<table class="doc-table">
+  <thead><tr><th>Descrição</th><th>NCM</th><th>CFOP</th><th>Qtd</th><th>Unit.</th><th>Total</th></tr></thead>
+  <tbody>
+  {% for i in itens %}
+  <tr><td>{{ i.descricao }}</td><td>{{ i.ncm or '—' }}</td><td>{{ i.cfop or '—' }}</td><td>{{ i.quantidade }}</td><td>{{ i.valor_unitario|currency }}</td><td>{{ i.valor_total|currency }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p><strong>Valor total da nota:</strong> {{ nfe.valor_total|currency }}</p>
+{% endblock %}

@@ -111,6 +111,22 @@ TEMPLATES: tuple[TemplateDef, ...] = (
         "financeiro.receber.visualizar",
     ),
     TemplateDef(
+        "danfe",
+        "documentos/danfe.html",
+        "DANFE — NF-e",
+        DocFamilia.TRANSACIONAL,
+        "nfe",
+        "fiscal.nfe.visualizar",
+    ),
+    TemplateDef(
+        "danfse",
+        "documentos/danfse.html",
+        "DANFSE — NFS-e",
+        DocFamilia.TRANSACIONAL,
+        "nfse",
+        "fiscal.nfse.visualizar",
+    ),
+    TemplateDef(
         "relatorio_analitico",
         "documentos/relatorio_analitico.html",
         "Relatório Analítico",

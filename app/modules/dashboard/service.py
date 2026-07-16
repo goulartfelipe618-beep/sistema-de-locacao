@@ -147,13 +147,8 @@ class DashboardService:
             return True
         return column == filial_id
 
-    async def get_snapshot(
-        self,
-        *,
-        permissions: set[str],
-        is_superuser: bool = False,
-        filial_id: uuid.UUID | None = None,
-    ) -> DashboardSnapshot:
+    async def build_raw_snapshot(self, filial_id: uuid.UUID | None = None) -> DashboardSnapshot:
+        """Calcula todos os KPIs sem filtro de permissão (para materialização)."""
         snap = DashboardSnapshot()
         snap.total_users = await self._count(
             select(func.count()).select_from(User).where(User.deleted_at.is_(None))
@@ -171,38 +166,89 @@ class DashboardService:
             .select_from(Filial)
             .where(Filial.deleted_at.is_(None), Filial.status == FilialStatus.ACTIVE)
         )
-
-        if self._can(permissions, "frota.veiculo.visualizar", is_superuser):
-            snap.frota = await self._frota_kpis(filial_id)
-            snap.alertas.extend(await self._alertas_frota(filial_id))
-            if self._can(permissions, "locacoes.contrato.visualizar", is_superuser):
-                snap.ocupacao_30 = await self._ocupacao_serie(filial_id, days=30, step=1)
-                snap.ocupacao_90 = await self._ocupacao_serie(filial_id, days=90, step=7)
-
-        if self._can(permissions, "reservas.reserva.visualizar", is_superuser):
-            snap.reservas = await self._reservas_kpis(filial_id)
-
-        if self._can(permissions, "locacoes.contrato.visualizar", is_superuser):
-            snap.locacoes = await self._locacoes_kpis(filial_id)
-            snap.alertas.extend(await self._alertas_locacoes(filial_id))
-            snap.alertas.extend(await self._alertas_contratos_atrasados(filial_id))
-
-        if self._can(permissions, "financeiro.receber.visualizar", is_superuser):
-            snap.financeiro = await self._financeiro_kpis(filial_id)
-
-        if self._can(permissions, "manutencao.os.visualizar", is_superuser):
-            snap.manutencao = await self._manutencao_kpis(filial_id)
-
-        if self._can(permissions, "comercial.funil.visualizar", is_superuser):
-            snap.comercial = await self._comercial_kpis()
-
-        if self._can(permissions, "cadastros.motorista.visualizar", is_superuser):
-            snap.alertas.extend(await self._alertas_motoristas())
-
-        if self._can(permissions, "fiscal.nfe.visualizar", is_superuser):
-            snap.alertas.extend(await self._alertas_fiscal())
-
+        snap.frota = await self._frota_kpis(filial_id)
+        snap.ocupacao_30 = await self._ocupacao_serie(filial_id, days=30, step=1)
+        snap.ocupacao_90 = await self._ocupacao_serie(filial_id, days=90, step=7)
+        snap.reservas = await self._reservas_kpis(filial_id)
+        snap.locacoes = await self._locacoes_kpis(filial_id)
+        snap.financeiro = await self._financeiro_kpis(filial_id)
+        snap.manutencao = await self._manutencao_kpis(filial_id)
+        snap.comercial = await self._comercial_kpis()
+        snap.alertas.extend(await self._alertas_frota(filial_id))
+        snap.alertas.extend(await self._alertas_locacoes(filial_id))
+        snap.alertas.extend(await self._alertas_contratos_atrasados(filial_id))
+        snap.alertas.extend(await self._alertas_motoristas())
+        snap.alertas.extend(await self._alertas_fiscal())
         return snap
+
+    def filter_snapshot(
+        self,
+        snap: DashboardSnapshot,
+        *,
+        permissions: set[str],
+        is_superuser: bool = False,
+    ) -> DashboardSnapshot:
+        """Aplica RBAC sobre snapshot completo materializado."""
+        filtered = DashboardSnapshot(
+            total_users=snap.total_users,
+            active_users=snap.active_users,
+            total_filiais=snap.total_filiais,
+            active_filiais=snap.active_filiais,
+        )
+        if self._can(permissions, "frota.veiculo.visualizar", is_superuser):
+            filtered.frota = snap.frota
+            if self._can(permissions, "locacoes.contrato.visualizar", is_superuser):
+                filtered.ocupacao_30 = snap.ocupacao_30
+                filtered.ocupacao_90 = snap.ocupacao_90
+        if self._can(permissions, "reservas.reserva.visualizar", is_superuser):
+            filtered.reservas = snap.reservas
+        if self._can(permissions, "locacoes.contrato.visualizar", is_superuser):
+            filtered.locacoes = snap.locacoes
+        if self._can(permissions, "financeiro.receber.visualizar", is_superuser):
+            filtered.financeiro = snap.financeiro
+        if self._can(permissions, "manutencao.os.visualizar", is_superuser):
+            filtered.manutencao = snap.manutencao
+        if self._can(permissions, "comercial.funil.visualizar", is_superuser):
+            filtered.comercial = snap.comercial
+        alerta_perms = {
+            "documentacao": "frota.veiculo.visualizar",
+            "cnh": "cadastros.motorista.visualizar",
+            "multa": "locacoes.contrato.visualizar",
+            "checkin": "locacoes.contrato.visualizar",
+            "nfe": "fiscal.nfe.visualizar",
+            "nfse": "fiscal.nfse.visualizar",
+        }
+        for alerta in snap.alertas:
+            required = alerta_perms.get(alerta.tipo)
+            if required is None or self._can(permissions, required, is_superuser):
+                filtered.alertas.append(alerta)
+        return filtered
+
+    async def get_snapshot(
+        self,
+        *,
+        permissions: set[str],
+        is_superuser: bool = False,
+        filial_id: uuid.UUID | None = None,
+        tenant_id: uuid.UUID | None = None,
+    ) -> tuple[DashboardSnapshot, datetime | None]:
+        from app.core.context import get_tenant_id
+        from app.modules.dashboard.cache import load_snapshot_cache
+
+        tid = tenant_id or get_tenant_id()
+        materialized_at: datetime | None = None
+        if tid:
+            cached = await load_snapshot_cache(tid, filial_id, snapshot_cls=DashboardSnapshot)
+            if cached:
+                snap, materialized_at = cached
+                return self.filter_snapshot(
+                    snap, permissions=permissions, is_superuser=is_superuser
+                ), materialized_at
+
+        snap = await self.build_raw_snapshot(filial_id)
+        return self.filter_snapshot(
+            snap, permissions=permissions, is_superuser=is_superuser
+        ), materialized_at
 
     def _can(self, permissions: set[str], code: str, is_superuser: bool) -> bool:
         return has_permission(permissions, code, is_superuser=is_superuser)
@@ -713,8 +759,9 @@ class DashboardService:
         filial_id: uuid.UUID | None = None,
     ) -> DashboardSnapshot:
         """Compatibilidade: retorna snapshot com permissões informadas."""
-        return await self.get_snapshot(
+        snap, _ = await self.get_snapshot(
             permissions=permissions or set(),
             is_superuser=is_superuser,
             filial_id=filial_id,
         )
+        return snap

@@ -31,7 +31,12 @@
     </form>
     {% endif %}
     {% if nfse.status.value == 'autorizada' %}
-    <a class="btn" href="/fiscal/nfse/{{ nfse.id }}/danfse" target="_blank">DANFSE</a>
+    {% if current_user.is_superuser or 'fiscal.nfse.visualizar' in current_user.permissions %}
+    <form method="post" action="/documentos/emitir/danfse/{{ nfse.id }}" style="margin:0;display:inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn" type="submit">PDF DANFSE</button>
+    </form>
+    {% endif %}
+    <a class="btn" href="/fiscal/nfse/{{ nfse.id }}/danfse" target="_blank">Visualizar HTML</a>
     {% if nfse.xml_arquivo_id %}<a class="btn" href="/fiscal/xml/{{ nfse.xml_arquivo_id }}/download">XML</a>{% endif %}
     {% endif %}
     <a class="btn" href="/fiscal/nfse">Voltar</a>

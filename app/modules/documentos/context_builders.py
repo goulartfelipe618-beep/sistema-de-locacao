@@ -14,6 +14,7 @@ from app.modules.comercial.models import CrmProposta, CrmPropostaItem
 from app.modules.comercial.service import PropostaService
 from app.modules.financeiro.models import FinContaReceber
 from app.modules.financeiro.service import ContaReceberService
+from app.modules.fiscal.service import NfeService, NfseService
 from app.modules.frota.models import FrotaCategoria, FrotaMarca, FrotaModelo, FrotaVeiculo
 from app.modules.frota.service import VeiculoService
 from app.modules.locacoes.models import LocAvaria, LocContrato, LocVistoria
@@ -279,6 +280,44 @@ async def build_recibo_pagamento(
     return ctx
 
 
+async def build_danfe(
+    session: AsyncSession, tenant_id: uuid.UUID, nfe_id: uuid.UUID
+) -> dict:
+    nfe_svc = NfeService(session)
+    nfe = await nfe_svc.get(nfe_id)
+    itens = await nfe_svc.list_nfe_itens(nfe_id)
+    ctx = await _empresa(session, tenant_id)
+    ctx.update(
+        {
+            "doc_titulo": f"DANFE {nfe.numero}",
+            "nfe": nfe,
+            "itens": itens,
+            "filial_nome": await _filial_nome(session, nfe.filial_id),
+            "watermark": None,
+        }
+    )
+    return ctx
+
+
+async def build_danfse(
+    session: AsyncSession, tenant_id: uuid.UUID, nfse_id: uuid.UUID
+) -> dict:
+    nfse = await NfseService(session).get(nfse_id)
+    ctx = await _empresa(session, tenant_id)
+    ctx.update(
+        {
+            "doc_titulo": f"DANFSE {nfse.numero}",
+            "nfse": nfse,
+            "filial_nome": await _filial_nome(session, nfse.filial_id),
+            "cliente_nome": await _cliente_nome(session, nfse.cliente_id)
+            if nfse.cliente_id
+            else "Consumidor não identificado",
+            "watermark": None,
+        }
+    )
+    return ctx
+
+
 async def build_relatorio_analitico(
     titulo: str,
     columns: list[str],
@@ -348,6 +387,10 @@ async def build_context(
         return await build_proposta(session, tenant_id, entidade_id)
     if template_id == "recibo_pagamento":
         return await build_recibo_pagamento(session, tenant_id, entidade_id)
+    if template_id == "danfe":
+        return await build_danfe(session, tenant_id, entidade_id)
+    if template_id == "danfse":
+        return await build_danfse(session, tenant_id, entidade_id)
     if template_id == "relatorio_analitico":
         return await build_relatorio_analitico(
             extra.get("titulo", "Relatório"),

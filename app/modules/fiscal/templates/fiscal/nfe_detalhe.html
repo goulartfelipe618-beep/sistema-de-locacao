@@ -40,7 +40,12 @@
     </form>
     {% endif %}
     {% if nfe.status.value == 'autorizada_sefaz' %}
-    <a class="btn" href="/fiscal/nfe/{{ nfe.id }}/danfe" target="_blank">DANFE</a>
+    {% if current_user.is_superuser or 'fiscal.nfe.visualizar' in current_user.permissions %}
+    <form method="post" action="/documentos/emitir/danfe/{{ nfe.id }}" style="margin:0;display:inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn" type="submit">PDF DANFE</button>
+    </form>
+    {% endif %}
+    <a class="btn" href="/fiscal/nfe/{{ nfe.id }}/danfe" target="_blank">Visualizar HTML</a>
     {% if nfe.xml_arquivo_id %}<a class="btn" href="/fiscal/xml/{{ nfe.xml_arquivo_id }}/download">XML</a>{% endif %}
     {% endif %}
     <a class="btn" href="/fiscal/nfe">Voltar</a>
