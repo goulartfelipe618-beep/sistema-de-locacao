@@ -14,6 +14,7 @@ from app.core.config import settings
 from app.core.database import UnitOfWork, get_db_session
 from app.core.exceptions import AuthenticationError, PermissionDeniedError, TenantResolutionError
 from app.modules.integracoes.models import IntApiKey
+from app.modules.integracoes.rate_limit import enforce_api_key_rate_limit
 from app.modules.integracoes.service import ApiKeyService
 from app.modules.tenants.repository import TenantRepository
 
@@ -41,6 +42,7 @@ async def get_api_key_record(
     context.set_tenant_id(tenant_id)
     async with UnitOfWork(tenant_id=tenant_id) as uow:
         item = await ApiKeyService(uow.session).authenticate(x_api_key)
+    await enforce_api_key_rate_limit(item.key_prefix, item.rate_limit_por_minuto)
     return item
 
 

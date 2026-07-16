@@ -26,6 +26,7 @@ from app.modules.integracoes.schemas import (
     TransitoCnhInput,
     TransitoMultasInput,
 )
+from app.modules.integracoes.outbound import OUTBOUND_EVENTOS, OutboundWebhookService
 from app.modules.integracoes.service import (
     ApiKeyService,
     CreditoService,
@@ -148,12 +149,15 @@ async def api_publica_hub(
     ],
 ) -> Any:
     keys = await ApiKeyService(session).list_items(PageParams(page=1, size=50))
+    webhooks = await OutboundWebhookService(session).list_items(PageParams(page=1, size=50))
     return render(
         request,
         "integracoes/api_publica.html",
         {
             "title": "API Pública",
             "keys": keys.items,
+            "webhooks": webhooks.items,
+            "outbound_eventos": OUTBOUND_EVENTOS,
             "docs_url": "/docs",
             "openapi_url": "/openapi.json",
         },
@@ -280,3 +284,39 @@ async def api_key_novo(
         "integracoes/api_key_created.html",
         {"title": "API Key criada", "key": item, "raw_key": raw},
     )
+
+
+@router.post("/integracoes/api/webhooks/novo")
+async def outbound_webhook_novo(
+    session: SessionDep,
+    current_user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("integracoes.api_publica.criar"))
+    ],
+    nome: Annotated[str, Form()],
+    url: Annotated[str, Form()],
+    secret: Annotated[str, Form()] = "",
+    eventos: Annotated[list[str] | None, Form()] = None,
+) -> RedirectResponse:
+    await OutboundWebhookService(session).create(
+        current_user.tenant_id,
+        nome=nome,
+        url=url,
+        eventos=eventos or [],
+        secret=secret or None,
+    )
+    return RedirectResponse("/integracoes/api", status_code=303)
+
+
+@router.post("/integracoes/api/webhooks/{webhook_id}/excluir")
+async def outbound_webhook_excluir(
+    webhook_id: uuid.UUID,
+    session: SessionDep,
+    _user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("integracoes.api_publica.criar"))
+    ],
+) -> RedirectResponse:
+    try:
+        await OutboundWebhookService(session).delete(webhook_id)
+    except AppError:
+        await session.rollback()
+    return RedirectResponse("/integracoes/api", status_code=303)

@@ -969,6 +969,21 @@ class CheckinService:
                     await NfseService(self.session).emitir(nfse.id)
             except Exception:  # noqa: BLE001 - fiscal não deve bloquear o check-in
                 pass
+            try:
+                from app.modules.integracoes.outbound import notify_outbound_event
+
+                await notify_outbound_event(
+                    contrato.tenant_id,
+                    "contrato.encerrado",
+                    {
+                        "id": str(contrato.id),
+                        "numero": contrato.numero,
+                        "status": contrato.status.value,
+                        "valor_final": str(contrato.valor_final or contrato.valor_total),
+                    },
+                )
+            except Exception:  # noqa: BLE001
+                pass
         return contrato
 
     async def _calcular_ajustes(

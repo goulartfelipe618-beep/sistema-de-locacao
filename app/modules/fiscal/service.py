@@ -20,9 +20,8 @@ from app.core.exceptions import (
 )
 from app.core.pagination import Page, PageParams
 from app.modules.audit.service import audit_service
+from app.modules.fiscal.adapters.factory import get_nfe_provider, get_nfse_provider
 from app.modules.fiscal.adapters.nfe_port import NfeItemPayload
-from app.modules.fiscal.adapters.simulador_nfe import SimuladorSefaz
-from app.modules.fiscal.adapters.simulador_nfse import SimuladorNfse
 from app.modules.fiscal.models import (
     FisAliquota,
     FisCancelamento,
@@ -776,13 +775,15 @@ class CancelamentoService:
             return evento
         protocolo: str | None = None
         if evento.documento_tipo == FiscalDocumentoTipo.NFSE:
-            resultado = SimuladorNfse().cancelar(
+            provedor = await get_nfse_provider(self.session, evento.tenant_id)
+            resultado = provedor.cancelar(
                 chave_acesso=chave_acesso or "", motivo=evento.motivo
             )
             protocolo = resultado.protocolo
             confirmado = resultado.confirmado
         else:
-            resultado_nfe = SimuladorSefaz().cancelar(
+            provedor_nfe = await get_nfe_provider(self.session, evento.tenant_id)
+            resultado_nfe = provedor_nfe.cancelar(
                 chave_acesso=chave_acesso or "", motivo=evento.motivo
             )
             protocolo = resultado_nfe.protocolo
@@ -829,7 +830,6 @@ class NfseService:
         self.repo = NfseRepository(session)
         self.imposto_svc = ImpostoService(session)
         self.xml_svc = XmlService(session)
-        self.provedor = SimuladorNfse()
 
     async def next_numero(self, tenant_id: uuid.UUID) -> str:
         count = await self.repo.count_by_tenant(tenant_id)
@@ -889,7 +889,7 @@ class NfseService:
             valor_iss_retido=valor_iss_retido,
             retencao_iss=retencao,
             discriminacao=data.discriminacao or "Serviço de locação de bem móvel.",
-            provedor=self.provedor.nome,
+            provedor=(await get_nfse_provider(self.session, tenant_id)).nome,
             automatica=automatica,
         )
         self.repo.add(nfse)
@@ -953,7 +953,8 @@ class NfseService:
             )
         tomador_nome = await self._tomador_nome(nfse.cliente_id)
         cnpj_prestador = await self._cnpj_prestador(nfse.filial_id)
-        resultado = self.provedor.emitir(
+        provedor = await get_nfse_provider(self.session, nfse.tenant_id)
+        resultado = provedor.emitir(
             numero=nfse.numero,
             serie=nfse.serie,
             cnpj_prestador=cnpj_prestador,
@@ -965,7 +966,7 @@ class NfseService:
             discriminacao=nfse.discriminacao or "",
         )
         nfse.emitida_em = _now()
-        nfse.provedor = self.provedor.nome
+        nfse.provedor = provedor.nome
         if not resultado.autorizada:
             nfse.status = NfseStatus.REJEITADA
             nfse.rejeicao_motivo = resultado.rejeicao_motivo
@@ -1083,7 +1084,6 @@ class NfeService:
         self.item_repo = NfeItemRepository(session)
         self.imposto_svc = ImpostoService(session)
         self.xml_svc = XmlService(session)
-        self.provedor = SimuladorSefaz()
 
     async def next_numero(self, tenant_id: uuid.UUID) -> str:
         count = await self.repo.count_by_tenant(tenant_id)
@@ -1125,7 +1125,7 @@ class NfeService:
             natureza_operacao=data.natureza_operacao or data.operacao.value.capitalize(),
             cfop_padrao=data.cfop_padrao,
             valor_total=_ZERO,
-            provedor=self.provedor.nome,
+            provedor=(await get_nfe_provider(self.session, tenant_id)).nome,
         )
         self.repo.add(nfe)
         await self.repo.flush()
@@ -1218,7 +1218,8 @@ class NfeService:
             for i in itens
         ]
         cnpj_emitente = await self._cnpj_emitente(nfe.filial_id)
-        resultado = self.provedor.emitir(
+        provedor = await get_nfe_provider(self.session, nfe.tenant_id)
+        resultado = provedor.emitir(
             numero=nfe.numero,
             serie=nfe.serie,
             cnpj_emitente=cnpj_emitente,
@@ -1229,7 +1230,7 @@ class NfeService:
             itens=payload,
         )
         nfe.emitida_em = _now()
-        nfe.provedor = self.provedor.nome
+        nfe.provedor = provedor.nome
         if not resultado.autorizada:
             nfe.status = NfeStatus.REJEITADA
             nfe.rejeicao_motivo = resultado.rejeicao_motivo

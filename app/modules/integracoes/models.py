@@ -146,3 +146,25 @@ class IntApiKey(TenantBaseModel):
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,
     )
+
+
+class IntOutboundWebhook(TenantBaseModel):
+    """Endpoint de webhook outbound para eventos da API pública (§12.5)."""
+
+    __tablename__ = "int_outbound_webhooks"
+    __table_args__ = (Index("ix_int_outbound_tenant", "tenant_id"),)
+
+    filial_id: Mapped[uuid.UUID | None] = mapped_column(
+        PgUUID(as_uuid=True),
+        ForeignKey("filiais.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    nome: Mapped[str] = mapped_column(String(120), nullable=False)
+    url: Mapped[str] = mapped_column(String(500), nullable=False)
+    eventos_json: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
+    secret_cripto: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ativo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default=text("true"))
+    ultimo_disparo_em: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    ultimo_erro: Mapped[str | None] = mapped_column(Text, nullable=True)

@@ -642,6 +642,13 @@ class ReservaService:
             entity_id=reserva.id,
             description=f"Reserva confirmada: {reserva.numero}",
         )
+        from app.modules.integracoes.outbound import notify_outbound_event
+
+        await notify_outbound_event(
+            reserva.tenant_id,
+            "reserva.confirmada",
+            {"id": str(reserva.id), "numero": reserva.numero, "status": reserva.status.value},
+        )
         return reserva
 
     async def aprovar_bloqueado(self, reserva_id: uuid.UUID) -> ResReserva:

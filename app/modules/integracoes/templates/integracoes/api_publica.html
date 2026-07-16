@@ -24,6 +24,49 @@
   <tbody>{% for k in keys %}<tr><td>{{ k.nome }}</td><td><code>{{ k.key_prefix }}…</code></td><td>{{ k.rate_limit_por_minuto }}</td><td>{{ 'sim' if k.ativo else 'não' }}</td><td>{{ k.ultimo_uso_em|datetime if k.ultimo_uso_em else '-' }}</td></tr>{% endfor %}</tbody></table>
   {% else %}<div class="empty-state">Nenhuma API Key cadastrada.</div>{% endif %}
 
+  <h4 style="margin-top:24px">Webhooks outbound (eventos para o site/parceiro)</h4>
+  <p class="form-help">O sistema envia POST JSON quando ocorrem: reserva confirmada, contrato encerrado. Assinatura HMAC em <code>X-ERP-Signature</code> quando secret configurado.</p>
+  {% if current_user.is_superuser or 'integracoes.api_publica.criar' in current_user.permissions %}
+  <form method="post" action="/integracoes/api/webhooks/novo" style="margin:12px 0">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="form-grid">
+      <div class="form-group"><label>Nome</label><input class="form-input" name="nome" required></div>
+      <div class="form-group"><label>URL de destino</label><input class="form-input" name="url" type="url" placeholder="https://..." required></div>
+      <div class="form-group"><label>Secret (HMAC)</label><input class="form-input" name="secret" type="password" autocomplete="new-password"></div>
+    </div>
+    <div class="form-group">
+      <label>Eventos</label>
+      {% for ev in outbound_eventos %}
+      <label class="form-check"><input type="checkbox" name="eventos" value="{{ ev }}"> {{ ev }}</label>
+      {% endfor %}
+    </div>
+    <button class="btn btn-primary btn-sm" type="submit">Cadastrar webhook</button>
+  </form>
+  {% endif %}
+  {% if webhooks %}
+  <table class="table"><thead><tr><th>Nome</th><th>URL</th><th>Eventos</th><th>Último disparo</th><th></th></tr></thead>
+  <tbody>
+    {% for w in webhooks %}
+    <tr>
+      <td>{{ w.nome }}</td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis">{{ w.url }}</td>
+      <td><code>{{ w.eventos_json }}</code></td>
+      <td>{{ w.ultimo_disparo_em|datetime if w.ultimo_disparo_em else '—' }}{% if w.ultimo_erro %} <span class="badge badge-danger" title="{{ w.ultimo_erro }}">erro</span>{% endif %}</td>
+      <td>
+        {% if current_user.is_superuser or 'integracoes.api_publica.criar' in current_user.permissions %}
+        <form method="post" action="/integracoes/api/webhooks/{{ w.id }}/excluir" style="display:inline" onsubmit="return confirm('Remover webhook?');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button class="btn btn-sm btn-danger" type="submit">Excluir</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody></table>
+  {% else %}
+  <div class="empty-state">Nenhum webhook outbound cadastrado.</div>
+  {% endif %}
+
   <h4 style="margin-top:24px">Endpoints expostos</h4>
   <ul>
     <li><code>GET /api/v1/public/disponibilidade</code></li>

@@ -23,10 +23,7 @@ from app.modules.financeiro.service import CartaoService, PixService
 from app.modules.frota.models import FrotaTelemetriaDispositivo, FrotaVeiculo
 from app.modules.frota.schemas import TelemetriaDispositivoUpsert, TelemetriaEventoCreate
 from app.modules.frota.service import TelemetriaService, VeiculoService
-from app.modules.integracoes.adapters.simulador_credito import SimuladorCredito
-from app.modules.integracoes.adapters.simulador_pagamento import SimuladorPagamento
-from app.modules.integracoes.adapters.simulador_telemetria import SimuladorTelemetria
-from app.modules.integracoes.adapters.simulador_transito import SimuladorTransito
+from app.modules.integracoes.adapters.registry import get_adapter, get_payment_adapter
 from app.modules.integracoes.models import IntApiKey, IntConsulta, IntProvedorConfig, IntWebhookEvento
 from app.modules.integracoes.schemas import (
     ApiKeyCreate,
@@ -85,19 +82,7 @@ def _credenciais_from_form(
 
 
 def _get_adapter(tipo: IntegracaoTipo, provedor: str):
-    mapping = {
-        IntegracaoTipo.PAGAMENTOS: SimuladorPagamento(),
-        IntegracaoTipo.TRANSITO: SimuladorTransito(),
-        IntegracaoTipo.CREDITO: SimuladorCredito(),
-        IntegracaoTipo.TELEMETRIA: SimuladorTelemetria(),
-    }
-    adapter = mapping.get(tipo)
-    if adapter is None:
-        raise ValidationError("Tipo de integração não suportado.")
-    if provedor != "simulador" and provedor != adapter.nome:
-        # Apenas simulador implementado; outros provedores usam mesmo contrato depois.
-        pass
-    return adapter
+    return get_adapter(tipo, provedor)
 
 
 class ProvedorConfigRepository(BaseRepository[IntProvedorConfig]):
@@ -251,7 +236,6 @@ class PagamentoWebhookService:
         self.session = session
         self.config_svc = ProvedorConfigService(session)
         self.webhook_repo = WebhookRepository(session)
-        self.gateway = SimuladorPagamento()
 
     async def processar(
         self,
@@ -268,8 +252,9 @@ class PagamentoWebhookService:
             raise ValidationError("Provedor do webhook não confere.")
 
         secret = self.config_svc.webhook_secret(config)
-        assinatura_ok = self.gateway.validar_assinatura(body=body, signature=signature, secret=secret)
-        payload = self.gateway.parse_webhook(body=body)
+        gateway = get_payment_adapter(config.provedor)
+        assinatura_ok = gateway.validar_assinatura(body=body, signature=signature, secret=secret)
+        payload = gateway.parse_webhook(body=body)
 
         evento = IntWebhookEvento(
             tenant_id=config.tenant_id,
@@ -326,7 +311,6 @@ class TransitoService:
         self.session = session
         self.config_svc = ProvedorConfigService(session)
         self.consulta_repo = ConsultaRepository(session)
-        self.adapter = SimuladorTransito()
 
     async def _resolve_config(
         self, tenant_id: uuid.UUID, config_id: uuid.UUID | None
@@ -368,7 +352,8 @@ class TransitoService:
         )
         self.consulta_repo.add(consulta)
         try:
-            multas = self.adapter.consultar_multas_veiculo(
+            adapter = get_adapter(IntegracaoTipo.TRANSITO, config.provedor)
+            multas = adapter.consultar_multas_veiculo(
                 placa=veiculo.placa, renavam=veiculo.renavam, credenciais=cred
             )
             imported: list[str] = []
@@ -417,7 +402,7 @@ class TransitoService:
         try:
             if not motorista.cnh_numero:
                 raise ValidationError("Motorista sem número de CNH.")
-            cnh = self.adapter.consultar_cnh(
+            cnh = get_adapter(IntegracaoTipo.TRANSITO, config.provedor).consultar_cnh(
                 cnh_numero=motorista.cnh_numero, cpf=motorista.cpf, credenciais=cred
             )
             if data.atualizar_pontuacao:
@@ -443,7 +428,6 @@ class CreditoService:
         self.session = session
         self.config_svc = ProvedorConfigService(session)
         self.consulta_repo = ConsultaRepository(session)
-        self.adapter = SimuladorCredito()
 
     async def consultar(self, tenant_id: uuid.UUID, data: CreditoConsultaInput) -> IntConsulta:
         from app.modules.cadastros.service import ClienteService
@@ -475,7 +459,7 @@ class CreditoService:
         )
         self.consulta_repo.add(consulta)
         try:
-            result = self.adapter.consultar_score(
+            result = get_adapter(IntegracaoTipo.CREDITO, config.provedor).consultar_score(
                 documento=doc, tipo_pessoa=tipo_pessoa, credenciais=self.config_svc.credenciais(config)
             )
             if result.restricao and not cliente.blacklist:
@@ -496,7 +480,6 @@ class TelemetriaIntegracaoService:
         self.session = session
         self.config_svc = ProvedorConfigService(session)
         self.telemetria = TelemetriaService(session)
-        self.adapter = SimuladorTelemetria()
 
     async def sincronizar(self, tenant_id: uuid.UUID, config_id: uuid.UUID | None = None) -> dict:
         if config_id:
@@ -523,7 +506,7 @@ class TelemetriaIntegracaoService:
         dispositivos = list((await self.session.execute(stmt)).scalars().all())
         equipamentos = [d.equipamento_id for d in dispositivos] or ["SIM-001"]
 
-        posicoes, eventos = self.adapter.sincronizar(
+        posicoes, eventos = get_adapter(IntegracaoTipo.TELEMETRIA, config.provedor).sincronizar(
             credenciais=self.config_svc.credenciais(config),
             equipamentos=equipamentos,
         )
