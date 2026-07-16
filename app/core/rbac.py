@@ -73,6 +73,8 @@ SYSTEM_PERMISSIONS: tuple[PermissionDef, ...] = (
     _perm("configuracoes", "filial", "criar", "Criar filiais/unidades"),
     _perm("configuracoes", "filial", "editar", "Editar filiais/unidades"),
     _perm("configuracoes", "filial", "excluir", "Excluir filiais/unidades"),
+    _perm("configuracoes", "parametro", "visualizar", "Visualizar parâmetros do sistema"),
+    _perm("configuracoes", "parametro", "editar", "Editar parâmetros do sistema"),
     # ---- Cadastros ----
     _perm("cadastros", "cliente", "visualizar", "Visualizar clientes"),
     _perm("cadastros", "cliente", "criar", "Criar clientes"),

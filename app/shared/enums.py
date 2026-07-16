@@ -908,3 +908,29 @@ class AutoAprovacaoStatus(str, enum.Enum):
     REJEITADO = "rejeitado"
 
 
+# =============================================================================
+# Parâmetros (§14.5)
+# =============================================================================
+class ParametroCategoria(str, enum.Enum):
+    """Agrupamento de parâmetros na UI."""
+
+    GERAL = "geral"
+    CADASTROS = "cadastros"
+    RESERVAS = "reservas"
+    LOCACOES = "locacoes"
+    MANUTENCAO = "manutencao"
+    FINANCEIRO = "financeiro"
+    AUTOMACOES = "automacoes"
+    AUDITORIA = "auditoria"
+
+
+class ParametroTipo(str, enum.Enum):
+    """Tipo de valor armazenado."""
+
+    INT = "int"
+    DECIMAL = "decimal"
+    STRING = "string"
+    BOOL = "bool"
+    JSON = "json"
+
+

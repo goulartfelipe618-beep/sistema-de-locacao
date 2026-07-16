@@ -23,6 +23,7 @@ from app.modules.locacoes.web import router as locacoes_router
 from app.modules.manutencao.web import router as manutencao_router
 from app.modules.reservas.web import router as reservas_router
 from app.modules.tarifario.web import router as tarifario_router
+from app.modules.parametros.web import router as parametros_router
 from app.modules.tenants.web import router as tenants_router
 
 web_router = APIRouter(include_in_schema=False)
@@ -30,6 +31,7 @@ web_router = APIRouter(include_in_schema=False)
 web_router.include_router(dashboard_router)
 web_router.include_router(identity_router)
 web_router.include_router(tenants_router)
+web_router.include_router(parametros_router)
 web_router.include_router(cadastros_router)
 web_router.include_router(frota_router)
 web_router.include_router(manutencao_router)

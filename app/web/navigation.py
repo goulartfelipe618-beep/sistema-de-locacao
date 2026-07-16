@@ -579,7 +579,12 @@ NAVIGATION: tuple[MenuSection, ...] = (
                 permission="identidade.papel.visualizar",
                 implemented=True,
             ),
-            MenuItem("Parâmetros", url="/configuracoes/parametros"),
+            MenuItem(
+                "Parâmetros",
+                url="/configuracoes/parametros",
+                permission="configuracoes.parametro.visualizar",
+                implemented=True,
+            ),
         ),
     ),
     MenuSection(

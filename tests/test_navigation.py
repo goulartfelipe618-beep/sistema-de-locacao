@@ -38,11 +38,32 @@ def test_operator_without_dashboard_permission_hides_it() -> None:
     assert "Dashboard" not in labels
 
 
-def test_future_modules_visible_but_disabled() -> None:
-    menu = build_menu(_make_user({"dashboard.painel.visualizar"}))
+def test_parametros_hidden_without_permission() -> None:
+    menu = build_menu(
+        _make_user(
+            {
+                "dashboard.painel.visualizar",
+                "configuracoes.empresa.visualizar",
+            }
+        )
+    )
+    config = next(s for s in menu if s["label"] == "Configurações")
+    labels = {item["label"] for item in config["children"]}
+    assert "Parâmetros" not in labels
+
+
+def test_parametros_enabled_with_permission() -> None:
+    menu = build_menu(
+        _make_user(
+            {
+                "dashboard.painel.visualizar",
+                "configuracoes.parametro.visualizar",
+            }
+        )
+    )
     config = next(s for s in menu if s["label"] == "Configurações")
     parametros = next(item for item in config["children"] if item["label"] == "Parâmetros")
-    assert parametros["enabled"] is False
+    assert parametros["enabled"] is True
 
 
 def test_automacoes_enabled_with_permissions() -> None:

@@ -23,6 +23,7 @@ from app.modules.locacoes.api import router as locacoes_router
 from app.modules.manutencao.api import router as manutencao_router
 from app.modules.reservas.api import router as reservas_router
 from app.modules.tarifario.api import router as tarifario_router
+from app.modules.parametros.api import router as parametros_router
 from app.modules.tenants.api import router as tenants_router
 
 api_router = APIRouter(prefix="/api/v1")
@@ -30,6 +31,7 @@ api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(health_router)
 api_router.include_router(identity_router)
 api_router.include_router(tenants_router)
+api_router.include_router(parametros_router)
 api_router.include_router(cadastros_router)
 api_router.include_router(frota_router)
 api_router.include_router(manutencao_router)
