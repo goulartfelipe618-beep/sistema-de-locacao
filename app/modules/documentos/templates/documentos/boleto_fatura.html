@@ -1,0 +1,28 @@
+{% extends "documentos/base_pdf.html" %}
+{% block doc_body %}
+<h2>Fatura / Boleto Bancário</h2>
+<p><strong>Fatura:</strong> {{ fatura.numero }}</p>
+<p><strong>Cliente:</strong> {{ cliente_nome }}</p>
+<p><strong>Período:</strong> {{ fatura.periodo_inicio|date }} — {{ fatura.periodo_fim|date }}</p>
+<p><strong>Vencimento:</strong> {{ fatura.vencimento|date if fatura.vencimento else '—' }}</p>
+<p><strong>Valor total:</strong> {{ fatura.valor_total|currency }}</p>
+<p><strong>Linha digitável:</strong> {{ linha_digitavel }}</p>
+{% if titulos %}
+<h3>Títulos incluídos</h3>
+<table class="doc-table">
+  <thead><tr><th>Número</th><th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Status</th></tr></thead>
+  <tbody>
+  {% for t in titulos %}
+  <tr>
+    <td>{{ t.numero }}</td>
+    <td>{{ t.descricao }}</td>
+    <td>{{ t.valor_original|currency }}</td>
+    <td>{{ t.vencimento|date }}</td>
+    <td>{{ t.status.value }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+<p class="legal">Documento gerado para cobrança consolidada. Utilize a linha digitável acima para pagamento via internet banking ou lotérica.</p>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "documentos/base_pdf.html" %}
+{% block doc_body %}
+<h2>Indicação de Condutor Infrator</h2>
+<p><strong>AIT:</strong> {{ multa.ait or '—' }}</p>
+<p><strong>Código infração:</strong> {{ multa.codigo_infracao }}</p>
+<p><strong>Órgão autuador:</strong> {{ multa.orgao }}</p>
+<p><strong>Data/hora:</strong> {{ multa.ocorrido_em|datetime }}</p>
+<p><strong>Veículo:</strong> {{ veiculo_label }}</p>
+<p><strong>Contrato:</strong> {{ contrato_numero or '—' }}</p>
+<p><strong>Cliente locatário:</strong> {{ cliente_nome }}</p>
+<p><strong>Valor:</strong> {{ multa.valor|currency }}</p>
+<p><strong>Pontuação:</strong> {{ multa.pontuacao }}</p>
+
+<h3>Condutor indicado</h3>
+{% if motorista %}
+<p><strong>Nome:</strong> {{ motorista.nome }}</p>
+<p><strong>CPF:</strong> {{ motorista.cpf or '—' }}</p>
+<p><strong>CNH:</strong> {{ motorista.cnh_numero or '—' }} (cat. {{ motorista.cnh_categoria or '—' }})</p>
+<p><strong>Validade CNH:</strong> {{ motorista.cnh_validade|date if motorista.cnh_validade else '—' }}</p>
+{% else %}
+<p>Nenhum motorista vinculado à multa.</p>
+{% endif %}
+
+<p class="legal">Documento para formalização da indicação do condutor responsável pela infração de trânsito, conforme legislação vigente.</p>
+{% endblock %}

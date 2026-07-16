@@ -1,0 +1,24 @@
+{% extends "documentos/base_pdf.html" %}
+{% block doc_body %}
+<h2>Trilha de Auditoria</h2>
+<p><strong>Total de eventos no sistema:</strong> {{ total }}</p>
+<p><strong>Registros neste export:</strong> {{ logs|length }}</p>
+{% if logs %}
+<table class="doc-table">
+  <thead><tr><th>Data/Hora</th><th>Ação</th><th>Entidade</th><th>Descrição</th><th>IP</th></tr></thead>
+  <tbody>
+  {% for log in logs %}
+  <tr>
+    <td>{{ log.created_at|datetime }}</td>
+    <td>{{ log.action }}</td>
+    <td>{{ log.entity or '—' }}</td>
+    <td>{{ log.description or '—' }}</td>
+    <td>{{ log.ip_address or '—' }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>Nenhum evento de auditoria registrado.</p>
+{% endif %}
+{% endblock %}

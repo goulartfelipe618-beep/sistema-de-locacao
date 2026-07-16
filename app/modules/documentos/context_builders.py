@@ -3,22 +3,28 @@
 from __future__ import annotations
 
 import uuid
+from datetime import date, timedelta
 from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundError
+from app.core.pagination import PageParams
+from app.modules.audit.models import AuditLog
+from app.modules.audit.repository import AuditRepository
 from app.modules.cadastros.models import Cliente
+from app.modules.cadastros.models_extra import Motorista
+from app.modules.cadastros.service import ClienteService
 from app.modules.comercial.models import CrmProposta, CrmPropostaItem
 from app.modules.comercial.service import PropostaService
 from app.modules.financeiro.models import FinContaReceber
-from app.modules.financeiro.service import ContaReceberService
+from app.modules.financeiro.service import ContaReceberService, FaturamentoService
 from app.modules.fiscal.service import NfeService, NfseService
-from app.modules.frota.models import FrotaCategoria, FrotaMarca, FrotaModelo, FrotaVeiculo
+from app.modules.frota.models import FrotaCategoria, FrotaDocumento, FrotaMarca, FrotaModelo, FrotaVeiculo
 from app.modules.frota.service import VeiculoService
-from app.modules.locacoes.models import LocAvaria, LocContrato, LocVistoria
-from app.modules.locacoes.service import AvariaService, ContratoService
+from app.modules.locacoes.models import LocAvaria, LocContrato, LocMulta, LocVistoria
+from app.modules.locacoes.service import AvariaService, ContratoService, MultaService
 from app.modules.manutencao.models import ManOsItem
 from app.modules.manutencao.service import OrdemServicoService
 from app.modules.reservas.models import ResReserva, ResReservaItem
@@ -27,6 +33,10 @@ from app.modules.tenants.models import Filial
 from app.modules.tenants.branding import branding_pdf_context
 from app.modules.tenants.repository import TenantRepository
 from app.shared.enums import VistoriaTipo
+
+
+def _qr(url: str | None, label: str = "Validação online") -> dict[str, Any]:
+    return {"qr_url": url, "qr_label": label} if url else {}
 
 
 async def _empresa(session: AsyncSession, tenant_id: uuid.UUID) -> dict[str, Any]:
@@ -131,6 +141,7 @@ async def build_contrato(session: AsyncSession, tenant_id: uuid.UUID, contrato_i
             "filial_devolucao": await _filial_nome(session, contrato.filial_devolucao_id),
             "watermark": watermark,
             "assinatura_b64": None,
+            **_qr(f"/locacoes/contratos/{contrato_id}"),
         }
     )
     return ctx
@@ -341,6 +352,192 @@ async def build_relatorio_analitico(
     return ctx
 
 
+async def build_recibo_caucao(
+    session: AsyncSession, tenant_id: uuid.UUID, contrato_id: uuid.UUID
+) -> dict:
+    contrato = await ContratoService(session).get(contrato_id)
+    ctx = await _empresa(session, tenant_id)
+    ctx.update(
+        {
+            "doc_titulo": f"Recibo de Caução — Contrato {contrato.numero}",
+            "contrato": contrato,
+            "cliente_nome": await _cliente_nome(session, contrato.cliente_id),
+            "veiculo_label": await _veiculo_label(session, contrato.veiculo_id),
+            "filial_nome": await _filial_nome(session, contrato.filial_retirada_id),
+            "valor_caucao": contrato.caucao,
+            "forma_pagamento": contrato.forma_pagamento or "—",
+            "watermark": None,
+            **_qr(f"/locacoes/contratos/{contrato_id}", "Consultar contrato"),
+        }
+    )
+    return ctx
+
+
+async def build_boleto_fatura(
+    session: AsyncSession, tenant_id: uuid.UUID, fatura_id: uuid.UUID
+) -> dict:
+    fat_svc = FaturamentoService(session)
+    fatura = await fat_svc.get_fatura(fatura_id)
+    titulos = await fat_svc.list_titulos(fatura_id)
+    ctx = await _empresa(session, tenant_id)
+    linha = f"23793.38128 60000.000003 00000.000400 1 {int(fatura.valor_total * 100):011d}"
+    ctx.update(
+        {
+            "doc_titulo": f"Fatura {fatura.numero}",
+            "fatura": fatura,
+            "titulos": titulos,
+            "cliente_nome": await _cliente_nome(session, fatura.cliente_id),
+            "linha_digitavel": linha,
+            "watermark": "RASCUNHO" if fatura.status.value == "rascunho" else None,
+            **_qr(f"/financeiro/faturamento/{fatura_id}", "Detalhe da fatura"),
+        }
+    )
+    return ctx
+
+
+async def build_doc_vencimentos(
+    session: AsyncSession, tenant_id: uuid.UUID, scope_id: uuid.UUID, *, dias: int = 90
+) -> dict:
+    limite = date.today() + timedelta(days=dias)
+    stmt = (
+        select(FrotaDocumento, FrotaVeiculo)
+        .join(FrotaVeiculo, FrotaVeiculo.id == FrotaDocumento.veiculo_id)
+        .where(
+            FrotaDocumento.tenant_id == tenant_id,
+            FrotaDocumento.deleted_at.is_(None),
+            FrotaDocumento.data_validade.is_not(None),
+            FrotaDocumento.data_validade <= limite,
+        )
+        .order_by(FrotaDocumento.data_validade)
+    )
+    rows = (await session.execute(stmt)).all()
+    itens = [
+        {
+            "placa": v.placa,
+            "tipo": d.tipo.value,
+            "numero": d.numero or "—",
+            "validade": d.data_validade,
+            "status": d.status.value,
+        }
+        for d, v in rows
+    ]
+    ctx = await _empresa(session, tenant_id)
+    ctx.update(
+        {
+            "doc_titulo": f"Vencimentos de Documentação ({dias} dias)",
+            "itens": itens,
+            "dias": dias,
+            "total": len(itens),
+            "watermark": None,
+        }
+    )
+    return ctx
+
+
+async def build_ficha_cliente(
+    session: AsyncSession, tenant_id: uuid.UUID, cliente_id: uuid.UUID
+) -> dict:
+    cliente = await ClienteService(session).get(cliente_id)
+    ctx = await _empresa(session, tenant_id)
+    watermark = "BLOQUEADO" if cliente.blacklist else None
+    ctx.update(
+        {
+            "doc_titulo": f"Ficha Cadastral — {cliente.nome}",
+            "cliente": cliente,
+            "filial_nome": await _filial_nome(session, cliente.filial_id),
+            "watermark": watermark,
+        }
+    )
+    return ctx
+
+
+async def build_extrato_cliente(
+    session: AsyncSession, tenant_id: uuid.UUID, cliente_id: uuid.UUID
+) -> dict:
+    cliente = await ClienteService(session).get(cliente_id)
+    contratos = (
+        await session.execute(
+            select(LocContrato)
+            .where(
+                LocContrato.tenant_id == tenant_id,
+                LocContrato.cliente_id == cliente_id,
+                LocContrato.deleted_at.is_(None),
+            )
+            .order_by(LocContrato.created_at.desc())
+            .limit(20)
+        )
+    ).scalars().all()
+    titulos = (
+        await session.execute(
+            select(FinContaReceber)
+            .where(
+                FinContaReceber.tenant_id == tenant_id,
+                FinContaReceber.cliente_id == cliente_id,
+                FinContaReceber.deleted_at.is_(None),
+            )
+            .order_by(FinContaReceber.vencimento.desc())
+            .limit(20)
+        )
+    ).scalars().all()
+    ctx = await _empresa(session, tenant_id)
+    ctx.update(
+        {
+            "doc_titulo": f"Extrato de Relacionamento — {cliente.nome}",
+            "cliente": cliente,
+            "contratos": contratos,
+            "titulos": titulos,
+            "watermark": None,
+        }
+    )
+    return ctx
+
+
+async def build_multa_condutor(
+    session: AsyncSession, tenant_id: uuid.UUID, multa_id: uuid.UUID
+) -> dict:
+    multa = await MultaService(session).get(multa_id)
+    motorista = await session.get(Motorista, multa.motorista_id) if multa.motorista_id else None
+    ctx = await _empresa(session, tenant_id)
+    ctx.update(
+        {
+            "doc_titulo": f"Indicação de Condutor — AIT {multa.ait or multa.codigo_infracao}",
+            "multa": multa,
+            "motorista": motorista,
+            "veiculo_label": await _veiculo_label(session, multa.veiculo_id),
+            "cliente_nome": await _cliente_nome(session, multa.cliente_id)
+            if multa.cliente_id
+            else "—",
+            "contrato_numero": None,
+            "watermark": None,
+        }
+    )
+    if multa.contrato_id:
+        c = await session.get(LocContrato, multa.contrato_id)
+        ctx["contrato_numero"] = c.numero if c else None
+    return ctx
+
+
+async def build_auditoria_export(
+    session: AsyncSession, tenant_id: uuid.UUID, scope_id: uuid.UUID, *, limit: int = 500
+) -> dict:
+    repo = AuditRepository(session)
+    result = await repo.paginate(
+        PageParams(page=1, size=limit),
+        tenant_id=tenant_id,
+    )
+    logs: list[AuditLog] = result.items
+    ctx = await _empresa(session, tenant_id)
+    ctx.update(
+        {
+            "doc_titulo": "Trilha de Auditoria — Exportação",
+            "logs": logs,
+            "total": result.total,
+            "watermark": "CONFIDENCIAL",
+        }
+    )
+    return ctx
+
+
 BUILDERS: dict[str, str] = {
     "reserva_confirmacao": "reserva",
     "reserva_voucher": "reserva",
@@ -353,6 +550,13 @@ BUILDERS: dict[str, str] = {
     "ficha_veiculo": "veiculo",
     "proposta_comercial": "proposta",
     "recibo_pagamento": "conta_receber",
+    "recibo_caucao": "contrato",
+    "boleto_fatura": "fatura",
+    "doc_vencimentos": "tenant",
+    "ficha_cliente": "cliente",
+    "extrato_cliente": "cliente",
+    "multa_condutor": "multa",
+    "auditoria_export": "tenant",
 }
 
 
@@ -402,4 +606,18 @@ async def build_context(
             tenant_id,
             session,
         )
+    if template_id == "recibo_caucao":
+        return await build_recibo_caucao(session, tenant_id, entidade_id)
+    if template_id == "boleto_fatura":
+        return await build_boleto_fatura(session, tenant_id, entidade_id)
+    if template_id == "doc_vencimentos":
+        return await build_doc_vencimentos(session, tenant_id, entidade_id)
+    if template_id == "ficha_cliente":
+        return await build_ficha_cliente(session, tenant_id, entidade_id)
+    if template_id == "extrato_cliente":
+        return await build_extrato_cliente(session, tenant_id, entidade_id)
+    if template_id == "multa_condutor":
+        return await build_multa_condutor(session, tenant_id, entidade_id)
+    if template_id == "auditoria_export":
+        return await build_auditoria_export(session, tenant_id, entidade_id)
     raise NotFoundError(f"Template desconhecido: {template_id}")

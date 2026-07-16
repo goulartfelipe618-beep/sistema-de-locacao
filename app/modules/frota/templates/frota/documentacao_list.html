@@ -25,6 +25,11 @@
     {% if current_user.is_superuser or 'frota.documentacao.criar' in current_user.permissions %}
     <a class="btn btn-primary" href="/frota/documentacao/novo">+ Novo Documento</a>
     {% endif %}
+    {% if current_user.is_superuser or 'frota.documentacao.visualizar' in current_user.permissions %}
+    <form method="post" action="/documentos/emitir/doc_vencimentos/{{ current_user.tenant_id }}" style="margin:0;display:inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-sm" type="submit">PDF Vencimentos</button>
+    </form>
+    {% endif %}
   </div>
   {% if page_result.items %}
   <table class="table"><thead><tr><th>Tipo</th><th>Veículo</th><th>Validade</th><th>Status</th><th></th></tr></thead>

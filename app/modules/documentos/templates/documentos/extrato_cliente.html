@@ -1,0 +1,42 @@
+{% extends "documentos/base_pdf.html" %}
+{% block doc_body %}
+<h2>Extrato de Relacionamento</h2>
+<p><strong>Cliente:</strong> {{ cliente.nome }}</p>
+<p><strong>Documento:</strong> {{ cliente.cpf or cliente.cnpj or '—' }}</p>
+
+<h3>Últimos contratos</h3>
+{% if contratos %}
+<table class="doc-table">
+  <thead><tr><th>Número</th><th>Status</th><th>Retirada</th><th>Devolução</th><th>Total</th></tr></thead>
+  <tbody>
+  {% for c in contratos %}
+  <tr>
+    <td>{{ c.numero }}</td>
+    <td>{{ c.status.value }}</td>
+    <td>{{ c.retirada_prevista_em|datetime }}</td>
+    <td>{{ c.devolucao_prevista_em|datetime }}</td>
+    <td>{{ c.valor_total|currency }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}<p>Nenhum contrato registrado.</p>{% endif %}
+
+<h3>Últimos títulos a receber</h3>
+{% if titulos %}
+<table class="doc-table">
+  <thead><tr><th>Número</th><th>Descrição</th><th>Vencimento</th><th>Valor</th><th>Status</th></tr></thead>
+  <tbody>
+  {% for t in titulos %}
+  <tr>
+    <td>{{ t.numero }}</td>
+    <td>{{ t.descricao }}</td>
+    <td>{{ t.vencimento|date }}</td>
+    <td>{{ t.valor_original|currency }}</td>
+    <td>{{ t.status.value }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}<p>Nenhum título financeiro registrado.</p>{% endif %}
+{% endblock %}

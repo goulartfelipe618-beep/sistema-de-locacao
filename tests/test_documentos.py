@@ -14,12 +14,43 @@ def test_permissoes_documentos_registradas() -> None:
 
 
 def test_catalogo_templates_completo() -> None:
-    assert len(TEMPLATES) >= 14
+    assert len(TEMPLATES) >= 21
     assert "contrato_locacao" in TEMPLATES_BY_ID
     assert "reserva_confirmacao" in TEMPLATES_BY_ID
     assert "danfe" in TEMPLATES_BY_ID
     assert "danfse" in TEMPLATES_BY_ID
+    assert "recibo_caucao" in TEMPLATES_BY_ID
+    assert "boleto_fatura" in TEMPLATES_BY_ID
+    assert "doc_vencimentos" in TEMPLATES_BY_ID
+    assert "ficha_cliente" in TEMPLATES_BY_ID
+    assert "extrato_cliente" in TEMPLATES_BY_ID
+    assert "multa_condutor" in TEMPLATES_BY_ID
+    assert "auditoria_export" in TEMPLATES_BY_ID
     assert TEMPLATES_BY_ID["relatorio_analitico"].pesado is True
+    assert TEMPLATES_BY_ID["auditoria_export"].pesado is True
+
+
+def test_pdf_engine_renderiza_template_novo() -> None:
+    html = render_html(
+        "documentos/recibo_caucao.html",
+        {
+            "doc_titulo": "Recibo de Caução",
+            "empresa_nome": "Locadora X",
+            "empresa_razao": "Locadora X LTDA",
+            "empresa_cnpj": "00000000000100",
+            "empresa_email": "a@b.com",
+            "empresa_phone": "11999999999",
+            "watermark": None,
+            "contrato": type("C", (), {"numero": "CT-001"})(),
+            "cliente_nome": "João",
+            "veiculo_label": "ABC1D23",
+            "filial_nome": "Matriz",
+            "valor_caucao": 500,
+            "forma_pagamento": "Cartão",
+        },
+    )
+    assert "Recibo de Caução" in html
+    assert "João" in html
 
 
 def test_pdf_engine_renderiza_html() -> None:

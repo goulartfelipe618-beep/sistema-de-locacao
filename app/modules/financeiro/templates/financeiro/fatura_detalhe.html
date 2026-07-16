@@ -34,6 +34,11 @@
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-primary" type="submit">Emitir Fatura</button>
     </form>
     {% endif %}
+    {% if current_user.is_superuser or 'financeiro.faturamento.visualizar' in current_user.permissions %}
+    <form method="post" action="/documentos/emitir/boleto_fatura/{{ fatura.id }}" style="margin:0;display:inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn" type="submit">PDF Boleto/Fatura</button>
+    </form>
+    {% endif %}
     <a class="btn" href="/financeiro/faturamento">Voltar</a>
   </div>
 </div>

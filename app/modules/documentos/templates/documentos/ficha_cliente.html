@@ -1,0 +1,15 @@
+{% extends "documentos/base_pdf.html" %}
+{% block doc_body %}
+<h2>Ficha Cadastral do Cliente</h2>
+<p><strong>Nome:</strong> {{ cliente.nome }}</p>
+<p><strong>Tipo:</strong> {{ 'Pessoa Física' if cliente.person_type.value == 'pf' else 'Pessoa Jurídica' }}</p>
+<p><strong>Documento:</strong> {{ cliente.cpf or cliente.cnpj or '—' }}</p>
+<p><strong>Status:</strong> {{ cliente.status.value }}{% if cliente.blacklist %} (blacklist){% endif %}</p>
+<p><strong>E-mail:</strong> {{ cliente.email or '—' }}</p>
+<p><strong>Telefone:</strong> {{ cliente.telefone or cliente.celular or '—' }}</p>
+<p><strong>Endereço:</strong> {{ cliente.endereco or '—' }}{% if cliente.numero %}, {{ cliente.numero }}{% endif %} — {{ cliente.cidade or '' }}/{{ cliente.uf or '' }}</p>
+<p><strong>Filial:</strong> {{ filial_nome }}</p>
+<p><strong>Limite de crédito:</strong> {{ cliente.limite_credito|currency }}</p>
+{% if cliente.motivo_bloqueio %}<p><strong>Motivo bloqueio:</strong> {{ cliente.motivo_bloqueio }}</p>{% endif %}
+{% if cliente.observacoes %}<p><strong>Observações:</strong> {{ cliente.observacoes }}</p>{% endif %}
+{% endblock %}

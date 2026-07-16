@@ -123,6 +123,17 @@
     </div>
   </form>
 
+  {% if cliente and (current_user.is_superuser or 'cadastros.cliente.visualizar' in current_user.permissions) %}
+  <div class="form-actions" style="margin-top:8px;gap:8px">
+    <form method="post" action="/documentos/emitir/ficha_cliente/{{ cliente.id }}" style="display:inline;margin:0">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn" type="submit">PDF Ficha</button>
+    </form>
+    <form method="post" action="/documentos/emitir/extrato_cliente/{{ cliente.id }}" style="display:inline;margin:0">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn" type="submit">PDF Extrato</button>
+    </form>
+  </div>
+  {% endif %}
+
   {% if cliente and (current_user.is_superuser or 'cadastros.cliente.bloquear' in current_user.permissions) %}
   <hr style="margin:24px 0;border:0;border-top:1px solid var(--border)">
   <form method="post" action="/cadastros/clientes/{{ cliente.id }}/bloquear" class="form-grid">

@@ -1,0 +1,24 @@
+{% extends "documentos/base_pdf.html" %}
+{% block doc_body %}
+<h2>Vencimentos de Documentação da Frota</h2>
+<p><strong>Horizonte:</strong> próximos {{ dias }} dias</p>
+<p><strong>Total de registros:</strong> {{ total }}</p>
+{% if itens %}
+<table class="doc-table">
+  <thead><tr><th>Placa</th><th>Tipo</th><th>Número</th><th>Validade</th><th>Status</th></tr></thead>
+  <tbody>
+  {% for i in itens %}
+  <tr>
+    <td>{{ i.placa }}</td>
+    <td>{{ i.tipo }}</td>
+    <td>{{ i.numero }}</td>
+    <td>{{ i.validade|date }}</td>
+    <td>{{ i.status }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>Nenhum documento com vencimento no período informado.</p>
+{% endif %}
+{% endblock %}

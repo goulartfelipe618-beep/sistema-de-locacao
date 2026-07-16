@@ -13,6 +13,11 @@
       <noscript><button class="btn" type="submit">Filtrar</button></noscript>
     </form>
     <span class="form-help">{{ page_result.total }} evento(s)</span>
+    {% if current_user.is_superuser or 'auditoria.trilha.visualizar' in current_user.permissions %}
+    <form method="post" action="/documentos/emitir/auditoria_export/{{ current_user.tenant_id }}" style="margin:0;display:inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-sm" type="submit">Exportar PDF</button>
+    </form>
+    {% endif %}
   </div>
 
   {% if page_result.items %}
