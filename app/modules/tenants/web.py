@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,6 +15,7 @@ from app.core.exceptions import AppError
 from app.core.pagination import PageParams
 from app.core.templating import render
 from app.modules.identity.service import AuthenticatedUser
+from app.modules.tenants.branding import resolve_logo_url
 from app.modules.tenants.schemas import FilialCreate, FilialUpdate, TenantUpdate
 from app.modules.tenants.service import FilialService, TenantService
 
@@ -41,7 +42,13 @@ async def company_view(
     return render(
         request,
         "tenants/company.html",
-        {"tenant": tenant, "can_edit": can_edit, "title": "Dados da Empresa", "error": None},
+        {
+            "tenant": tenant,
+            "can_edit": can_edit,
+            "title": "Dados da Empresa",
+            "error": None,
+            "logo_preview": resolve_logo_url(tenant),
+        },
     )
 
 
@@ -56,24 +63,53 @@ async def company_update(
     trade_name: Annotated[str, Form()] = "",
     email: Annotated[str, Form()] = "",
     phone: Annotated[str, Form()] = "",
+    logo_url: Annotated[str, Form()] = "",
+    logo_storage_key: Annotated[str, Form()] = "",
+    brand_primary_color: Annotated[str, Form()] = "#1e5a8a",
+    cert_password: Annotated[str, Form()] = "",
+    remove_cert: Annotated[str, Form()] = "",
+    cert_file: UploadFile | None = File(None),
 ) -> HTMLResponse:
-    """Atualiza os dados cadastrais da empresa."""
+    """Atualiza os dados cadastrais, branding e certificado da empresa."""
+    svc = TenantService(session)
     try:
         data = TenantUpdate(
             legal_name=legal_name,
             trade_name=trade_name or None,
             email=email or None,
             phone=phone or None,
+            logo_url=logo_url or None,
+            logo_storage_key=logo_storage_key or None,
+            brand_primary_color=brand_primary_color or None,
         )
-        await TenantService(session).update_tenant(current_user.tenant_id, data)
+        tenant = await svc.update_tenant(current_user.tenant_id, data)
+
+        if remove_cert == "on":
+            tenant = await svc.update_certificate(current_user.tenant_id, pfx_bytes=None, password=None, remove=True)
+        elif cert_file and cert_file.filename:
+            pfx_bytes = await cert_file.read()
+            if pfx_bytes:
+                tenant = await svc.update_certificate(
+                    current_user.tenant_id,
+                    pfx_bytes=pfx_bytes,
+                    password=cert_password,
+                )
+
+        request.session["tenant_branding"] = svc.session_branding(tenant)
     except (AppError, ValueError) as exc:
         await session.rollback()
-        tenant = await TenantService(session).get_tenant(current_user.tenant_id)
+        tenant = await svc.get_tenant(current_user.tenant_id)
         message = exc.message if isinstance(exc, AppError) else str(exc)
         return render(
             request,
             "tenants/company.html",
-            {"tenant": tenant, "can_edit": True, "title": "Dados da Empresa", "error": message},
+            {
+                "tenant": tenant,
+                "can_edit": True,
+                "title": "Dados da Empresa",
+                "error": message,
+                "logo_preview": resolve_logo_url(tenant),
+            },
             status_code=400,
         )
     return RedirectResponse(url="/configuracoes/empresa", status_code=303)
@@ -161,6 +197,7 @@ async def filial_create(
             status_code=400,
         )
     return RedirectResponse(url="/configuracoes/filiais", status_code=303)
+
 
 
 @router.get("/configuracoes/filiais/{filial_id}/editar", response_class=HTMLResponse)

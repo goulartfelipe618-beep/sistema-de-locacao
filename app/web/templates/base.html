@@ -8,6 +8,9 @@
   <title>{% block title %}{{ title|default('Painel') }}{% endblock %} · {{ app_name }}</title>
   <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/static/css/app.css">
+  {% if tenant_branding and tenant_branding.brand_primary_color %}
+  <style>:root { --primary: {{ tenant_branding.brand_primary_color }}; --sidebar-bg: {{ tenant_branding.brand_primary_color }}; }</style>
+  {% endif %}
   <script src="/static/js/htmx.min.js" defer></script>
   <script src="/static/js/alpine.min.js" defer></script>
   <script src="/static/js/app.js" defer></script>

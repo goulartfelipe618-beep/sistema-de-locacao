@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import uuid
+from datetime import date
 
-from sqlalchemy import Enum as SAEnum
-from sqlalchemy import ForeignKey, Index, String, text
+from sqlalchemy import Date, Enum as SAEnum
+from sqlalchemy import ForeignKey, Index, String, Text, text
 from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -50,6 +51,14 @@ class Tenant(BaseModel):
     email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
+    logo_storage_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    logo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    brand_primary_color: Mapped[str | None] = mapped_column(String(7), nullable=True)
+    cert_a1_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
+    cert_a1_password_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
+    cert_a1_valid_until: Mapped[date | None] = mapped_column(Date, nullable=True)
+    cert_a1_subject: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
     filiais: Mapped[list[Filial]] = relationship(
         back_populates="tenant",
         cascade="all, delete-orphan",
@@ -58,6 +67,10 @@ class Tenant(BaseModel):
 
     def __repr__(self) -> str:  # pragma: no cover - conveniência de debug
         return f"<Tenant slug={self.slug!r} status={self.status.value}>"
+
+    @property
+    def cert_configured(self) -> bool:
+        return bool(self.cert_a1_encrypted)
 
 
 class Filial(BaseModel):

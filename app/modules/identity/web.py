@@ -18,6 +18,7 @@ from app.core.templating import render
 from app.modules.identity.repository import RoleRepository, UserRepository
 from app.modules.identity.schemas import UserCreate
 from app.modules.identity.service import AuthenticatedUser, AuthService, UserService
+from app.modules.tenants.branding import branding_session_payload
 from app.modules.tenants.repository import TenantRepository
 from app.modules.tenants.service import FilialService
 
@@ -79,6 +80,7 @@ async def login_submit(
     request.session["tenant_id"] = str(user.tenant_id)
     request.session["filial_id"] = str(filial_ids[0]) if filial_ids else None
     request.session["is_superuser"] = user.is_superuser
+    request.session["tenant_branding"] = branding_session_payload(tenant)
     return RedirectResponse(url="/", status_code=303)
 
 

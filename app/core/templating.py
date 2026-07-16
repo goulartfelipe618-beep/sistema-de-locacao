@@ -93,6 +93,7 @@ def render(
     ctx.setdefault("current_path", request.url.path)
     ctx.setdefault("menu", build_menu(current_user))
     ctx.setdefault("csrf_token", ensure_csrf_token(request))
+    ctx.setdefault("tenant_branding", request.session.get("tenant_branding"))
     flash = request.session.pop("_flash", None)
     ctx.setdefault("flash", flash)
     return templates.TemplateResponse(request, template_name, ctx, status_code=status_code)

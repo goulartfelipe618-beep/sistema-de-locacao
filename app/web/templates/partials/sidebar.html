@@ -8,8 +8,12 @@
          });
        ">
   <div class="brand">
+    {% if tenant_branding and tenant_branding.logo_url %}
+    <img src="{{ tenant_branding.logo_url }}" alt="" style="max-height:28px;max-width:120px">
+    {% else %}
     <span class="brand-mark">ERP</span>
-    <span class="brand-name">Locadora</span>
+    {% endif %}
+    <span class="brand-name">{{ tenant_branding.display_name if tenant_branding else 'Locadora' }}</span>
   </div>
   <nav class="nav">
     {% for section in menu %}

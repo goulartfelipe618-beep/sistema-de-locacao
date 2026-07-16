@@ -1,11 +1,12 @@
 {% extends "base.html" %}
 {% block title %}Dados da Empresa{% endblock %}
 {% block content %}
-<div class="card" style="max-width: 780px;">
+<div class="card" style="max-width: 900px;">
   <h2 class="card-title">Dados da Empresa</h2>
   {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
 
-  <form method="post" action="/configuracoes/empresa">
+  <form method="post" action="/configuracoes/empresa" enctype="multipart/form-data">
+    <h3 style="margin-top:0">Cadastro</h3>
     <div class="form-grid">
       <div class="form-group">
         <label class="form-label">Identificador (slug)</label>
@@ -44,6 +45,54 @@
         <input class="form-input" value="{{ tenant.status.value }}" disabled>
       </div>
     </div>
+
+    <h3 style="margin-top:24px">Identidade visual (painel e PDFs)</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label" for="brand_primary_color">Cor primária</label>
+        <input class="form-input" type="color" id="brand_primary_color" name="brand_primary_color"
+               value="{{ tenant.brand_primary_color or '#1e5a8a' }}" {{ '' if can_edit else 'disabled' }}>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="logo_url">URL da logo</label>
+        <input class="form-input" id="logo_url" name="logo_url"
+               value="{{ tenant.logo_url or '' }}" placeholder="https://..." {{ '' if can_edit else 'disabled' }}>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="logo_storage_key">Chave R2 da logo (opcional)</label>
+        <input class="form-input" id="logo_storage_key" name="logo_storage_key"
+               value="{{ tenant.logo_storage_key or '' }}" {{ '' if can_edit else 'disabled' }}>
+      </div>
+    </div>
+    {% if logo_preview %}
+    <p class="form-help">Prévia: <img src="{{ logo_preview }}" alt="Logo" style="max-height:48px;vertical-align:middle"></p>
+    {% endif %}
+
+    <h3 style="margin-top:24px">Certificado digital A1 (NF-e / NFS-e)</h3>
+    {% if tenant.cert_configured %}
+    <div class="alert alert-info">
+      Certificado configurado{% if tenant.cert_a1_subject %}: {{ tenant.cert_a1_subject }}{% endif %}
+      {% if tenant.cert_a1_valid_until %} · válido até {{ tenant.cert_a1_valid_until|date }}{% endif %}
+    </div>
+    {% else %}
+    <p class="form-help">Nenhum certificado A1 cadastrado. A emissão fiscal usa simulador até configurar.</p>
+    {% endif %}
+    {% if can_edit %}
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label" for="cert_file">Arquivo .pfx / .p12</label>
+        <input class="form-input" type="file" id="cert_file" name="cert_file" accept=".pfx,.p12">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="cert_password">Senha do certificado</label>
+        <input class="form-input" type="password" id="cert_password" name="cert_password" autocomplete="new-password">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label"><input type="checkbox" name="remove_cert" value="on"> Remover certificado atual</label>
+    </div>
+    {% endif %}
+
     {% if can_edit %}
     <div class="form-actions">
       <button type="submit" class="btn btn-primary">Salvar alterações</button>

@@ -6,10 +6,16 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import ConflictError, NotFoundError
+from app.core.crypto import encrypt_secret
+from app.core.exceptions import ConflictError, NotFoundError, ValidationError
 from app.core.logging import get_logger
 from app.core.pagination import Page, PageParams
 from app.modules.audit.service import audit_service
+from app.modules.tenants.branding import (
+    branding_session_payload,
+    encrypt_pfx,
+    parse_pfx_metadata,
+)
 from app.modules.tenants.models import Filial, Tenant
 from app.modules.tenants.repository import FilialRepository, TenantRepository
 from app.modules.tenants.schemas import FilialCreate, FilialUpdate, TenantUpdate
@@ -35,14 +41,13 @@ class TenantService:
     async def update_tenant(self, tenant_id: uuid.UUID, data: TenantUpdate) -> Tenant:
         """Atualiza dados cadastrais editáveis da empresa."""
         tenant = await self.get_tenant(tenant_id)
-        if data.legal_name is not None:
-            tenant.legal_name = data.legal_name.strip()
-        if data.trade_name is not None:
-            tenant.trade_name = data.trade_name.strip() or None
-        if data.email is not None:
-            tenant.email = data.email.strip() or None
-        if data.phone is not None:
-            tenant.phone = data.phone.strip() or None
+        payload = data.model_dump(exclude_unset=True)
+        for field in ("legal_name", "trade_name", "email", "phone", "logo_storage_key", "logo_url"):
+            if field in payload:
+                value = payload[field]
+                setattr(tenant, field, value.strip() if isinstance(value, str) and value else None)
+        if "brand_primary_color" in payload:
+            tenant.brand_primary_color = payload["brand_primary_color"]
         await audit_service.record(
             AuditAction.UPDATE,
             entity="tenant",
@@ -50,6 +55,49 @@ class TenantService:
             description=f"Empresa atualizada: {tenant.legal_name}",
         )
         return tenant
+
+    async def update_certificate(
+        self,
+        tenant_id: uuid.UUID,
+        *,
+        pfx_bytes: bytes | None,
+        password: str | None,
+        remove: bool = False,
+    ) -> Tenant:
+        """Armazena ou remove certificado digital A1 (criptografado)."""
+        tenant = await self.get_tenant(tenant_id)
+        if remove:
+            tenant.cert_a1_encrypted = None
+            tenant.cert_a1_password_encrypted = None
+            tenant.cert_a1_valid_until = None
+            tenant.cert_a1_subject = None
+            await audit_service.record(
+                AuditAction.UPDATE,
+                entity="tenant",
+                entity_id=tenant.id,
+                description="Certificado A1 removido",
+            )
+            return tenant
+        if not pfx_bytes or not password:
+            raise ValidationError("Arquivo PFX e senha são obrigatórios para o certificado.")
+        try:
+            meta = parse_pfx_metadata(pfx_bytes, password)
+        except Exception as exc:
+            raise ValidationError(f"Certificado inválido: {exc}") from exc
+        tenant.cert_a1_encrypted = encrypt_pfx(pfx_bytes)
+        tenant.cert_a1_password_encrypted = encrypt_secret(password)
+        tenant.cert_a1_valid_until = meta.valid_until
+        tenant.cert_a1_subject = meta.subject
+        await audit_service.record(
+            AuditAction.UPDATE,
+            entity="tenant",
+            entity_id=tenant.id,
+            description="Certificado A1 atualizado",
+        )
+        return tenant
+
+    def session_branding(self, tenant: Tenant) -> dict:
+        return branding_session_payload(tenant)
 
 
 class FilialService:

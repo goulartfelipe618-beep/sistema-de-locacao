@@ -24,6 +24,7 @@ from app.modules.manutencao.service import OrdemServicoService
 from app.modules.reservas.models import ResReserva, ResReservaItem
 from app.modules.reservas.service import CotacaoService, ReservaService
 from app.modules.tenants.models import Filial
+from app.modules.tenants.branding import branding_pdf_context
 from app.modules.tenants.repository import TenantRepository
 from app.shared.enums import VistoriaTipo
 
@@ -38,6 +39,7 @@ async def _empresa(session: AsyncSession, tenant_id: uuid.UUID) -> dict[str, Any
         "empresa_cnpj": tenant.cnpj or "—",
         "empresa_email": tenant.email or "—",
         "empresa_phone": tenant.phone or "—",
+        **branding_pdf_context(tenant),
     }
 
 
