@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:640px">
+  <h2 class="card-title">{{ title }}</h2>
+  {% if error %}<p class="text-danger">{{ error }}</p>{% endif %}
+  <form method="post" action="/relatorios/agendamentos/novo">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="form-group"><label class="form-label">Nome</label><input class="form-input" name="nome" required></div>
+    <div class="form-group"><label class="form-label">Relatório</label>
+      <select class="form-input" name="relatorio_codigo" id="relatorio-select" required>
+        {% for codigo, r in catalogo.items() %}
+        <option value="{{ codigo }}" data-categoria="{{ r.categoria.value }}">{{ r.titulo }} ({{ r.categoria.value }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    <input type="hidden" name="categoria" id="categoria-hidden" value="{{ catalogo.values()|list|first.categoria.value if catalogo else 'frota' }}">
+    <div class="form-grid">
+      <div class="form-group"><label>Recorrência</label><select class="form-input" name="recorrencia"><option value="diaria">Diária</option><option value="semanal">Semanal</option><option value="mensal" selected>Mensal</option></select></div>
+      <div class="form-group"><label>Formato</label><select class="form-input" name="formato"><option value="pdf">PDF</option><option value="csv">CSV</option><option value="xlsx">XLSX</option></select></div>
+    </div>
+    <div class="form-group"><label>E-mails (opcional)</label><input class="form-input" name="email_destinatarios" placeholder="a@x.com, b@y.com"></div>
+    <div class="form-actions"><button class="btn btn-primary" type="submit">Salvar</button><a class="btn" href="/relatorios/agendamentos">Voltar</a></div>
+  </form>
+</div>
+<script>
+(function () {
+  var sel = document.getElementById('relatorio-select');
+  var cat = document.getElementById('categoria-hidden');
+  function sync() {
+    var opt = sel.options[sel.selectedIndex];
+    if (opt && opt.dataset.categoria) cat.value = opt.dataset.categoria;
+  }
+  sel.addEventListener('change', sync);
+  sync();
+})();
+</script>
+{% endblock %}

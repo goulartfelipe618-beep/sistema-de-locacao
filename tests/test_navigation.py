@@ -40,8 +40,23 @@ def test_operator_without_dashboard_permission_hides_it() -> None:
 
 def test_future_modules_visible_but_disabled() -> None:
     menu = build_menu(_make_user({"dashboard.painel.visualizar"}))
+    integracoes = next(s for s in menu if s["label"] == "Integrações")
+    assert all(item["enabled"] is False for item in integracoes["children"])
+
+
+def test_relatorios_enabled_with_permissions() -> None:
+    menu = build_menu(
+        _make_user(
+            {
+                "dashboard.painel.visualizar",
+                "relatorios.frota.visualizar",
+                "relatorios.historico.visualizar",
+            }
+        )
+    )
     relatorios = next(s for s in menu if s["label"] == "Relatórios")
-    assert all(item["enabled"] is False for item in relatorios["children"])
+    enabled = {item["label"] for item in relatorios["children"] if item["enabled"]}
+    assert {"Frota", "Histórico"} <= enabled
 
 
 def test_comercial_hidden_without_permissions() -> None:

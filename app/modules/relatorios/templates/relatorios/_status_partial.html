@@ -1,0 +1,13 @@
+<div>
+  <p><strong>Status:</strong>
+    <span class="badge {% if emissao.status.value == 'concluido' %}badge-success{% elif emissao.status.value == 'erro' %}badge-danger{% else %}badge-warning{% endif %}">{{ emissao.status.value }}</span>
+  </p>
+  {% if emissao.status.value == 'concluido' %}
+  <p>Linhas: {{ emissao.linhas_count or 0 }} · Tamanho: {{ emissao.tamanho_bytes or 0 }} bytes</p>
+  <a class="btn btn-primary" href="/relatorios/emissoes/{{ emissao.id }}/download">Baixar {{ emissao.formato.value|upper }}</a>
+  {% elif emissao.status.value == 'erro' %}
+  <p class="text-danger">{{ emissao.erro_mensagem }}</p>
+  {% else %}
+  <p>Processando… aguarde.</p>
+  {% endif %}
+</div>

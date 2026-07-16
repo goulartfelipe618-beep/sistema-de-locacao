@@ -25,6 +25,7 @@ celery_app = Celery(
         "app.modules.comercial.tasks",
         "app.modules.financeiro.tasks",
         "app.modules.fiscal.tasks",
+        "app.modules.relatorios.tasks",
         "app.modules.frota.tasks",
         "app.modules.manutencao.tasks",
         "app.modules.reservas.tasks",

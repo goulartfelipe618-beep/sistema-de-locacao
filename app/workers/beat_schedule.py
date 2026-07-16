@@ -71,4 +71,10 @@ BEAT_SCHEDULE: dict[str, dict] = {
         "schedule": crontab(hour=6, minute=30),
         "options": {"queue": "default"},
     },
+    # Agendamentos de relatórios (§11).
+    "relatorios-processar-agendamentos": {
+        "task": "relatorios.processar_agendamentos",
+        "schedule": crontab(minute=0),
+        "options": {"queue": "reports"},
+    },
 }

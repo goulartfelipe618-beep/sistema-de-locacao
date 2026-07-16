@@ -45,3 +45,7 @@ httpx==0.28.1
 # --- Utilitários ---
 python-dateutil==2.9.0.post0
 tenacity==9.0.0
+
+# --- Relatórios (§11) ---
+openpyxl==3.1.5
+xhtml2pdf==0.2.16

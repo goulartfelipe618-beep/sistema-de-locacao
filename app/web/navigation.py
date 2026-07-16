@@ -437,12 +437,50 @@ NAVIGATION: tuple[MenuSection, ...] = (
     MenuSection(
         label="Relatórios",
         icon="chart",
+        implemented=True,
         items=(
-            MenuItem("Frota", url="/relatorios/frota"),
-            MenuItem("Locação", url="/relatorios/locacao"),
-            MenuItem("Financeiro", url="/relatorios/financeiro"),
-            MenuItem("Fiscal", url="/relatorios/fiscal"),
-            MenuItem("Gerencial", url="/relatorios/gerencial"),
+            MenuItem(
+                "Frota",
+                url="/relatorios/frota",
+                permission="relatorios.frota.visualizar",
+                implemented=True,
+            ),
+            MenuItem(
+                "Locação",
+                url="/relatorios/locacao",
+                permission="relatorios.locacao.visualizar",
+                implemented=True,
+            ),
+            MenuItem(
+                "Financeiro",
+                url="/relatorios/financeiro",
+                permission="relatorios.financeiro.visualizar",
+                implemented=True,
+            ),
+            MenuItem(
+                "Fiscal",
+                url="/relatorios/fiscal",
+                permission="relatorios.fiscal.visualizar",
+                implemented=True,
+            ),
+            MenuItem(
+                "Gerencial",
+                url="/relatorios/gerencial",
+                permission="relatorios.gerencial.visualizar",
+                implemented=True,
+            ),
+            MenuItem(
+                "Histórico",
+                url="/relatorios/historico",
+                permission="relatorios.historico.visualizar",
+                implemented=True,
+            ),
+            MenuItem(
+                "Agendamentos",
+                url="/relatorios/agendamentos",
+                permission="relatorios.agendamento.visualizar",
+                implemented=True,
+            ),
         ),
     ),
     MenuSection(

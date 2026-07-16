@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <h2 class="card-title" style="margin:0">{{ title }}</h2>
+    <div style="display:flex;gap:8px">
+      <a class="btn btn-sm" href="/relatorios/historico">Histórico</a>
+      <a class="btn btn-sm" href="/relatorios/agendamentos">Agendamentos</a>
+    </div>
+  </div>
+  <p class="text-muted">{{ categoria_label }} — selecione um relatório para emitir.</p>
+  <div class="form-grid" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">
+    {% for r in relatorios %}
+    <div class="card" style="padding:12px;margin:0">
+      <h4 style="margin:0 0 8px">{{ r.titulo }}</h4>
+      <p style="font-size:0.9em;color:#666;margin:0 0 12px">{{ r.descricao }}</p>
+      {% if r.pesado %}<span class="badge badge-warning">Assíncrono</span>{% endif %}
+      <a class="btn btn-primary btn-sm" href="/relatorios/{{ categoria.value }}/{{ r.codigo }}/emitir" style="margin-top:8px">Gerar</a>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

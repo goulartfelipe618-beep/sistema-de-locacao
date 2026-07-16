@@ -747,3 +747,38 @@ class AuditAction(str, enum.Enum):
     LOGOUT = "logout"
     ACCESS_DENIED = "access_denied"
     EXPORT = "export"
+
+
+class RelCategoria(str, enum.Enum):
+    """Categoria de relatório analítico (§11)."""
+
+    FROTA = "frota"
+    LOCACAO = "locacao"
+    FINANCEIRO = "financeiro"
+    FISCAL = "fiscal"
+    GERENCIAL = "gerencial"
+
+
+class RelFormato(str, enum.Enum):
+    """Formato de exportação do relatório."""
+
+    PDF = "pdf"
+    CSV = "csv"
+    XLSX = "xlsx"
+
+
+class RelEmissaoStatus(str, enum.Enum):
+    """Situação de uma emissão de relatório."""
+
+    PENDENTE = "pendente"
+    PROCESSANDO = "processando"
+    CONCLUIDO = "concluido"
+    ERRO = "erro"
+
+
+class RelRecorrencia(str, enum.Enum):
+    """Recorrência de agendamento de relatório (§11)."""
+
+    DIARIA = "diaria"
+    SEMANAL = "semanal"
+    MENSAL = "mensal"

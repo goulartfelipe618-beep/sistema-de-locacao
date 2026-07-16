@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar"><h2 class="card-title" style="margin:0">{{ title }}</h2>
+    <a class="btn btn-sm" href="/relatorios/agendamentos/novo">Novo agendamento</a></div>
+  <table class="table">
+    <thead><tr><th>Nome</th><th>Relatório</th><th>Recorrência</th><th>Próxima</th><th>Status emissão</th></tr></thead>
+    <tbody>
+    {% for e in emissoes %}
+    <tr>
+      <td>{{ e.titulo }}</td><td>{{ e.relatorio_codigo }}</td><td>{{ e.formato.value }}</td>
+      <td>{{ e.created_at|datetime }}</td>
+      <td><span class="badge">{{ e.status.value }}</span>
+        {% if e.status.value == 'concluido' %}<a href="/relatorios/emissoes/{{ e.id }}/download">Baixar</a>{% endif %}
+      </td>
+    </tr>
+    {% else %}<tr><td colspan="5">Nenhuma emissão registrada.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  {% if pages > 1 %}<p>Página {{ page }} de {{ pages }} ({{ total }} registros)</p>{% endif %}
+</div>
+{% endblock %}

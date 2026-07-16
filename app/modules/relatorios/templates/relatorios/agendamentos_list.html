@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar"><h2 class="card-title" style="margin:0">{{ title }}</h2>
+    <a class="btn btn-primary btn-sm" href="/relatorios/agendamentos/novo">Novo</a></div>
+  <table class="table">
+    <thead><tr><th>Nome</th><th>Relatório</th><th>Recorrência</th><th>Próxima execução</th><th>Ativo</th></tr></thead>
+    <tbody>
+    {% for a in agendamentos %}
+    <tr><td>{{ a.nome }}</td><td>{{ a.relatorio_codigo }}</td><td>{{ a.recorrencia.value }}</td>
+    <td>{{ a.proxima_execucao_em|datetime }}</td><td>{{ 'Sim' if a.ativo else 'Não' }}</td></tr>
+    {% else %}<tr><td colspan="5">Nenhum agendamento.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
