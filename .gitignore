@@ -44,8 +44,15 @@ e2e/blob-report/
 supabase/migrations/_full_upgrade.sql
 supabase/.temp/
 
-# Payloads temporários de apply MCP
-scripts/_*
+# Payloads temporários de apply MCP (não inclui __init__.py)
+scripts/_apply*
+scripts/_batch*
+scripts/_current*
+scripts/_mcp*
+scripts/_next*
+scripts/_q*
+scripts/_single*
+scripts/_tmp*
 
 # Dados locais (volumes Docker gerenciam persistência na VPS)
 pgdata/
