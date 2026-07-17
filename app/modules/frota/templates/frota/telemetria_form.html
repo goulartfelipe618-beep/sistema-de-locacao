@@ -1,40 +1,78 @@
 {% extends "base.html" %}
+{% from "macros/forms.html" import field_label, form_legend %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
-<div class="card" style="max-width:960px">
+<div class="card erp-form-card" style="max-width:960px">
   <h2 class="card-title">{{ title }}</h2>
   {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
 
-  <form method="post" action="{{ action }}">
-    <h3>Dispositivo</h3>
-    <div class="form-grid">
-      {% if not dispositivo %}
-      <div class="form-group"><label class="form-label" for="veiculo_id">Veículo</label>
-        <select class="form-input" id="veiculo_id" name="veiculo_id" required>
-          <option value="">—</option>
-          {% for v in veiculos %}<option value="{{ v.id }}">{{ v.placa }}</option>{% endfor %}
-        </select>
+  <form method="post" action="{{ action }}" class="erp-form">
+    <fieldset class="form-fieldset">
+      <legend>Dispositivo</legend>
+      <div class="form-grid">
+        {% if not dispositivo %}
+        <div class="form-group">
+          {{ field_label('Veículo', true, 'veiculo_id') }}
+          <select class="form-input" id="veiculo_id" name="veiculo_id" required data-combobox="veiculo">
+            <option value="">Buscar por placa...</option>
+            {% for v in veiculos %}<option value="{{ v.id }}">{{ v.placa }}</option>{% endfor %}
+          </select>
+        </div>
+        {% endif %}
+        <div class="form-group">
+          {{ field_label('Provedor', true, 'provedor') }}
+          <input class="form-input" id="provedor" name="provedor" required value="{{ dispositivo.provedor if dispositivo else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Equipamento ID', true, 'equipamento_id') }}
+          <input class="form-input" id="equipamento_id" name="equipamento_id" required value="{{ dispositivo.equipamento_id if dispositivo else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Conexão', true, 'conn_status') }}
+          <select class="form-input" id="conn_status" name="conn_status" required>
+            {% for s in ['online','offline','sem_sinal'] %}
+            <option value="{{ s }}" {% if dispositivo and dispositivo.conn_status.value == s %}selected{% elif not dispositivo and s == 'offline' %}selected{% endif %}>{{ s|replace('_',' ') }}</option>
+            {% endfor %}
+          </select>
+        </div>
       </div>
-      {% endif %}
-      <div class="form-group"><label class="form-label" for="provedor">Provedor</label><input class="form-input" id="provedor" name="provedor" required value="{{ dispositivo.provedor if dispositivo else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="equipamento_id">Equipamento ID</label><input class="form-input" id="equipamento_id" name="equipamento_id" required value="{{ dispositivo.equipamento_id if dispositivo else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="conn_status">Conexão</label>
-        <select class="form-input" id="conn_status" name="conn_status">
-          {% for s in ['online','offline','sem_sinal'] %}
-          <option value="{{ s }}" {% if dispositivo and dispositivo.conn_status.value == s %}selected{% elif not dispositivo and s == 'offline' %}selected{% endif %}>{{ s }}</option>
-          {% endfor %}
-        </select>
+    </fieldset>
+    <fieldset class="form-fieldset">
+      <legend>Posição e telemetria</legend>
+      <div class="form-grid">
+        <div class="form-group">
+          {{ field_label('Latitude', false, 'lat') }}
+          <input class="form-input" id="lat" name="lat" value="{{ dispositivo.lat if dispositivo and dispositivo.lat else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Longitude', false, 'lng') }}
+          <input class="form-input" id="lng" name="lng" value="{{ dispositivo.lng if dispositivo and dispositivo.lng else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Última posição', false, 'ultima_posicao_em') }}
+          <input class="form-input" type="datetime-local" id="ultima_posicao_em" name="ultima_posicao_em"
+                 value="{{ dispositivo.ultima_posicao_em.strftime('%Y-%m-%dT%H:%M') if dispositivo and dispositivo.ultima_posicao_em else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('KM telemetria', false, 'km_telemetria') }}
+          <input class="form-input" type="number" min="0" id="km_telemetria" name="km_telemetria"
+                 value="{{ dispositivo.km_telemetria if dispositivo and dispositivo.km_telemetria is not none else '' }}">
+        </div>
+        <div class="form-group form-check-row">
+          <input type="checkbox" id="bloqueio_remoto" name="bloqueio_remoto" value="1" {% if dispositivo and dispositivo.bloqueio_remoto %}checked{% endif %}>
+          <label class="form-label" for="bloqueio_remoto">Bloqueio remoto ativo</label>
+        </div>
       </div>
-      <div class="form-group"><label class="form-label" for="lat">Latitude</label><input class="form-input" id="lat" name="lat" value="{{ dispositivo.lat if dispositivo and dispositivo.lat else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="lng">Longitude</label><input class="form-input" id="lng" name="lng" value="{{ dispositivo.lng if dispositivo and dispositivo.lng else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="ultima_posicao_em">Última posição</label><input class="form-input" type="datetime-local" id="ultima_posicao_em" name="ultima_posicao_em" value="{{ dispositivo.ultima_posicao_em.strftime('%Y-%m-%dT%H:%M') if dispositivo and dispositivo.ultima_posicao_em else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="km_telemetria">KM telemetria</label><input class="form-input" type="number" id="km_telemetria" name="km_telemetria" value="{{ dispositivo.km_telemetria if dispositivo and dispositivo.km_telemetria is not none else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="bloqueio_remoto">Bloqueio remoto</label>
-        <input type="checkbox" id="bloqueio_remoto" name="bloqueio_remoto" value="1" {% if dispositivo and dispositivo.bloqueio_remoto %}checked{% endif %}>
-      </div>
+    </fieldset>
+    <div class="form-group">
+      {{ field_label('Observações', false, 'observacoes') }}
+      <textarea class="form-input" id="observacoes" name="observacoes" rows="2">{{ dispositivo.observacoes if dispositivo else '' }}</textarea>
     </div>
-    <div class="form-group" style="margin-top:12px"><label class="form-label" for="observacoes">Observações</label><textarea class="form-input" id="observacoes" name="observacoes" rows="2">{{ dispositivo.observacoes if dispositivo else '' }}</textarea></div>
-    <div class="form-actions" style="margin-top:16px"><button class="btn btn-primary" type="submit">Salvar dispositivo</button><a class="btn" href="/frota/telemetria">Voltar</a></div>
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Salvar dispositivo</button>
+      <a class="btn" href="/frota/telemetria">Voltar</a>
+    </div>
+    {{ form_legend() }}
   </form>
 
   {% if dispositivo and eventos %}
@@ -48,22 +86,35 @@
     {% else %}<div class="empty-state">Nenhum evento registrado.</div>{% endif %}
 
     <h4 style="margin-top:20px">Registrar evento</h4>
-    <form method="post" action="/frota/telemetria/{{ dispositivo.veiculo_id }}/evento">
+    <form method="post" action="/frota/telemetria/{{ dispositivo.veiculo_id }}/evento" class="erp-form">
       <input type="hidden" name="dispositivo_id" value="{{ dispositivo.id }}">
       <div class="form-grid">
-        <div class="form-group"><label class="form-label" for="tipo">Tipo</label>
+        <div class="form-group">
+          {{ field_label('Tipo', true, 'tipo') }}
           <select class="form-input" id="tipo" name="tipo" required>
             {% for t in ['excesso_velocidade','geofence','colisao','bloqueio','desbloqueio','outro'] %}
-            <option value="{{ t }}">{{ t }}</option>
+            <option value="{{ t }}">{{ t|replace('_',' ') }}</option>
             {% endfor %}
           </select>
         </div>
-        <div class="form-group"><label class="form-label" for="ocorrido_em">Ocorrido em</label><input class="form-input" type="datetime-local" id="ocorrido_em" name="ocorrido_em" required></div>
-        <div class="form-group"><label class="form-label" for="velocidade">Velocidade</label><input class="form-input" id="velocidade" name="velocidade"></div>
-        <div class="form-group"><label class="form-label" for="lat_evt">Lat</label><input class="form-input" id="lat_evt" name="lat"></div>
-        <div class="form-group"><label class="form-label" for="lng_evt">Lng</label><input class="form-input" id="lng_evt" name="lng"></div>
+        <div class="form-group">
+          {{ field_label('Ocorrido em', true, 'ocorrido_em') }}
+          <input class="form-input" type="datetime-local" id="ocorrido_em" name="ocorrido_em" required>
+        </div>
+        <div class="form-group">
+          {{ field_label('Velocidade', false, 'velocidade') }}
+          <input class="form-input" id="velocidade" name="velocidade">
+        </div>
+        <div class="form-group">
+          {{ field_label('Lat', false, 'lat_evt') }}
+          <input class="form-input" id="lat_evt" name="lat">
+        </div>
+        <div class="form-group">
+          {{ field_label('Lng', false, 'lng_evt') }}
+          <input class="form-input" id="lng_evt" name="lng">
+        </div>
       </div>
-      <div class="form-group" style="margin-top:8px"><label class="form-label" for="descricao">Descrição</label><input class="form-input" id="descricao" name="descricao"></div>
+      <div class="form-group"><label class="form-label" for="descricao">Descrição</label><input class="form-input" id="descricao" name="descricao"></div>
       <div class="form-group"><label class="form-label" for="payload_json">Payload JSON</label><textarea class="form-input" id="payload_json" name="payload_json" rows="2"></textarea></div>
       <button class="btn btn-sm btn-primary" type="submit" style="margin-top:8px">Registrar evento</button>
     </form>

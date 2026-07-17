@@ -1,71 +1,155 @@
 {% extends "base.html" %}
+{% from "macros/forms.html" import field_label, form_legend %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
-<div class="card" style="max-width:960px">
+<div class="card erp-form-card" style="max-width:960px">
   <h2 class="card-title">{{ title }}</h2>
   {% if veiculo %}
   <p>Status: <span class="badge {% if veiculo.status.value == 'disponivel' %}badge-success{% elif veiculo.status.value in ['bloqueado','baixado'] %}badge-danger{% else %}badge-warning{% endif %}">{{ veiculo.status.value }}</span></p>
   {% endif %}
   {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
-  <form method="post" action="{{ action }}">
-    <div class="form-grid">
-      <div class="form-group"><label class="form-label" for="placa">Placa</label><input class="form-input" id="placa" name="placa" required value="{{ veiculo.placa if veiculo else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="renavam">RENAVAM</label><input class="form-input" id="renavam" name="renavam" value="{{ veiculo.renavam if veiculo else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="chassi">Chassi</label><input class="form-input" id="chassi" name="chassi" value="{{ veiculo.chassi if veiculo else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="ano_fabricacao">Ano fabricação</label><input class="form-input" type="number" id="ano_fabricacao" name="ano_fabricacao" required value="{{ veiculo.ano_fabricacao if veiculo else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="ano_modelo">Ano modelo</label><input class="form-input" type="number" id="ano_modelo" name="ano_modelo" required value="{{ veiculo.ano_modelo if veiculo else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="cor">Cor</label><input class="form-input" id="cor" name="cor" value="{{ veiculo.cor if veiculo else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="categoria_id">Categoria</label>
-        <select class="form-input" id="categoria_id" name="categoria_id" required>
-          <option value="">—</option>
-          {% for c in categorias %}<option value="{{ c.id }}" {% if veiculo and veiculo.categoria_id == c.id %}selected{% endif %}>{{ c.nome }}</option>{% endfor %}
-        </select>
+  <form method="post" action="{{ action }}" class="erp-form">
+    <fieldset class="form-fieldset">
+      <legend>Identificação do veículo</legend>
+      <div class="form-grid">
+        <div class="form-group">
+          {{ field_label('Placa', true, 'placa') }}
+          <input class="form-input" id="placa" name="placa" required data-mask="placa" placeholder="ABC1D23"
+                 value="{{ veiculo.placa if veiculo else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('RENAVAM', false, 'renavam') }}
+          <input class="form-input" id="renavam" name="renavam" data-mask="renavam" placeholder="00000000000"
+                 value="{{ veiculo.renavam if veiculo else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Chassi', false, 'chassi') }}
+          <input class="form-input" id="chassi" name="chassi" maxlength="17" placeholder="17 caracteres"
+                 value="{{ veiculo.chassi if veiculo else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Ano fabricação', true, 'ano_fabricacao') }}
+          <input class="form-input" id="ano_fabricacao" name="ano_fabricacao" required data-mask="year"
+                 value="{{ veiculo.ano_fabricacao if veiculo else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Ano modelo', true, 'ano_modelo') }}
+          <input class="form-input" id="ano_modelo" name="ano_modelo" required data-mask="year"
+                 value="{{ veiculo.ano_modelo if veiculo else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Cor', false, 'cor') }}
+          <input class="form-input" id="cor" name="cor" value="{{ veiculo.cor if veiculo else '' }}">
+        </div>
       </div>
-      <div class="form-group"><label class="form-label" for="marca_id">Marca</label>
-        <select class="form-input" id="marca_id" name="marca_id" required>
-          <option value="">—</option>
-          {% for m in marcas %}<option value="{{ m.id }}" {% if veiculo and veiculo.marca_id == m.id %}selected{% endif %}>{{ m.nome }}</option>{% endfor %}
-        </select>
+    </fieldset>
+
+    <fieldset class="form-fieldset">
+      <legend>Classificação</legend>
+      <div class="form-grid">
+        <div class="form-group">
+          {{ field_label('Categoria', true, 'categoria_id') }}
+          <select class="form-input" id="categoria_id" name="categoria_id" required>
+            <option value="">Selecionar</option>
+            {% for c in categorias %}<option value="{{ c.id }}" {% if veiculo and veiculo.categoria_id == c.id %}selected{% endif %}>{{ c.nome }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('Marca', true, 'marca_id') }}
+          <select class="form-input" id="marca_id" name="marca_id" required>
+            <option value="">Selecionar</option>
+            {% for m in marcas %}<option value="{{ m.id }}" {% if veiculo and veiculo.marca_id == m.id %}selected{% endif %}>{{ m.nome }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('Modelo', true, 'modelo_id') }}
+          <select class="form-input" id="modelo_id" name="modelo_id" required>
+            <option value="">Selecionar</option>
+            {% for m in modelos %}<option value="{{ m.id }}" {% if veiculo and veiculo.modelo_id == m.id %}selected{% endif %}>{{ m.nome }}</option>{% endfor %}
+          </select>
+          <p class="form-help">Modelos filtrados pela marca selecionada.</p>
+        </div>
+        <div class="form-group">
+          {{ field_label('Combustível', true, 'combustivel_id') }}
+          <select class="form-input" id="combustivel_id" name="combustivel_id" required>
+            <option value="">Selecionar</option>
+            {% for c in combustiveis %}<option value="{{ c.id }}" {% if veiculo and veiculo.combustivel_id == c.id %}selected{% endif %}>{{ c.nome }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('Filial', false, 'filial_id') }}
+          <select class="form-input" id="filial_id" name="filial_id">
+            <option value="">—</option>
+            {% for f in filiais %}<option value="{{ f.id }}" {% if veiculo and veiculo.filial_id == f.id %}selected{% endif %}>{{ f.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('Propriedade', true, 'propriedade') }}
+          <select class="form-input" id="propriedade" name="propriedade" required>
+            {% for p in ['propria','consorcio','financiada','terceirizada'] %}
+            <option value="{{ p }}" {% if veiculo and veiculo.propriedade.value == p %}selected{% elif not veiculo and p == 'propria' %}selected{% endif %}>{{ p|capitalize }}</option>
+            {% endfor %}
+          </select>
+        </div>
       </div>
-      <div class="form-group"><label class="form-label" for="modelo_id">Modelo</label>
-        <select class="form-input" id="modelo_id" name="modelo_id" required>
-          <option value="">—</option>
-          {% for m in modelos %}<option value="{{ m.id }}" {% if veiculo and veiculo.modelo_id == m.id %}selected{% endif %}>{{ m.nome }}</option>{% endfor %}
-        </select>
+    </fieldset>
+
+    <fieldset class="form-fieldset">
+      <legend>Valores e operação</legend>
+      <div class="form-grid">
+        <div class="form-group">
+          {{ field_label('Data aquisição', false, 'data_compra') }}
+          <input class="form-input" type="date" id="data_compra" name="data_compra"
+                 value="{{ veiculo.data_compra if veiculo and veiculo.data_compra else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Valor aquisição', false, 'valor_aquisicao') }}
+          <input class="form-input" id="valor_aquisicao" name="valor_aquisicao" data-money="1"
+                 value="{{ veiculo.valor_aquisicao if veiculo and veiculo.valor_aquisicao else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Valor FIPE', false, 'valor_fipe') }}
+          <input class="form-input" id="valor_fipe" name="valor_fipe" data-money="1"
+                 value="{{ veiculo.valor_fipe if veiculo and veiculo.valor_fipe else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Valor mercado', false, 'valor_mercado') }}
+          <input class="form-input" id="valor_mercado" name="valor_mercado" data-money="1"
+                 value="{{ veiculo.valor_mercado if veiculo and veiculo.valor_mercado else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Proprietário real', false, 'proprietario_nome') }}
+          <input class="form-input" id="proprietario_nome" name="proprietario_nome"
+                 value="{{ veiculo.proprietario_nome if veiculo else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('KM inicial', false, 'km_inicial') }}
+          <input class="form-input" type="number" id="km_inicial" name="km_inicial" min="0"
+                 value="{{ veiculo.km_inicial if veiculo and veiculo.km_inicial is not none else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('KM atual', false, 'km_atual') }}
+          <input class="form-input" type="number" id="km_atual" name="km_atual" min="0"
+                 value="{{ veiculo.km_atual if veiculo and veiculo.km_atual is not none else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Nível combustível (0-8)', false, 'nivel_combustivel_atual') }}
+          <input class="form-input" type="number" min="0" max="8" id="nivel_combustivel_atual" name="nivel_combustivel_atual"
+                 value="{{ veiculo.nivel_combustivel_atual if veiculo else 8 }}">
+        </div>
       </div>
-      <div class="form-group"><label class="form-label" for="combustivel_id">Combustível</label>
-        <select class="form-input" id="combustivel_id" name="combustivel_id" required>
-          <option value="">—</option>
-          {% for c in combustiveis %}<option value="{{ c.id }}" {% if veiculo and veiculo.combustivel_id == c.id %}selected{% endif %}>{{ c.nome }}</option>{% endfor %}
-        </select>
-      </div>
-      <div class="form-group"><label class="form-label" for="filial_id">Filial</label>
-        <select class="form-input" id="filial_id" name="filial_id">
-          <option value="">—</option>
-          {% for f in filiais %}<option value="{{ f.id }}" {% if veiculo and veiculo.filial_id == f.id %}selected{% endif %}>{{ f.name }}</option>{% endfor %}
-        </select>
-      </div>
-      <div class="form-group"><label class="form-label" for="propriedade">Propriedade</label>
-        <select class="form-input" id="propriedade" name="propriedade">
-          {% for p in ['propria','consorcio','financiada','terceirizada'] %}
-          <option value="{{ p }}" {% if veiculo and veiculo.propriedade.value == p %}selected{% elif not veiculo and p == 'propria' %}selected{% endif %}>{{ p }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="form-group"><label class="form-label" for="data_compra">Data aquisição</label><input class="form-input" type="date" id="data_compra" name="data_compra" value="{{ veiculo.data_compra if veiculo and veiculo.data_compra else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="valor_aquisicao">Valor aquisição</label><input class="form-input" id="valor_aquisicao" name="valor_aquisicao" value="{{ veiculo.valor_aquisicao if veiculo and veiculo.valor_aquisicao else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="valor_fipe">Valor FIPE</label><input class="form-input" id="valor_fipe" name="valor_fipe" value="{{ veiculo.valor_fipe if veiculo and veiculo.valor_fipe else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="valor_mercado">Valor mercado</label><input class="form-input" id="valor_mercado" name="valor_mercado" value="{{ veiculo.valor_mercado if veiculo and veiculo.valor_mercado else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="proprietario_nome">Proprietário real</label><input class="form-input" id="proprietario_nome" name="proprietario_nome" value="{{ veiculo.proprietario_nome if veiculo else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="km_inicial">KM inicial</label><input class="form-input" type="number" id="km_inicial" name="km_inicial" value="{{ veiculo.km_inicial if veiculo and veiculo.km_inicial is not none else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="km_atual">KM atual</label><input class="form-input" type="number" id="km_atual" name="km_atual" value="{{ veiculo.km_atual if veiculo and veiculo.km_atual is not none else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="nivel_combustivel_atual">Nível combustível (0-8)</label><input class="form-input" type="number" min="0" max="8" id="nivel_combustivel_atual" name="nivel_combustivel_atual" value="{{ veiculo.nivel_combustivel_atual if veiculo else 8 }}"></div>
+    </fieldset>
+
+    <div class="form-group">
+      {{ field_label('Observações', false, 'observacoes') }}
+      <textarea class="form-input" id="observacoes" name="observacoes" rows="3">{{ veiculo.observacoes if veiculo else '' }}</textarea>
     </div>
-    <div class="form-group" style="margin-top:12px"><label class="form-label" for="observacoes">Observações</label><textarea class="form-input" id="observacoes" name="observacoes" rows="3">{{ veiculo.observacoes if veiculo else '' }}</textarea></div>
-    <div class="form-actions" style="margin-top:16px">
+
+    <div class="form-actions">
       <button class="btn btn-primary" type="submit">Salvar</button>
       <a class="btn" href="/frota/veiculos">Cancelar</a>
     </div>
+    {{ form_legend() }}
   </form>
   {% if veiculo and (current_user.is_superuser or 'frota.veiculo.visualizar' in current_user.permissions) %}
   <form method="post" action="/documentos/emitir/ficha_veiculo/{{ veiculo.id }}" style="display:inline;margin-top:8px">
@@ -130,7 +214,10 @@
   <div style="margin-top:24px;border-top:1px solid var(--border);padding-top:16px">
     <h3>Ações de status</h3>
     {% if veiculo.status.value != 'bloqueado' and veiculo.status.value != 'baixado' %}
-    <form method="post" action="/frota/veiculos/{{ veiculo.id }}/bloquear" style="display:flex;gap:8px;margin:8px 0">
+    <form method="post" action="/frota/veiculos/{{ veiculo.id }}/bloquear" class="erp-form" style="display:flex;gap:8px;margin:8px 0;flex-wrap:wrap"
+          data-impact-url="/frota/veiculos/{{ veiculo.id }}/impacto"
+          data-impact-title="Bloquear veículo">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <input class="form-input" name="motivo" placeholder="Motivo do bloqueio" required>
       <button class="btn btn-sm" type="submit">Bloquear</button>
     </form>
@@ -142,7 +229,10 @@
     </form>
     {% endif %}
     {% if veiculo.status.value != 'baixado' %}
-    <form method="post" action="/frota/veiculos/{{ veiculo.id }}/baixar" style="margin:8px 0">
+    <form method="post" action="/frota/veiculos/{{ veiculo.id }}/baixar" class="erp-form" style="margin:8px 0"
+          data-impact-url="/frota/veiculos/{{ veiculo.id }}/impacto"
+          data-impact-title="Baixar veículo">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <input class="form-input" name="motivo" placeholder="Motivo da baixa (ex.: venda)" required>
         <button class="btn btn-sm" type="submit">Baixar</button>
@@ -150,8 +240,8 @@
       <p style="margin:8px 0 0"><small>Venda? Preencha os dados abaixo para gerar uma NF-e (rascunho).</small></p>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
         <input class="form-input" name="destinatario_nome" placeholder="Comprador (nome)">
-        <input class="form-input" name="destinatario_doc" placeholder="CPF/CNPJ do comprador">
-        <input class="form-input" name="valor_venda" placeholder="Valor da venda">
+        <input class="form-input" name="destinatario_doc" placeholder="CPF/CNPJ do comprador" data-mask="cpf">
+        <input class="form-input" name="valor_venda" placeholder="Valor da venda" data-money="1">
       </div>
     </form>
     {% endif %}

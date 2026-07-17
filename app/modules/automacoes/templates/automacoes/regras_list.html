@@ -49,7 +49,9 @@
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <button class="btn btn-sm" type="submit">{{ 'Desativar' if r.ativo else 'Ativar' }}</button>
         </form>
-        <form method="post" action="/automacoes/regras/{{ r.id }}/excluir" style="display:inline" onsubmit="return confirm('Excluir regra?')">
+        <form method="post" action="/automacoes/regras/{{ r.id }}/excluir" style="display:inline" class="erp-form"
+              data-confirm="Excluir esta regra de automação?"
+              data-confirm-title="Excluir regra">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <button class="btn btn-sm btn-danger" type="submit">Excluir</button>
         </form>

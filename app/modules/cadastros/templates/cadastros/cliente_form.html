@@ -1,144 +1,168 @@
 {% extends "base.html" %}
+{% from "macros/forms.html" import field_label, form_legend %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
-<div class="card" style="max-width: 900px;">
+<div class="card erp-form-card" style="max-width:960px">
   <h2 class="card-title">{{ title }}</h2>
   {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
 
-  <form method="post" action="{{ action }}">
-    <div class="form-grid">
-      {% if not cliente %}
-      <div class="form-group">
-        <label class="form-label" for="person_type">Tipo</label>
-        <select class="form-input" id="person_type" name="person_type" required>
-          <option value="pf" {% if form and form.person_type == 'pf' %}selected{% endif %}>Pessoa Física</option>
-          <option value="pj" {% if form and form.person_type == 'pj' %}selected{% endif %}>Pessoa Jurídica</option>
-        </select>
-      </div>
-      {% else %}
-      <div class="form-group">
-        <label class="form-label">Tipo</label>
-        <input class="form-input" value="{{ 'Pessoa Física' if cliente.person_type.value == 'pf' else 'Pessoa Jurídica' }}" disabled>
-      </div>
-      {% endif %}
+  <form method="post" action="{{ action }}" class="erp-form">
+    <fieldset class="form-fieldset">
+      <legend>Identificação</legend>
+      <div class="form-grid">
+        {% if not cliente %}
+        <div class="form-group">
+          {{ field_label('Tipo', true, 'person_type') }}
+          <select class="form-input" id="person_type" name="person_type" required>
+            <option value="pf" {% if form and form.person_type == 'pf' %}selected{% endif %}>Pessoa Física</option>
+            <option value="pj" {% if form and form.person_type == 'pj' %}selected{% endif %}>Pessoa Jurídica</option>
+          </select>
+        </div>
+        {% else %}
+        <div class="form-group">
+          <label class="form-label">Tipo</label>
+          <input class="form-input" value="{{ 'Pessoa Física' if cliente.person_type.value == 'pf' else 'Pessoa Jurídica' }}" disabled>
+        </div>
+        {% endif %}
 
-      <div class="form-group">
-        <label class="form-label" for="status">Situação</label>
-        <select class="form-input" id="status" name="status">
-          <option value="active" {% if cliente and cliente.status.value == 'active' %}selected{% endif %}>Ativo</option>
-          <option value="inactive" {% if cliente and cliente.status.value == 'inactive' %}selected{% endif %}>Inativo</option>
-          <option value="blocked" {% if cliente and cliente.status.value == 'blocked' %}selected{% endif %}>Bloqueado</option>
-        </select>
-      </div>
+        <div class="form-group">
+          {{ field_label('Situação', true, 'status') }}
+          <select class="form-input" id="status" name="status" required>
+            <option value="active" {% if not cliente or cliente.status.value == 'active' %}selected{% endif %}>Ativo</option>
+            <option value="inactive" {% if cliente and cliente.status.value == 'inactive' %}selected{% endif %}>Inativo</option>
+            <option value="blocked" {% if cliente and cliente.status.value == 'blocked' %}selected{% endif %}>Bloqueado</option>
+          </select>
+        </div>
 
-      <div class="form-group">
-        <label class="form-label" for="nome">Nome / Razão Social</label>
-        <input class="form-input" id="nome" name="nome" required
-               value="{{ cliente.nome if cliente else (form.nome if form else '') }}">
-      </div>
-      <div class="form-group">
-        <label class="form-label" for="nome_fantasia">Nome Fantasia</label>
-        <input class="form-input" id="nome_fantasia" name="nome_fantasia"
-               value="{{ cliente.nome_fantasia if cliente else '' }}">
-      </div>
+        <div class="form-group">
+          {{ field_label('Nome / Razão Social', true, 'nome') }}
+          <input class="form-input" id="nome" name="nome" required placeholder="Nome completo ou razão social"
+                 value="{{ cliente.nome if cliente else (form.nome if form else '') }}">
+        </div>
+        <div class="form-group" id="group-nome-fantasia">
+          {{ field_label('Nome Fantasia', false, 'nome_fantasia') }}
+          <input class="form-input" id="nome_fantasia" name="nome_fantasia" placeholder="Opcional para PJ"
+                 value="{{ cliente.nome_fantasia if cliente else '' }}">
+        </div>
 
-      {% if not cliente %}
-      <div class="form-group">
-        <label class="form-label" for="cpf">CPF</label>
-        <input class="form-input" id="cpf" name="cpf" value="{{ form.cpf if form else '' }}">
+        {% if not cliente %}
+        <div class="form-group" id="group-cpf">
+          {{ field_label('CPF', true, 'cpf') }}
+          <input class="form-input" id="cpf" name="cpf" data-mask="cpf" placeholder="000.000.000-00"
+                 value="{{ form.cpf if form else '' }}">
+        </div>
+        <div class="form-group" id="group-cnpj">
+          {{ field_label('CNPJ', true, 'cnpj') }}
+          <input class="form-input" id="cnpj" name="cnpj" data-mask="cnpj" placeholder="00.000.000/0000-00"
+                 value="{{ form.cnpj if form else '' }}">
+        </div>
+        {% else %}
+        <div class="form-group">
+          <label class="form-label">Documento</label>
+          <input class="form-input" value="{{ cliente.cpf or cliente.cnpj or '-' }}" disabled>
+        </div>
+        {% endif %}
       </div>
-      <div class="form-group">
-        <label class="form-label" for="cnpj">CNPJ</label>
-        <input class="form-input" id="cnpj" name="cnpj" value="{{ form.cnpj if form else '' }}">
-      </div>
-      {% else %}
-      <div class="form-group">
-        <label class="form-label">Documento</label>
-        <input class="form-input" value="{{ cliente.cpf or cliente.cnpj or '-' }}" disabled>
-      </div>
-      {% endif %}
+    </fieldset>
 
-      <div class="form-group">
-        <label class="form-label" for="email">E-mail</label>
-        <input class="form-input" type="email" id="email" name="email"
-               value="{{ cliente.email if cliente else (form.email if form else '') }}">
+    <fieldset class="form-fieldset">
+      <legend>Contato</legend>
+      <div class="form-grid">
+        <div class="form-group">
+          {{ field_label('E-mail', false, 'email') }}
+          <input class="form-input" type="email" id="email" name="email" placeholder="nome@empresa.com"
+                 value="{{ cliente.email if cliente else (form.email if form else '') }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Telefone', false, 'telefone') }}
+          <input class="form-input" id="telefone" name="telefone" placeholder="(00) 0000-0000"
+                 value="{{ cliente.telefone if cliente else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Celular', false, 'celular') }}
+          <input class="form-input" id="celular" name="celular" placeholder="(00) 00000-0000"
+                 value="{{ cliente.celular if cliente else '' }}">
+        </div>
       </div>
-      <div class="form-group">
-        <label class="form-label" for="telefone">Telefone</label>
-        <input class="form-input" id="telefone" name="telefone"
-               value="{{ cliente.telefone if cliente else '' }}">
-      </div>
-      <div class="form-group">
-        <label class="form-label" for="celular">Celular</label>
-        <input class="form-input" id="celular" name="celular"
-               value="{{ cliente.celular if cliente else '' }}">
-      </div>
+    </fieldset>
 
-      <div class="form-group">
-        <label class="form-label" for="cep">CEP</label>
-        <input class="form-input" id="cep" name="cep" maxlength="9"
-               value="{{ cliente.cep if cliente else '' }}" placeholder="00000-000">
+    <fieldset class="form-fieldset">
+      <legend>Endereço</legend>
+      <div class="form-grid">
+        <div class="form-group">
+          {{ field_label('CEP', false, 'cep') }}
+          <input class="form-input" id="cep" name="cep" data-mask="cep" placeholder="00000-000"
+                 value="{{ cliente.cep if cliente else '' }}">
+          <p class="form-help">Ao sair do campo, o endereço é preenchido automaticamente.</p>
+        </div>
+        <div class="form-group">
+          {{ field_label('Endereço', false, 'endereco') }}
+          <input class="form-input" id="endereco" name="endereco"
+                 value="{{ cliente.endereco if cliente else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Número', false, 'numero') }}
+          <input class="form-input" id="numero" name="numero" placeholder="Nº"
+                 value="{{ cliente.numero if cliente else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Complemento', false, 'complemento') }}
+          <input class="form-input" id="complemento" name="complemento"
+                 value="{{ cliente.complemento if cliente else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Bairro', false, 'bairro') }}
+          <input class="form-input" id="bairro" name="bairro"
+                 value="{{ cliente.bairro if cliente else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('UF', false, 'uf') }}
+          <input class="form-input" id="uf" name="uf" maxlength="2" placeholder="SP"
+                 value="{{ cliente.uf if cliente else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Cidade', false, 'cidade') }}
+          <input class="form-input" id="cidade" name="cidade"
+                 value="{{ cliente.cidade if cliente else '' }}">
+          <p class="form-help">Selecione a UF para carregar as cidades (IBGE).</p>
+        </div>
       </div>
-      <div class="form-group">
-        <label class="form-label" for="endereco">Endereço</label>
-        <input class="form-input" id="endereco" name="endereco"
-               value="{{ cliente.endereco if cliente else '' }}">
-      </div>
-      <div class="form-group">
-        <label class="form-label" for="numero">Número</label>
-        <input class="form-input" id="numero" name="numero"
-               value="{{ cliente.numero if cliente else '' }}">
-      </div>
-      <div class="form-group">
-        <label class="form-label" for="complemento">Complemento</label>
-        <input class="form-input" id="complemento" name="complemento"
-               value="{{ cliente.complemento if cliente else '' }}">
-      </div>
-      <div class="form-group">
-        <label class="form-label" for="bairro">Bairro</label>
-        <input class="form-input" id="bairro" name="bairro"
-               value="{{ cliente.bairro if cliente else '' }}">
-      </div>
+    </fieldset>
 
-      <div class="form-group">
-        <label class="form-label" for="cidade">Cidade</label>
-        <input class="form-input" id="cidade" name="cidade"
-               value="{{ cliente.cidade if cliente else '' }}">
+    <fieldset class="form-fieldset">
+      <legend>Comercial</legend>
+      <div class="form-grid">
+        <div class="form-group">
+          {{ field_label('Categoria', false, 'categoria_codigo') }}
+          <select class="form-input" id="categoria_codigo" name="categoria_codigo">
+            <option value="">—</option>
+            {% for cat in categorias %}
+            <option value="{{ cat.codigo }}"
+              {% if cliente and cliente.categoria_codigo == cat.codigo %}selected{% endif %}>
+              {{ cat.descricao }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('Limite de crédito', false, 'limite_credito') }}
+          <input class="form-input" id="limite_credito" name="limite_credito" data-money="1"
+                 value="{{ cliente.limite_credito if cliente else '0,00' }}">
+        </div>
       </div>
-      <div class="form-group">
-        <label class="form-label" for="uf">UF</label>
-        <input class="form-input" id="uf" name="uf" maxlength="2"
-               value="{{ cliente.uf if cliente else '' }}">
-      </div>
+    </fieldset>
 
-      <div class="form-group">
-        <label class="form-label" for="categoria_codigo">Categoria</label>
-        <select class="form-input" id="categoria_codigo" name="categoria_codigo">
-          <option value="">—</option>
-          {% for cat in categorias %}
-          <option value="{{ cat.codigo }}"
-            {% if cliente and cliente.categoria_codigo == cat.codigo %}selected{% endif %}>
-            {{ cat.descricao }}
-          </option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="form-group">
-        <label class="form-label" for="limite_credito">Limite de crédito (R$)</label>
-        <input class="form-input" id="limite_credito" name="limite_credito"
-               value="{{ cliente.limite_credito if cliente else '0,00' }}">
-      </div>
+    <div class="form-group">
+      {{ field_label('Observações', false, 'observacoes') }}
+      <textarea class="form-input" id="observacoes" name="observacoes" rows="3"
+                placeholder="Informações adicionais sobre o cliente">{{ cliente.observacoes if cliente else '' }}</textarea>
     </div>
 
-    <div class="form-group" style="margin-top:12px">
-      <label class="form-label" for="observacoes">Observações</label>
-      <textarea class="form-input" id="observacoes" name="observacoes" rows="3">{{ cliente.observacoes if cliente else '' }}</textarea>
-    </div>
-
-    <div class="form-actions" style="margin-top:16px">
+    <div class="form-actions">
       <button type="submit" class="btn btn-primary">Salvar</button>
       <a class="btn" href="/cadastros/clientes">Cancelar</a>
     </div>
+    {{ form_legend() }}
   </form>
 
   {% if cliente and (current_user.is_superuser or 'cadastros.cliente.visualizar' in current_user.permissions) %}
@@ -154,10 +178,15 @@
 
   {% if cliente and (current_user.is_superuser or 'cadastros.cliente.bloquear' in current_user.permissions) %}
   <hr style="margin:24px 0;border:0;border-top:1px solid var(--border)">
-  <form method="post" action="/cadastros/clientes/{{ cliente.id }}/bloquear" class="form-grid">
+  <form method="post" action="/cadastros/clientes/{{ cliente.id }}/bloquear" class="erp-form form-grid"
+        data-impact-url="/cadastros/clientes/{{ cliente.id }}/impacto"
+        data-impact-mode="warn"
+        data-impact-title="Bloquear cliente">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <div class="form-group" style="grid-column:1 / -1">
-      <label class="form-label" for="motivo">Bloquear cliente (blacklist)</label>
-      <input class="form-input" id="motivo" name="motivo" placeholder="Motivo do bloqueio" required>
+      {{ field_label('Bloquear cliente (blacklist)', true, 'motivo') }}
+      <input class="form-input" id="motivo" name="motivo" placeholder="Motivo do bloqueio — impacta novas reservas" required>
+      <p class="form-help">Clientes bloqueados não podem ser usados em novas reservas sem permissão especial.</p>
     </div>
     <div class="form-actions">
       <button type="submit" class="btn btn-danger">Bloquear</button>
@@ -165,27 +194,4 @@
   </form>
   {% endif %}
 </div>
-{% endblock %}
-{% block scripts %}
-<script>
-(function () {
-  const cepInput = document.getElementById('cep');
-  if (!cepInput) return;
-  cepInput.addEventListener('blur', async function () {
-    const digits = (this.value || '').replace(/\D/g, '');
-    if (digits.length !== 8) return;
-    try {
-      const resp = await fetch('/cadastros/cep/' + digits);
-      if (!resp.ok) return;
-      const data = await resp.json();
-      const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
-      set('endereco', data.endereco);
-      set('complemento', data.complemento);
-      set('bairro', data.bairro);
-      set('cidade', data.cidade);
-      set('uf', data.uf);
-    } catch (_) { /* silencioso */ }
-  });
-})();
-</script>
 {% endblock %}

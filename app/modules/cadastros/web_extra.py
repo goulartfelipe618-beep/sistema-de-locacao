@@ -8,7 +8,7 @@ from decimal import Decimal, InvalidOperation
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db_session
@@ -45,6 +45,40 @@ from app.shared.enums import (
 
 router = APIRouter()
 SessionDep = Annotated[AsyncSession, Depends(get_db_session)]
+
+
+@router.get("/cadastros/fornecedores/json")
+async def fornecedores_json(
+    session: SessionDep,
+    _user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("cadastros.fornecedor.visualizar"))
+    ],
+    q: str = "",
+    page: int = 1,
+) -> JSONResponse:
+    result = await FornecedorService(session).list_items(
+        PageParams(page=page, size=25), search=q or None
+    )
+    return JSONResponse(
+        content={
+            "items": [{"id": str(f.id), "label": f.nome, "nome": f.nome} for f in result.items],
+            "total": result.total,
+            "page": page,
+        }
+    )
+
+
+@router.get("/cadastros/motoristas/{item_id}/impacto")
+async def motorista_impacto_web(
+    item_id: uuid.UUID,
+    session: SessionDep,
+    _user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("cadastros.motorista.visualizar"))
+    ],
+) -> JSONResponse:
+    from app.shared.entity_impact import motorista_impact
+
+    return JSONResponse(content=await motorista_impact(session, item_id))
 
 
 def _dec(raw: str | None, default: str = "0") -> Decimal:

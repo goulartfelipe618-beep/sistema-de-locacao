@@ -1,28 +1,42 @@
 {% extends "base.html" %}
+{% from "macros/forms.html" import field_label, form_legend %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
-<div class="card" style="max-width:700px">
+<div class="card erp-form-card" style="max-width:700px">
   <h2 class="card-title">{{ title }}</h2>
   {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
-  <form method="post" action="{{ action }}">
+  <form method="post" action="{{ action }}" class="erp-form">
     <div class="form-grid">
-      <div class="form-group"><label class="form-label" for="nome">Nome</label><input class="form-input" id="nome" name="nome" required value="{{ item.nome if item else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="unidade">Unidade</label>
-        <select class="form-input" id="unidade" name="unidade">
+      <div class="form-group">
+        {{ field_label('Nome', true, 'nome') }}
+        <input class="form-input" id="nome" name="nome" required value="{{ item.nome if item else '' }}">
+      </div>
+      <div class="form-group">
+        {{ field_label('Unidade', true, 'unidade') }}
+        <select class="form-input" id="unidade" name="unidade" required>
           {% for u in ['litro','kwh','m3'] %}
-          <option value="{{ u }}" {% if item and item.unidade.value == u %}selected{% elif not item and u == 'litro' %}selected{% endif %}>{{ u }}</option>
+          <option value="{{ u }}" {% if item and item.unidade.value == u %}selected{% elif not item and u == 'litro' %}selected{% endif %}>{{ u|upper }}</option>
           {% endfor %}
         </select>
       </div>
-      <div class="form-group"><label class="form-label" for="preco_referencia">Preço referência</label><input class="form-input" id="preco_referencia" name="preco_referencia" value="{{ item.preco_referencia if item else '0' }}"></div>
-      <div class="form-group"><label class="form-label" for="status">Status</label>
-        <select class="form-input" id="status" name="status">
-          <option value="active" {% if item and item.status.value == 'active' %}selected{% endif %}>Ativo</option>
+      <div class="form-group">
+        {{ field_label('Preço referência', false, 'preco_referencia') }}
+        <input class="form-input" id="preco_referencia" name="preco_referencia" data-money="1"
+               value="{{ item.preco_referencia if item else '0' }}">
+      </div>
+      <div class="form-group">
+        {{ field_label('Status', true, 'status') }}
+        <select class="form-input" id="status" name="status" required>
+          <option value="active" {% if not item or item.status.value == 'active' %}selected{% endif %}>Ativo</option>
           <option value="inactive" {% if item and item.status.value == 'inactive' %}selected{% endif %}>Inativo</option>
         </select>
       </div>
     </div>
-    <div class="form-actions" style="margin-top:16px"><button class="btn btn-primary" type="submit">Salvar</button><a class="btn" href="/frota/combustiveis">Cancelar</a></div>
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Salvar</button>
+      <a class="btn" href="/frota/combustiveis">Cancelar</a>
+    </div>
+    {{ form_legend() }}
   </form>
 </div>
 {% endblock %}

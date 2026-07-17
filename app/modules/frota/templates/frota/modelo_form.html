@@ -1,39 +1,79 @@
 {% extends "base.html" %}
+{% from "macros/forms.html" import field_label, form_legend %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
-<div class="card" style="max-width:900px">
+<div class="card erp-form-card" style="max-width:900px">
   <h2 class="card-title">{{ title }}</h2>
   {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
-  <form method="post" action="{{ action }}">
-    <div class="form-grid">
-      <div class="form-group"><label class="form-label" for="marca_id">Marca</label>
-        <select class="form-input" id="marca_id" name="marca_id" required>
-          <option value="">—</option>
-          {% for m in marcas %}<option value="{{ m.id }}" {% if item and item.marca_id == m.id %}selected{% endif %}>{{ m.nome }}</option>{% endfor %}
-        </select>
+  <form method="post" action="{{ action }}" class="erp-form">
+    <fieldset class="form-fieldset">
+      <legend>Classificação</legend>
+      <div class="form-grid">
+        <div class="form-group">
+          {{ field_label('Marca', true, 'marca_id') }}
+          <select class="form-input" id="marca_id" name="marca_id" required>
+            <option value="">Selecionar</option>
+            {% for m in marcas %}<option value="{{ m.id }}" {% if item and item.marca_id == m.id %}selected{% endif %}>{{ m.nome }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('Categoria padrão', false, 'categoria_padrao_id') }}
+          <select class="form-input" id="categoria_padrao_id" name="categoria_padrao_id">
+            <option value="">—</option>
+            {% for c in categorias %}<option value="{{ c.id }}" {% if item and item.categoria_padrao_id == c.id %}selected{% endif %}>{{ c.nome }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('Nome', true, 'nome') }}
+          <input class="form-input" id="nome" name="nome" required value="{{ item.nome if item else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Versão', false, 'versao') }}
+          <input class="form-input" id="versao" name="versao" value="{{ item.versao if item else '' }}">
+        </div>
       </div>
-      <div class="form-group"><label class="form-label" for="categoria_padrao_id">Categoria padrão</label>
-        <select class="form-input" id="categoria_padrao_id" name="categoria_padrao_id">
-          <option value="">—</option>
-          {% for c in categorias %}<option value="{{ c.id }}" {% if item and item.categoria_padrao_id == c.id %}selected{% endif %}>{{ c.nome }}</option>{% endfor %}
-        </select>
+    </fieldset>
+    <fieldset class="form-fieldset">
+      <legend>Especificações técnicas</legend>
+      <div class="form-grid">
+        <div class="form-group">
+          {{ field_label('Motorização', false, 'motorizacao') }}
+          <input class="form-input" id="motorizacao" name="motorizacao" placeholder="1.0, 1.6 Turbo..." value="{{ item.motorizacao if item else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Câmbio', false, 'cambio') }}
+          <input class="form-input" id="cambio" name="cambio" placeholder="Automático, Manual" value="{{ item.cambio if item else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Portas', false, 'portas') }}
+          <input class="form-input" type="number" min="2" max="5" id="portas" name="portas" value="{{ item.portas if item and item.portas else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Capacidade tanque (L)', false, 'capacidade_tanque') }}
+          <input class="form-input" id="capacidade_tanque" name="capacidade_tanque" value="{{ item.capacidade_tanque if item and item.capacidade_tanque else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Consumo km/l', false, 'consumo_medio_km_l') }}
+          <input class="form-input" id="consumo_medio_km_l" name="consumo_medio_km_l" value="{{ item.consumo_medio_km_l if item and item.consumo_medio_km_l else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Código FIPE', false, 'codigo_fipe') }}
+          <input class="form-input" id="codigo_fipe" name="codigo_fipe" value="{{ item.codigo_fipe if item else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Status', true, 'status') }}
+          <select class="form-input" id="status" name="status" required>
+            <option value="active" {% if not item or item.status.value == 'active' %}selected{% endif %}>Ativo</option>
+            <option value="inactive" {% if item and item.status.value == 'inactive' %}selected{% endif %}>Inativo</option>
+          </select>
+        </div>
       </div>
-      <div class="form-group"><label class="form-label" for="nome">Nome</label><input class="form-input" id="nome" name="nome" required value="{{ item.nome if item else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="versao">Versão</label><input class="form-input" id="versao" name="versao" value="{{ item.versao if item else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="motorizacao">Motorização</label><input class="form-input" id="motorizacao" name="motorizacao" value="{{ item.motorizacao if item else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="cambio">Câmbio</label><input class="form-input" id="cambio" name="cambio" value="{{ item.cambio if item else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="portas">Portas</label><input class="form-input" type="number" id="portas" name="portas" value="{{ item.portas if item and item.portas else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="capacidade_tanque">Capacidade tanque</label><input class="form-input" id="capacidade_tanque" name="capacidade_tanque" value="{{ item.capacidade_tanque if item and item.capacidade_tanque else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="consumo_medio_km_l">Consumo km/l</label><input class="form-input" id="consumo_medio_km_l" name="consumo_medio_km_l" value="{{ item.consumo_medio_km_l if item and item.consumo_medio_km_l else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="codigo_fipe">Código FIPE</label><input class="form-input" id="codigo_fipe" name="codigo_fipe" value="{{ item.codigo_fipe if item else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="status">Status</label>
-        <select class="form-input" id="status" name="status">
-          <option value="active" {% if item and item.status.value == 'active' %}selected{% endif %}>Ativo</option>
-          <option value="inactive" {% if item and item.status.value == 'inactive' %}selected{% endif %}>Inativo</option>
-        </select>
-      </div>
+    </fieldset>
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Salvar</button>
+      <a class="btn" href="/frota/modelos">Cancelar</a>
     </div>
-    <div class="form-actions" style="margin-top:16px"><button class="btn btn-primary" type="submit">Salvar</button><a class="btn" href="/frota/modelos">Cancelar</a></div>
+    {{ form_legend() }}
   </form>
 </div>
 {% endblock %}

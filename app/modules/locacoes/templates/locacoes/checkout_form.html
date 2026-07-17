@@ -1,50 +1,80 @@
 {% extends "base.html" %}
+{% from "macros/forms.html" import field_label, form_legend %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
-<div class="card" style="max-width:900px">
+<div class="card erp-form-card" style="max-width:960px">
   <div class="toolbar">
     <h2 class="card-title" style="margin:0">{{ title }}</h2>
     <a class="btn btn-sm" href="/locacoes/checkout">← Voltar</a>
   </div>
   {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
 
-  <div class="form-grid" style="margin-bottom:16px">
-    <div><strong>Contrato:</strong> {{ contrato.numero }}</div>
-    <div><strong>Cliente:</strong> {{ cliente_nomes.get(contrato.cliente_id|string, '') }}</div>
-    <div><strong>Veículo:</strong> {{ veiculo.placa }}</div>
-    <div><strong>Caução prevista:</strong> {{ contrato.caucao|currency }}</div>
-    <div><strong>Km atual:</strong> {{ veiculo.km_atual or 0 }}</div>
-    <div><strong>Combustível atual:</strong> {{ veiculo.nivel_combustivel_atual or 0 }}/8</div>
+  <div class="form-summary-panel" style="margin:16px 0">
+    <div><strong>Contrato</strong>{{ contrato.numero }}</div>
+    <div><strong>Cliente</strong>{{ cliente_nomes.get(contrato.cliente_id|string, '—') }}</div>
+    <div><strong>Veículo</strong>{{ veiculo.placa }}</div>
+    <div><strong>Caução prevista</strong>{{ contrato.caucao|currency }}</div>
+    <div><strong>Km atual</strong>{{ veiculo.km_atual or 0 }}</div>
+    <div><strong>Combustível atual</strong>{{ veiculo.nivel_combustivel_atual or 0 }}/8</div>
   </div>
 
-  <form method="post" action="/locacoes/checkout/{{ contrato.id }}/concluir">
+  <form method="post" action="/locacoes/checkout/{{ contrato.id }}/concluir" class="erp-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <div class="form-grid">
-      <div class="form-group"><label class="form-label">Km saída</label><input class="form-input" name="km" type="number" min="0" required value="{{ veiculo.km_atual or 0 }}"></div>
-      <div class="form-group"><label class="form-label">Combustível (0-8)</label><input class="form-input" name="combustivel_nivel" type="number" min="0" max="8" required value="{{ veiculo.nivel_combustivel_atual or 8 }}"></div>
-    </div>
 
-    <h4>Fotos (storage keys por ângulo)</h4>
-    <div class="form-grid">
-      {% for ang in foto_angulos %}
-      <div class="form-group"><label class="form-label">{{ ang }}</label><input class="form-input" name="foto_{{ ang }}" placeholder="storage/key/foto.jpg"></div>
-      {% endfor %}
-    </div>
+    <fieldset class="form-fieldset">
+      <legend>1. Leituras de saída</legend>
+      <div class="form-grid">
+        <div class="form-group">
+          {{ field_label('Km saída', true, 'km') }}
+          <input class="form-input" id="km" name="km" type="number" min="0" required value="{{ veiculo.km_atual or 0 }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Combustível (0–8)', true, 'combustivel_nivel') }}
+          <input class="form-input" id="combustivel_nivel" name="combustivel_nivel" type="number" min="0" max="8" required value="{{ veiculo.nivel_combustivel_atual or 8 }}">
+          <p class="form-help">Use o controle deslizante ou digite o nível (0 = vazio, 8 = cheio).</p>
+        </div>
+      </div>
+    </fieldset>
 
-    <div class="form-group"><label class="form-label">Checklist (um item por linha)</label><textarea class="form-input" name="checklist" rows="4" placeholder="Pneus OK&#10;Documentos OK&#10;Limpador OK"></textarea></div>
-    <div class="form-group"><label class="form-label">Observações</label><textarea class="form-input" name="observacoes" rows="2"></textarea></div>
+    <fieldset class="form-fieldset">
+      <legend>2. Fotos (storage keys por ângulo)</legend>
+      <div class="form-grid">
+        {% for ang in foto_angulos %}
+        <div class="form-group">
+          {{ field_label(ang, false, 'foto_' ~ ang) }}
+          <input class="form-input" id="foto_{{ ang }}" name="foto_{{ ang }}" placeholder="storage/key/foto.jpg">
+        </div>
+        {% endfor %}
+      </div>
+    </fieldset>
 
-    <div class="form-group">
-      <label><input type="checkbox" name="caucao_confirmada"> Caução confirmada</label>
-    </div>
-    <div class="form-group">
-      <label><input type="checkbox" name="allow_force"> Forçar (ignorar bloqueios)</label>
-    </div>
+    <fieldset class="form-fieldset">
+      <legend>3. Checklist e observações</legend>
+      <div class="form-group">
+        {{ field_label('Checklist (um item por linha)', false, 'checklist') }}
+        <textarea class="form-input" id="checklist" name="checklist" rows="4" placeholder="Pneus OK&#10;Documentos OK&#10;Limpador OK"></textarea>
+      </div>
+      <div class="form-group">
+        {{ field_label('Observações', false, 'observacoes') }}
+        <textarea class="form-input" id="observacoes" name="observacoes" rows="2"></textarea>
+      </div>
+    </fieldset>
 
-    <div class="form-actions" style="margin-top:16px">
-      <button class="btn btn-primary" type="submit">Concluir check-out</button>
-      <a class="btn" href="/locacoes/contratos/{{ contrato.id }}">Cancelar</a>
-    </div>
+    <fieldset class="form-fieldset">
+      <legend>4. Confirmações</legend>
+      <div class="form-group">
+        <label><input type="checkbox" name="caucao_confirmada"> Caução confirmada / recebida</label>
+      </div>
+      <div class="form-group">
+        <label><input type="checkbox" name="allow_force"> Forçar (ignorar bloqueios de frota)</label>
+        <p class="form-help">Use apenas com permissão especial quando houver conflito de disponibilidade.</p>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">Concluir check-out</button>
+        <a class="btn" href="/locacoes/contratos/{{ contrato.id }}">Cancelar</a>
+      </div>
+      {{ form_legend() }}
+    </fieldset>
   </form>
 </div>
 {% endblock %}

@@ -1,27 +1,68 @@
 {% extends "base.html" %}
+{% from "macros/forms.html" import field_label, form_legend %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
-<div class="card" style="max-width:900px">
+<div class="card erp-form-card" style="max-width:900px">
   <h2 class="card-title">{{ title }}</h2>
   {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
-  <form method="post" action="{{ action }}">
-    <div class="form-grid">
-      <div class="form-group"><label class="form-label" for="nome">Nome</label><input class="form-input" id="nome" name="nome" required value="{{ item.nome if item else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="ordem">Ordem</label><input class="form-input" type="number" id="ordem" name="ordem" value="{{ item.ordem if item else 0 }}"></div>
-      <div class="form-group"><label class="form-label" for="capacidade_passageiros">Passageiros</label><input class="form-input" type="number" id="capacidade_passageiros" name="capacidade_passageiros" value="{{ item.capacidade_passageiros if item else 5 }}"></div>
-      <div class="form-group"><label class="form-label" for="grupo_tarifario">Grupo tarifário</label><input class="form-input" id="grupo_tarifario" name="grupo_tarifario" value="{{ item.grupo_tarifario if item else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="transmissao_tipica">Transmissão</label><input class="form-input" id="transmissao_tipica" name="transmissao_tipica" value="{{ item.transmissao_tipica if item else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="capacidade_porta_malas">Porta-malas</label><input class="form-input" id="capacidade_porta_malas" name="capacidade_porta_malas" value="{{ item.capacidade_porta_malas if item else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="status">Status</label>
-        <select class="form-input" id="status" name="status">
-          <option value="active" {% if item and item.status.value == 'active' %}selected{% endif %}>Ativo</option>
-          <option value="inactive" {% if item and item.status.value == 'inactive' %}selected{% endif %}>Inativo</option>
-        </select>
+  <form method="post" action="{{ action }}" class="erp-form">
+    <fieldset class="form-fieldset">
+      <legend>Identificação</legend>
+      <div class="form-grid">
+        <div class="form-group">
+          {{ field_label('Nome', true, 'nome') }}
+          <input class="form-input" id="nome" name="nome" required value="{{ item.nome if item else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Ordem', false, 'ordem') }}
+          <input class="form-input" type="number" id="ordem" name="ordem" value="{{ item.ordem if item else 0 }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Grupo tarifário', false, 'grupo_tarifario') }}
+          <input class="form-input" id="grupo_tarifario" name="grupo_tarifario" value="{{ item.grupo_tarifario if item else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Status', true, 'status') }}
+          <select class="form-input" id="status" name="status" required>
+            <option value="active" {% if not item or item.status.value == 'active' %}selected{% endif %}>Ativo</option>
+            <option value="inactive" {% if item and item.status.value == 'inactive' %}selected{% endif %}>Inativo</option>
+          </select>
+        </div>
       </div>
-      <div class="form-group"><label class="form-label" for="imagem_url">URL imagem</label><input class="form-input" id="imagem_url" name="imagem_url" value="{{ item.imagem_url if item else '' }}"></div>
+    </fieldset>
+    <fieldset class="form-fieldset">
+      <legend>Capacidades</legend>
+      <div class="form-grid">
+        <div class="form-group">
+          {{ field_label('Passageiros', false, 'capacidade_passageiros') }}
+          <input class="form-input" type="number" min="1" id="capacidade_passageiros" name="capacidade_passageiros"
+                 value="{{ item.capacidade_passageiros if item else 5 }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Transmissão típica', false, 'transmissao_tipica') }}
+          <input class="form-input" id="transmissao_tipica" name="transmissao_tipica" placeholder="Automática, Manual..."
+                 value="{{ item.transmissao_tipica if item else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Porta-malas', false, 'capacidade_porta_malas') }}
+          <input class="form-input" id="capacidade_porta_malas" name="capacidade_porta_malas"
+                 value="{{ item.capacidade_porta_malas if item else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('URL imagem', false, 'imagem_url') }}
+          <input class="form-input" id="imagem_url" name="imagem_url" type="url" value="{{ item.imagem_url if item else '' }}">
+        </div>
+      </div>
+    </fieldset>
+    <div class="form-group">
+      {{ field_label('Descrição', false, 'descricao') }}
+      <textarea class="form-input" id="descricao" name="descricao" rows="3">{{ item.descricao if item else '' }}</textarea>
     </div>
-    <div class="form-group" style="margin-top:12px"><label class="form-label" for="descricao">Descrição</label><textarea class="form-input" id="descricao" name="descricao" rows="3">{{ item.descricao if item else '' }}</textarea></div>
-    <div class="form-actions" style="margin-top:16px"><button class="btn btn-primary" type="submit">Salvar</button><a class="btn" href="/frota/categorias">Cancelar</a></div>
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Salvar</button>
+      <a class="btn" href="/frota/categorias">Cancelar</a>
+    </div>
+    {{ form_legend() }}
   </form>
 </div>
 {% endblock %}

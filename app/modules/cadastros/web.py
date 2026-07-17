@@ -39,6 +39,63 @@ async def consultar_cep_web(
     return JSONResponse(content=data)
 
 
+@router.get("/cadastros/ibge/ufs")
+async def ibge_ufs_web(
+    _user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("cadastros.cliente.visualizar"))
+    ],
+) -> JSONResponse:
+    from app.shared.ibge import list_ufs
+
+    return JSONResponse(content=await list_ufs())
+
+
+@router.get("/cadastros/ibge/municipios/{uf}")
+async def ibge_municipios_web(
+    uf: str,
+    _user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("cadastros.cliente.visualizar"))
+    ],
+) -> JSONResponse:
+    from app.shared.ibge import list_municipios
+
+    return JSONResponse(content=await list_municipios(uf))
+
+
+@router.get("/cadastros/clientes/json")
+async def clientes_json(
+    session: SessionDep,
+    _user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("cadastros.cliente.visualizar"))
+    ],
+    q: str = "",
+    page: int = 1,
+) -> JSONResponse:
+    """Busca async de clientes para combobox nos formulários."""
+    result = await ClienteService(session).list_clientes(
+        PageParams(page=page, size=25), search=q or None
+    )
+    items = []
+    for c in result.items:
+        doc = c.cpf or c.cnpj or ""
+        label = c.nome if not doc else f"{c.nome} ({doc})"
+        items.append({"id": str(c.id), "label": label, "nome": c.nome})
+    return JSONResponse(content={"items": items, "total": result.total, "page": page})
+
+
+@router.get("/cadastros/clientes/{cliente_id}/impacto")
+async def cliente_impacto_web(
+    cliente_id: uuid.UUID,
+    session: SessionDep,
+    _user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("cadastros.cliente.visualizar"))
+    ],
+) -> JSONResponse:
+    from app.shared.entity_impact import cliente_impact
+
+    return JSONResponse(content=await cliente_impact(session, cliente_id))
+
+
 def _parse_decimal(raw: str | None) -> Decimal:
     if not raw or not raw.strip():
         return Decimal("0.00")

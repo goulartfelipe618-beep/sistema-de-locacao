@@ -1,46 +1,97 @@
 ﻿{% extends "base.html" %}
+{% from "macros/forms.html" import field_label, form_legend %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
-<div class="card" style="max-width:900px">
+<div class="card erp-form-card" style="max-width:900px">
   <h2 class="card-title">{{ title }}</h2>
   {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
-  <form method="post" action="{{ action }}">
-    <div class="form-grid">
-      <div class="form-group"><label class="form-label" for="nome">Nome</label><input class="form-input" id="nome" name="nome" required value="{{ item.nome if item else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="nome_fantasia">Nome fantasia</label><input class="form-input" id="nome_fantasia" name="nome_fantasia" value="{{ item.nome_fantasia if item else '' }}"></div>
-      {% if not item %}
-      <div class="form-group"><label class="form-label" for="person_type">Tipo pessoa</label>
-        <select class="form-input" id="person_type" name="person_type" required>
-          <option value="pf">Pessoa Física</option>
-          <option value="pj">Pessoa Jurídica</option>
-        </select>
+  <form method="post" action="{{ action }}" class="erp-form">
+    <fieldset class="form-fieldset">
+      <legend>Identificação</legend>
+      <div class="form-grid">
+        <div class="form-group">
+          {{ field_label('Nome', true, 'nome') }}
+          <input class="form-input" id="nome" name="nome" required value="{{ item.nome if item else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Nome fantasia', false, 'nome_fantasia') }}
+          <input class="form-input" id="nome_fantasia" name="nome_fantasia" value="{{ item.nome_fantasia if item else '' }}">
+        </div>
+        {% if not item %}
+        <div class="form-group">
+          {{ field_label('Tipo pessoa', true, 'person_type') }}
+          <select class="form-input" id="person_type" name="person_type" required>
+            <option value="pf">Pessoa Física</option>
+            <option value="pj">Pessoa Jurídica</option>
+          </select>
+        </div>
+        <div class="form-group" id="group-cpf">
+          {{ field_label('CPF', true, 'cpf') }}
+          <input class="form-input" id="cpf" name="cpf" data-mask="cpf" placeholder="000.000.000-00">
+        </div>
+        <div class="form-group" id="group-cnpj">
+          {{ field_label('CNPJ', true, 'cnpj') }}
+          <input class="form-input" id="cnpj" name="cnpj" data-mask="cnpj" placeholder="00.000.000/0000-00">
+        </div>
+        {% endif %}
+        <div class="form-group">
+          {{ field_label('Tipo parceria', true, 'tipo') }}
+          <select class="form-input" id="tipo" name="tipo" required>
+            {% for t in ['indicacao','white_label','franquia','marketplace'] %}
+            <option value="{{ t }}" {% if item and item.tipo.value == t %}selected{% endif %}>{{ t|replace('_',' ')|capitalize }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('Status', true, 'status') }}
+          <select class="form-input" id="status" name="status" required>
+            <option value="active" {% if not item or item.status.value == 'active' %}selected{% endif %}>Ativo</option>
+            <option value="inactive" {% if item and item.status.value == 'inactive' %}selected{% endif %}>Inativo</option>
+          </select>
+        </div>
       </div>
-      {% endif %}
-      <div class="form-group"><label class="form-label" for="tipo">Tipo parceria</label>
-        <select class="form-input" id="tipo" name="tipo">
-          {% for t in ['indicacao','white_label','franquia','marketplace'] %}
-          <option value="{{ t }}" {% if item and item.tipo.value == t %}selected{% endif %}>{{ t }}</option>
-          {% endfor %}
-        </select>
+    </fieldset>
+
+    <fieldset class="form-fieldset">
+      <legend>Contato e comissões</legend>
+      <div class="form-grid">
+        <div class="form-group">
+          {{ field_label('E-mail', false, 'email') }}
+          <input class="form-input" type="email" id="email" name="email" value="{{ item.email if item else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Telefone', false, 'telefone') }}
+          <input class="form-input" id="telefone" name="telefone" placeholder="(00) 0000-0000"
+                 value="{{ item.telefone if item else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Comissão %', false, 'comissao_percentual') }}
+          <input class="form-input" id="comissao_percentual" name="comissao_percentual" data-mask="percent"
+                 value="{{ item.comissao_percentual if item else '0' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Comissão fixa', false, 'comissao_valor_fixo') }}
+          <input class="form-input" id="comissao_valor_fixo" name="comissao_valor_fixo" data-money="1"
+                 value="{{ item.comissao_valor_fixo if item else '0' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Chave PIX', false, 'pix_chave') }}
+          <input class="form-input" id="pix_chave" name="pix_chave" placeholder="CPF, CNPJ, e-mail ou telefone"
+                 value="{{ item.pix_chave if item else '' }}">
+        </div>
       </div>
-      <div class="form-group"><label class="form-label" for="status">Status</label>
-        <select class="form-input" id="status" name="status">
-          <option value="active" {% if item and item.status.value == 'active' %}selected{% endif %}>Ativo</option>
-          <option value="inactive" {% if item and item.status.value == 'inactive' %}selected{% endif %}>Inativo</option>
-        </select>
-      </div>
-      {% if not item %}
-      <div class="form-group"><label class="form-label" for="cpf">CPF (PF)</label><input class="form-input" id="cpf" name="cpf"></div>
-      <div class="form-group"><label class="form-label" for="cnpj">CNPJ (PJ)</label><input class="form-input" id="cnpj" name="cnpj"></div>
-      {% endif %}
-      <div class="form-group"><label class="form-label" for="email">E-mail</label><input class="form-input" id="email" name="email" value="{{ item.email if item else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="telefone">Telefone</label><input class="form-input" id="telefone" name="telefone" value="{{ item.telefone if item else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="comissao_percentual">Comissão %</label><input class="form-input" type="number" step="0.01" id="comissao_percentual" name="comissao_percentual" value="{{ item.comissao_percentual if item else '0' }}"></div>
-      <div class="form-group"><label class="form-label" for="comissao_valor_fixo">Comissão fixa</label><input class="form-input" type="number" step="0.01" id="comissao_valor_fixo" name="comissao_valor_fixo" value="{{ item.comissao_valor_fixo if item else '0' }}"></div>
-      <div class="form-group"><label class="form-label" for="pix_chave">Chave PIX</label><input class="form-input" id="pix_chave" name="pix_chave" value="{{ item.pix_chave if item else '' }}"></div>
+    </fieldset>
+
+    <div class="form-group">
+      {{ field_label('Observações', false, 'observacoes') }}
+      <textarea class="form-input" id="observacoes" name="observacoes" rows="3">{{ item.observacoes if item else '' }}</textarea>
     </div>
-    <div class="form-group" style="margin-top:12px"><label class="form-label" for="observacoes">Observações</label><textarea class="form-input" id="observacoes" name="observacoes" rows="3">{{ item.observacoes if item else '' }}</textarea></div>
-    <div class="form-actions" style="margin-top:16px"><button class="btn btn-primary" type="submit">Salvar</button><a class="btn" href="/cadastros/parceiros">Cancelar</a></div>
+
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Salvar</button>
+      <a class="btn" href="/cadastros/parceiros">Cancelar</a>
+    </div>
+    {{ form_legend() }}
   </form>
 </div>
 {% endblock %}

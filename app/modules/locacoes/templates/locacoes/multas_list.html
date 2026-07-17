@@ -39,7 +39,9 @@
         <form method="post" action="/documentos/emitir/multa_condutor/{{ m.id }}" style="display:inline"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-sm" type="submit">PDF Condutor</button></form>
         {% endif %}
         {% if current_user.is_superuser or 'locacoes.multa.excluir' in current_user.permissions %}
-        <form method="post" action="/locacoes/multas/{{ m.id }}/excluir" style="display:inline" onsubmit="return confirm('Excluir multa?')"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-sm btn-danger" type="submit">Excluir</button></form>
+        <form method="post" action="/locacoes/multas/{{ m.id }}/excluir" style="display:inline" class="erp-form"
+              data-confirm="Excluir esta multa? A ação não pode ser desfeita."
+              data-confirm-title="Excluir multa"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-sm btn-danger" type="submit">Excluir</button></form>
         {% endif %}
       </td>
     </tr>

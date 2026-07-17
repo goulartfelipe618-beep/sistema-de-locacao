@@ -1,40 +1,65 @@
 {% extends "base.html" %}
+{% from "macros/forms.html" import field_label, form_legend %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
 {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
-<div class="card">
+<div class="card erp-form-card">
   <h2 class="card-title">{{ title }}</h2>
-  <form method="post" action="/financeiro/receber/novo">
+  <form method="post" action="/financeiro/receber/novo" class="erp-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <div class="form-grid">
-      <div class="form-group"><label class="form-label">Filial *</label>
-        <select class="form-input" name="filial_id" required>
-          <option value="">Selecionar</option>
-          {% for f in filiais %}<option value="{{ f.id }}">{{ f.name }}</option>{% endfor %}
-        </select>
+    <fieldset class="form-fieldset">
+      <legend>Dados do título</legend>
+      <div class="form-grid">
+        <div class="form-group">
+          {{ field_label('Filial', true, 'filial_id') }}
+          <select class="form-input" id="filial_id" name="filial_id" required>
+            <option value="">Selecionar</option>
+            {% for f in filiais %}<option value="{{ f.id }}">{{ f.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('Cliente', false, 'cliente_id') }}
+          <select class="form-input" id="cliente_id" name="cliente_id" data-combobox="cliente">
+            <option value="">(sem cliente)</option>
+            {% for c in clientes %}<option value="{{ c.id }}">{{ c.nome }}</option>{% endfor %}
+          </select>
+          <p class="form-help">Digite para buscar entre todos os clientes.</p>
+        </div>
+        <div class="form-group">
+          {{ field_label('Descrição', true, 'descricao') }}
+          <input class="form-input" id="descricao" name="descricao" required placeholder="Ex.: Locação contrato #123">
+        </div>
+        <div class="form-group">
+          {{ field_label('Valor original', true, 'valor_original') }}
+          <input class="form-input" id="valor_original" name="valor_original" required data-money="1" placeholder="R$ 0,00">
+        </div>
+        <div class="form-group">
+          {{ field_label('Vencimento', true, 'vencimento') }}
+          <input class="form-input" type="date" id="vencimento" name="vencimento" required>
+          <p class="form-help">Padrão: 30 dias a partir de hoje.</p>
+        </div>
+        <div class="form-group">
+          {{ field_label('Forma prevista', false, 'forma_prevista') }}
+          <select class="form-input" id="forma_prevista" name="forma_prevista">
+            <option value="">(não definida)</option>
+            {% for f in formas_pagamento %}<option value="{{ f }}">{{ f }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group form-check-row">
+          <input type="checkbox" id="gera_pix" name="gera_pix" value="on">
+          <label class="form-label" for="gera_pix" style="font-weight:500">Gerar PIX automaticamente</label>
+        </div>
+        <div class="form-group">
+          {{ field_label('Observações', false, 'observacoes') }}
+          <input class="form-input" id="observacoes" name="observacoes" placeholder="Opcional">
+        </div>
       </div>
-      <div class="form-group"><label class="form-label">Cliente</label>
-        <select class="form-input" name="cliente_id">
-          <option value="">(sem cliente)</option>
-          {% for c in clientes %}<option value="{{ c.id }}">{{ c.nome }}</option>{% endfor %}
-        </select>
-      </div>
-      <div class="form-group"><label class="form-label">Descrição *</label><input class="form-input" name="descricao" required></div>
-      <div class="form-group"><label class="form-label">Valor original *</label><input class="form-input" name="valor_original" required></div>
-      <div class="form-group"><label class="form-label">Vencimento *</label><input class="form-input" type="date" name="vencimento" required></div>
-      <div class="form-group"><label class="form-label">Forma prevista</label>
-        <select class="form-input" name="forma_prevista">
-          <option value="">(não definida)</option>
-          {% for f in formas_pagamento %}<option value="{{ f }}">{{ f }}</option>{% endfor %}
-        </select>
-      </div>
-      <div class="form-group"><label class="form-label"><input type="checkbox" name="gera_pix" value="on"> Gerar PIX automaticamente</label></div>
-      <div class="form-group"><label class="form-label">Observações</label><input class="form-input" name="observacoes"></div>
-    </div>
-    <div class="form-actions" style="margin-top:12px">
+    </fieldset>
+    <div class="form-actions">
       <button class="btn btn-primary" type="submit">Salvar</button>
       <a class="btn" href="/financeiro/receber">Cancelar</a>
     </div>
+    {{ form_legend() }}
   </form>
 </div>
 {% endblock %}

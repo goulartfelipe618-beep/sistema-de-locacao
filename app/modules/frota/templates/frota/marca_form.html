@@ -1,22 +1,37 @@
 {% extends "base.html" %}
+{% from "macros/forms.html" import field_label, form_legend %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
-<div class="card" style="max-width:700px">
+<div class="card erp-form-card" style="max-width:700px">
   <h2 class="card-title">{{ title }}</h2>
   {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
-  <form method="post" action="{{ action }}">
+  <form method="post" action="{{ action }}" class="erp-form">
     <div class="form-grid">
-      <div class="form-group"><label class="form-label" for="nome">Nome</label><input class="form-input" id="nome" name="nome" required value="{{ item.nome if item else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="pais_origem">País origem</label><input class="form-input" id="pais_origem" name="pais_origem" value="{{ item.pais_origem if item else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="logo_url">URL logo</label><input class="form-input" id="logo_url" name="logo_url" value="{{ item.logo_url if item else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="status">Status</label>
-        <select class="form-input" id="status" name="status">
-          <option value="active" {% if item and item.status.value == 'active' %}selected{% endif %}>Ativo</option>
+      <div class="form-group">
+        {{ field_label('Nome', true, 'nome') }}
+        <input class="form-input" id="nome" name="nome" required value="{{ item.nome if item else '' }}">
+      </div>
+      <div class="form-group">
+        {{ field_label('País origem', false, 'pais_origem') }}
+        <input class="form-input" id="pais_origem" name="pais_origem" placeholder="Brasil" value="{{ item.pais_origem if item else '' }}">
+      </div>
+      <div class="form-group">
+        {{ field_label('URL logo', false, 'logo_url') }}
+        <input class="form-input" id="logo_url" name="logo_url" type="url" value="{{ item.logo_url if item else '' }}">
+      </div>
+      <div class="form-group">
+        {{ field_label('Status', true, 'status') }}
+        <select class="form-input" id="status" name="status" required>
+          <option value="active" {% if not item or item.status.value == 'active' %}selected{% endif %}>Ativo</option>
           <option value="inactive" {% if item and item.status.value == 'inactive' %}selected{% endif %}>Inativo</option>
         </select>
       </div>
     </div>
-    <div class="form-actions" style="margin-top:16px"><button class="btn btn-primary" type="submit">Salvar</button><a class="btn" href="/frota/marcas">Cancelar</a></div>
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Salvar</button>
+      <a class="btn" href="/frota/marcas">Cancelar</a>
+    </div>
+    {{ form_legend() }}
   </form>
 </div>
 {% endblock %}

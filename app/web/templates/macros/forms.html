@@ -1,0 +1,87 @@
+{# Macros reutilizáveis para formulários ERP #}
+
+{% macro field_label(text, required=false, for_id='') %}
+<label class="form-label{% if required %} form-label--required{% endif %}"{% if for_id %} for="{{ for_id }}"{% endif %}>{{ text }}</label>
+{% endmacro %}
+
+{% macro field_help(text) %}
+<p class="form-help">{{ text }}</p>
+{% endmacro %}
+
+{% macro field_error(name) %}
+<div class="form-error" id="err-{{ name }}" role="alert"></div>
+{% endmacro %}
+
+{% macro form_legend() %}
+<p class="form-legend-required">* Campos obrigatórios</p>
+{% endmacro %}
+
+{% macro form_actions(save_label='Salvar', cancel_url='#', extra_class='') %}
+<div class="form-actions {{ extra_class }}">
+  <button type="submit" class="btn btn-primary">{{ save_label }}</button>
+  <a class="btn" href="{{ cancel_url }}">Cancelar</a>
+</div>
+{{ form_legend() }}
+{% endmacro %}
+
+{% macro fieldset(title, open=true) %}
+<fieldset class="form-fieldset">
+  <legend>{{ title }}</legend>
+  {{ caller() }}
+</fieldset>
+{% endmacro %}
+
+{% macro form_shell(title, action, error=None, max_width='960px') %}
+<div class="card erp-form-card" style="max-width:{{ max_width }}">
+  <h2 class="card-title">{{ title }}</h2>
+  {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+  <form method="post" action="{{ action }}" class="erp-form">
+    {{ caller() }}
+  </form>
+</div>
+{% endmacro %}
+
+{% macro tarifa_item_row(categorias, item=None) %}
+<div class="form-repeater-row">
+  <div class="form-group" style="margin:0">
+    <label class="form-label form-label--required">Categoria</label>
+    <select class="form-input" name="item_categoria_id" required>
+      <option value="">Selecionar</option>
+      {% for c in categorias %}
+      <option value="{{ c.id }}" {% if item and item.categoria_id == c.id %}selected{% endif %}>{{ c.nome }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="form-group" style="margin:0"><label class="form-label">1–3d</label><input class="form-input" name="item_valor_1_3" data-money="1" value="{{ item.valor_1_3 if item else '0' }}"></div>
+  <div class="form-group" style="margin:0"><label class="form-label">4–7d</label><input class="form-input" name="item_valor_4_7" data-money="1" value="{{ item.valor_4_7 if item else '0' }}"></div>
+  <div class="form-group" style="margin:0"><label class="form-label">8–15d</label><input class="form-input" name="item_valor_8_15" data-money="1" value="{{ item.valor_8_15 if item else '0' }}"></div>
+  <div class="form-group" style="margin:0"><label class="form-label">16–30d</label><input class="form-input" name="item_valor_16_30" data-money="1" value="{{ item.valor_16_30 if item else '0' }}"></div>
+  <div class="form-group" style="margin:0"><label class="form-label">Mensal</label><input class="form-input" name="item_valor_mensal" data-money="1" value="{{ item.valor_mensal if item else '0' }}"></div>
+  <div class="form-group" style="margin:0">
+    <label class="form-label">KM</label>
+    <input type="hidden" class="km-livre-val" name="item_km_livre" value="{{ '1' if not item or item.km_livre else '0' }}">
+    <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;margin-top:6px"><input type="checkbox" class="km-livre-cb" {% if not item or item.km_livre %}checked{% endif %}> Livre</label>
+  </div>
+  <button type="button" class="btn btn-sm form-repeater-remove" title="Remover linha">×</button>
+</div>
+{% endmacro %}
+
+{% macro proposta_item_row(categorias) %}
+<div class="form-repeater-row">
+  <div class="form-group" style="margin:0">
+    <label class="form-label form-label--required">Descrição</label>
+    <input class="form-input" name="item_descricao" placeholder="Ex.: Locação grupo B">
+  </div>
+  <div class="form-group" style="margin:0">
+    <label class="form-label">Categoria</label>
+    <select class="form-input" name="item_categoria_id">
+      <option value="">—</option>
+      {% for c in categorias %}<option value="{{ c.id }}">{{ c.nome }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="form-group" style="margin:0"><label class="form-label">Qtd</label><input class="form-input" name="item_quantidade" type="number" min="1" value="1"></div>
+  <div class="form-group" style="margin:0"><label class="form-label">Dias</label><input class="form-input" name="item_dias" type="number" min="1" value="1"></div>
+  <div class="form-group" style="margin:0"><label class="form-label">Valor unit.</label><input class="form-input" name="item_valor_unitario" data-money="1" value="0"></div>
+  <button type="button" class="btn btn-sm form-repeater-remove" title="Remover linha">×</button>
+</div>
+{% endmacro %}

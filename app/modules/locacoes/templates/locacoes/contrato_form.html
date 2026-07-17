@@ -1,93 +1,146 @@
 {% extends "base.html" %}
+{% from "macros/forms.html" import field_label, form_legend %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
-<div class="card" style="max-width:1100px">
+<div class="card erp-form-card" style="max-width:1100px">
   <h2 class="card-title">{{ title }}</h2>
   {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
-  <form method="post" action="/locacoes/contratos/novo">
+
+  <form method="post" action="/locacoes/contratos/novo" id="form-contrato" class="erp-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <h3>Período e filiais</h3>
-    <div class="form-grid">
-      <div class="form-group"><label class="form-label">Filial retirada</label>
-        <select class="form-input" name="filial_retirada_id" required>
-          <option value="">Selecionar</option>
-          {% for f in filiais %}<option value="{{ f.id }}" {% if form.filial_retirada_id == f.id|string %}selected{% endif %}>{{ f.name }}</option>{% endfor %}
-        </select>
+
+    <fieldset class="form-fieldset">
+      <legend>1. Período e filiais</legend>
+      <div class="form-grid">
+        <div class="form-group">
+          {{ field_label('Filial retirada', true, 'filial_retirada_id') }}
+          <select class="form-input" id="filial_retirada_id" name="filial_retirada_id" required>
+            <option value="">Selecionar</option>
+            {% for f in filiais %}<option value="{{ f.id }}" {% if form.filial_retirada_id == f.id|string %}selected{% endif %}>{{ f.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('Filial devolução', true, 'filial_devolucao_id') }}
+          <select class="form-input" id="filial_devolucao_id" name="filial_devolucao_id" required>
+            <option value="">Selecionar</option>
+            {% for f in filiais %}<option value="{{ f.id }}" {% if form.filial_devolucao_id == f.id|string %}selected{% endif %}>{{ f.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('Retirada prevista', true, 'retirada_prevista_em') }}
+          <input class="form-input" id="retirada_prevista_em" type="datetime-local" name="retirada_prevista_em" required value="{{ form.retirada_prevista_em }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Devolução prevista', true, 'devolucao_prevista_em') }}
+          <input class="form-input" id="devolucao_prevista_em" type="datetime-local" name="devolucao_prevista_em" required value="{{ form.devolucao_prevista_em }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Origem', false, 'origem') }}
+          <select class="form-input" id="origem" name="origem">
+            {% for o in ['balcao','website','app','parceiro','telefone'] %}
+            <option value="{{ o }}" {% if form.origem == o or (not form.origem and o == 'balcao') %}selected{% endif %}>{{ o }}</option>
+            {% endfor %}
+          </select>
+        </div>
       </div>
-      <div class="form-group"><label class="form-label">Filial devolução</label>
-        <select class="form-input" name="filial_devolucao_id" required>
-          <option value="">Selecionar</option>
-          {% for f in filiais %}<option value="{{ f.id }}" {% if form.filial_devolucao_id == f.id|string %}selected{% endif %}>{{ f.name }}</option>{% endfor %}
-        </select>
+    </fieldset>
+
+    <fieldset class="form-fieldset">
+      <legend>2. Veículo e cliente</legend>
+      <div class="form-grid">
+        <div class="form-group">
+          {{ field_label('Categoria', true, 'categoria_id') }}
+          <select class="form-input" id="categoria_id" name="categoria_id" required>
+            <option value="">Selecionar</option>
+            {% for c in categorias %}<option value="{{ c.id }}" {% if form.categoria_id == c.id|string %}selected{% endif %}>{{ c.nome }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('Veículo', true, 'veiculo_id') }}
+          <select class="form-input" id="veiculo_id" name="veiculo_id" required data-combobox="veiculo">
+            <option value="">Buscar placa...</option>
+            {% for v in veiculos %}<option value="{{ v.id }}" {% if form.veiculo_id == v.id|string %}selected{% endif %}>{{ v.placa }} — {{ categoria_nomes.get(v.categoria_id|string, '') }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('Cliente', true, 'cliente_id') }}
+          <select class="form-input" id="cliente_id" name="cliente_id" required data-combobox="cliente">
+            <option value="">Buscar cliente...</option>
+            {% for cl in clientes %}<option value="{{ cl.id }}" {% if form.cliente_id == cl.id|string %}selected{% endif %}>{{ cl.nome }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('Parceiro (opcional)', false, 'parceiro_id') }}
+          <select class="form-input" id="parceiro_id" name="parceiro_id">
+            <option value="">Nenhum</option>
+            {% for p in parceiros %}<option value="{{ p.id }}" {% if form.parceiro_id == p.id|string %}selected{% endif %}>{{ p.nome }}</option>{% endfor %}
+          </select>
+        </div>
       </div>
-      <div class="form-group"><label class="form-label">Retirada prevista</label><input class="form-input" type="datetime-local" name="retirada_prevista_em" required value="{{ form.retirada_prevista_em }}"></div>
-      <div class="form-group"><label class="form-label">Devolução prevista</label><input class="form-input" type="datetime-local" name="devolucao_prevista_em" required value="{{ form.devolucao_prevista_em }}"></div>
-      <div class="form-group"><label class="form-label">Origem</label>
-        <select class="form-input" name="origem">
-          {% for o in ['balcao','website','app','parceiro','telefone'] %}
-          <option value="{{ o }}" {% if form.origem == o %}selected{% endif %}>{{ o }}</option>
-          {% endfor %}
-        </select>
+    </fieldset>
+
+    <fieldset class="form-fieldset">
+      <legend>3. Motoristas</legend>
+      <div class="form-grid">
+        <div class="form-group">
+          {{ field_label('Motoristas autorizados', false, 'motorista_ids') }}
+          <select class="form-input" id="motorista_ids" name="motorista_ids" multiple size="4">
+            {% for m in motoristas %}<option value="{{ m.id }}" {% if m.id|string in form.motorista_ids %}selected{% endif %}>{{ m.nome }}</option>{% endfor %}
+          </select>
+          <p class="form-help">Segure Ctrl (Windows) ou Cmd (Mac) para selecionar vários.</p>
+        </div>
+        <div class="form-group">
+          {{ field_label('Motorista principal', false, 'motorista_principal') }}
+          <select class="form-input" id="motorista_principal" name="motorista_principal">
+            <option value="">Primeiro da lista</option>
+            {% for m in motoristas %}<option value="{{ m.id }}" {% if form.motorista_principal == m.id|string %}selected{% endif %}>{{ m.nome }}</option>{% endfor %}
+          </select>
+        </div>
       </div>
-    </div>
-    <h3>Veículo e cliente</h3>
-    <div class="form-grid">
-      <div class="form-group"><label class="form-label">Categoria</label>
-        <select class="form-input" name="categoria_id" required>
-          <option value="">Selecionar</option>
-          {% for c in categorias %}<option value="{{ c.id }}" {% if form.categoria_id == c.id|string %}selected{% endif %}>{{ c.nome }}</option>{% endfor %}
-        </select>
+    </fieldset>
+
+    <fieldset class="form-fieldset">
+      <legend>4. Cobrança</legend>
+      <div class="form-grid">
+        <div class="form-group">
+          {{ field_label('Forma de pagamento', false, 'forma_pagamento') }}
+          <input class="form-input" id="forma_pagamento" name="forma_pagamento" value="{{ form.forma_pagamento }}" placeholder="Cartão, PIX, faturado...">
+        </div>
+        <div class="form-group">
+          {{ field_label('Condição', false, 'condicao') }}
+          <select class="form-input" id="condicao" name="condicao">
+            {% for c in ['avista','cartao_recorrente','faturado'] %}
+            <option value="{{ c }}" {% if form.condicao == c or (not form.condicao and c == 'avista') %}selected{% endif %}>{{ c }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('Caução (R$)', false, 'caucao') }}
+          <input class="form-input" id="caucao" name="caucao" data-money="1" value="{{ form.caucao or '0' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Desconto (R$)', false, 'desconto') }}
+          <input class="form-input" id="desconto" name="desconto" data-money="1" value="{{ form.desconto or '0' }}">
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          {{ field_label('Cláusulas combustível', false, 'clausulas_combustivel') }}
+          <textarea class="form-input" id="clausulas_combustivel" name="clausulas_combustivel" rows="2" placeholder="Política de tanque cheio, multa por combustível...">{{ form.clausulas_combustivel }}</textarea>
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          {{ field_label('Observações', false, 'observacoes') }}
+          <textarea class="form-input" id="observacoes" name="observacoes" rows="2">{{ form.observacoes }}</textarea>
+        </div>
       </div>
-      <div class="form-group"><label class="form-label">Veículo</label>
-        <select class="form-input" name="veiculo_id" required>
-          <option value="">Selecionar</option>
-          {% for v in veiculos %}<option value="{{ v.id }}" {% if form.veiculo_id == v.id|string %}selected{% endif %}>{{ v.placa }} — {{ categoria_nomes.get(v.categoria_id|string, '') }}</option>{% endfor %}
-        </select>
+    </fieldset>
+
+    <fieldset class="form-fieldset">
+      <legend>5. Confirmar</legend>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">Criar contrato</button>
+        <a class="btn" href="/locacoes/contratos">Cancelar</a>
       </div>
-      <div class="form-group"><label class="form-label">Cliente</label>
-        <select class="form-input" name="cliente_id" required>
-          <option value="">Selecionar</option>
-          {% for cl in clientes %}<option value="{{ cl.id }}" {% if form.cliente_id == cl.id|string %}selected{% endif %}>{{ cl.nome }}</option>{% endfor %}
-        </select>
-      </div>
-      <div class="form-group"><label class="form-label">Parceiro</label>
-        <select class="form-input" name="parceiro_id">
-          <option value="">Nenhum</option>
-          {% for p in parceiros %}<option value="{{ p.id }}" {% if form.parceiro_id == p.id|string %}selected{% endif %}>{{ p.nome }}</option>{% endfor %}
-        </select>
-      </div>
-    </div>
-    <h3>Motoristas</h3>
-    <div class="form-group">
-      <label class="form-label">Motoristas autorizados</label>
-      <select class="form-input" name="motorista_ids" multiple size="4">
-        {% for m in motoristas %}<option value="{{ m.id }}" {% if m.id|string in form.motorista_ids %}selected{% endif %}>{{ m.nome }}</option>{% endfor %}
-      </select>
-      <label class="form-label" style="margin-top:8px">Principal</label>
-      <select class="form-input" name="motorista_principal">
-        <option value="">Primeiro da lista</option>
-        {% for m in motoristas %}<option value="{{ m.id }}" {% if form.motorista_principal == m.id|string %}selected{% endif %}>{{ m.nome }}</option>{% endfor %}
-      </select>
-    </div>
-    <h3>Cobrança</h3>
-    <div class="form-grid">
-      <div class="form-group"><label class="form-label">Forma pagamento</label><input class="form-input" name="forma_pagamento" value="{{ form.forma_pagamento }}"></div>
-      <div class="form-group"><label class="form-label">Condição</label>
-        <select class="form-input" name="condicao">
-          {% for c in ['avista','cartao_recorrente','faturado'] %}
-          <option value="{{ c }}" {% if form.condicao == c %}selected{% endif %}>{{ c }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="form-group"><label class="form-label">Caução</label><input class="form-input" name="caucao" value="{{ form.caucao }}"></div>
-      <div class="form-group"><label class="form-label">Desconto</label><input class="form-input" name="desconto" value="{{ form.desconto }}"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Cláusulas combustível</label><textarea class="form-input" name="clausulas_combustivel" rows="2">{{ form.clausulas_combustivel }}</textarea></div>
-    <div class="form-group"><label class="form-label">Observações</label><textarea class="form-input" name="observacoes" rows="2">{{ form.observacoes }}</textarea></div>
-    <div class="form-actions" style="margin-top:16px">
-      <button class="btn btn-primary" type="submit">Criar contrato</button>
-      <a class="btn" href="/locacoes/contratos">Cancelar</a>
-    </div>
+      {{ form_legend() }}
+    </fieldset>
   </form>
 </div>
 {% endblock %}

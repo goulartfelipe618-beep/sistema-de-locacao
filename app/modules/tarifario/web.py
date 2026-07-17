@@ -103,6 +103,41 @@ def _parse_uuid_list(raw_values: list[str]) -> list[uuid.UUID]:
     return ids
 
 
+def _parse_tabela_itens(
+    categorias: list[str] | None,
+    valor_1_3: list[str] | None,
+    valor_4_7: list[str] | None,
+    valor_8_15: list[str] | None,
+    valor_16_30: list[str] | None,
+    valor_mensal: list[str] | None,
+    km_livre: list[str] | None,
+) -> list[TabelaItemCreate]:
+    categorias = categorias or []
+    valor_1_3 = valor_1_3 or []
+    valor_4_7 = valor_4_7 or []
+    valor_8_15 = valor_8_15 or []
+    valor_16_30 = valor_16_30 or []
+    valor_mensal = valor_mensal or []
+    km_livre = km_livre or []
+    itens: list[TabelaItemCreate] = []
+    for idx, cat in enumerate(categorias):
+        if not cat or not cat.strip():
+            continue
+        km_raw = km_livre[idx] if idx < len(km_livre) else "1"
+        itens.append(
+            TabelaItemCreate(
+                categoria_id=uuid.UUID(cat.strip()),
+                valor_1_3=_dec(valor_1_3[idx] if idx < len(valor_1_3) else "0"),
+                valor_4_7=_dec(valor_4_7[idx] if idx < len(valor_4_7) else "0"),
+                valor_8_15=_dec(valor_8_15[idx] if idx < len(valor_8_15) else "0"),
+                valor_16_30=_dec(valor_16_30[idx] if idx < len(valor_16_30) else "0"),
+                valor_mensal=_dec(valor_mensal[idx] if idx < len(valor_mensal) else "0"),
+                km_livre=km_raw.strip() in ("1", "on", "true", "True"),
+            )
+        )
+    return itens
+
+
 async def _ensure_tarifario_defaults(session: AsyncSession, tenant_id: uuid.UUID) -> None:
     await CategoriasService(session).ensure_defaults(tenant_id)
     await PricingService(session).ensure_defaults(tenant_id)
@@ -208,6 +243,13 @@ async def tabela_create(
     prioridade: Annotated[str, Form()] = "0",
     status: Annotated[str, Form()] = "active",
     observacoes: Annotated[str, Form()] = "",
+    item_categoria_id: Annotated[list[str] | None, Form()] = None,
+    item_valor_1_3: Annotated[list[str] | None, Form()] = None,
+    item_valor_4_7: Annotated[list[str] | None, Form()] = None,
+    item_valor_8_15: Annotated[list[str] | None, Form()] = None,
+    item_valor_16_30: Annotated[list[str] | None, Form()] = None,
+    item_valor_mensal: Annotated[list[str] | None, Form()] = None,
+    item_km_livre: Annotated[list[str] | None, Form()] = None,
 ) -> HTMLResponse:
     lookups = await _tarifario_lookups(session, current_user.tenant_id)
     ctx = {
@@ -219,6 +261,17 @@ async def tabela_create(
         **lookups,
     }
     try:
+        itens = _parse_tabela_itens(
+            item_categoria_id,
+            item_valor_1_3,
+            item_valor_4_7,
+            item_valor_8_15,
+            item_valor_16_30,
+            item_valor_mensal,
+            item_km_livre,
+        )
+        if not itens:
+            raise ValueError("Adicione ao menos uma categoria com valores na tabela.")
         item = await TabelaTarifaService(session).create(
             current_user.tenant_id,
             TabelaCreate(
@@ -232,6 +285,7 @@ async def tabela_create(
                 prioridade=int(prioridade) if prioridade.strip() else 0,
                 status=CadastroStatus(status),
                 observacoes=observacoes or None,
+                itens=itens,
             ),
         )
     except (AppError, ValueError) as exc:
@@ -355,6 +409,36 @@ async def tabela_add_item(
             valor_km_excedente=_dec(valor_km_excedente) if valor_km_excedente.strip() else None,
         ),
     )
+    return RedirectResponse(f"/tarifario/tabelas/{tabela_id}/editar", status_code=303)
+
+
+@router.post("/tarifario/tabelas/{tabela_id}/itens/lote", response_class=HTMLResponse)
+async def tabela_add_itens_lote(
+    session: SessionDep,
+    tabela_id: uuid.UUID,
+    current_user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("tarifario.tabela.editar"))
+    ],
+    item_categoria_id: Annotated[list[str] | None, Form()] = None,
+    item_valor_1_3: Annotated[list[str] | None, Form()] = None,
+    item_valor_4_7: Annotated[list[str] | None, Form()] = None,
+    item_valor_8_15: Annotated[list[str] | None, Form()] = None,
+    item_valor_16_30: Annotated[list[str] | None, Form()] = None,
+    item_valor_mensal: Annotated[list[str] | None, Form()] = None,
+    item_km_livre: Annotated[list[str] | None, Form()] = None,
+) -> RedirectResponse:
+    itens = _parse_tabela_itens(
+        item_categoria_id,
+        item_valor_1_3,
+        item_valor_4_7,
+        item_valor_8_15,
+        item_valor_16_30,
+        item_valor_mensal,
+        item_km_livre,
+    )
+    svc = TabelaTarifaService(session)
+    for entry in itens:
+        await svc.add_item(current_user.tenant_id, tabela_id, entry)
     return RedirectResponse(f"/tarifario/tabelas/{tabela_id}/editar", status_code=303)
 
 

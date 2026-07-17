@@ -31,7 +31,9 @@
       <td><span class="badge {% if c.status.value == 'ativo' %}badge-success{% elif c.status.value in ['expirado','esgotado'] %}badge-danger{% endif %}">{{ c.status.value }}</span></td>
       <td>
         {% if current_user.is_superuser or 'comercial.cupom.excluir' in current_user.permissions %}
-        <form method="post" action="/comercial/cupons/{{ c.id }}/excluir" style="margin:0" onsubmit="return confirm('Excluir cupom?')">
+        <form method="post" action="/comercial/cupons/{{ c.id }}/excluir" style="margin:0" class="erp-form"
+              data-confirm="Excluir este cupom? Reservas futuras não poderão mais utilizá-lo."
+              data-confirm-title="Excluir cupom">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-sm btn-danger" type="submit">Excluir</button>
         </form>
         {% endif %}

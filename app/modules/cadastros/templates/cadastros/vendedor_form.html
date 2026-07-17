@@ -1,34 +1,73 @@
 ﻿{% extends "base.html" %}
+{% from "macros/forms.html" import field_label, form_legend %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
-<div class="card" style="max-width:900px">
+<div class="card erp-form-card" style="max-width:900px">
   <h2 class="card-title">{{ title }}</h2>
   {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
-  <form method="post" action="{{ action }}">
-    <div class="form-grid">
-      <div class="form-group"><label class="form-label" for="nome">Nome</label><input class="form-input" id="nome" name="nome" required value="{{ item.nome if item else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="status">Status</label>
-        <select class="form-input" id="status" name="status">
-          <option value="active" {% if item and item.status.value == 'active' %}selected{% endif %}>Ativo</option>
-          <option value="inactive" {% if item and item.status.value == 'inactive' %}selected{% endif %}>Inativo</option>
-        </select>
+  <form method="post" action="{{ action }}" class="erp-form">
+    <fieldset class="form-fieldset">
+      <legend>Dados do vendedor</legend>
+      <div class="form-grid">
+        <div class="form-group">
+          {{ field_label('Nome', true, 'nome') }}
+          <input class="form-input" id="nome" name="nome" required value="{{ item.nome if item else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Status', true, 'status') }}
+          <select class="form-input" id="status" name="status" required>
+            <option value="active" {% if not item or item.status.value == 'active' %}selected{% endif %}>Ativo</option>
+            <option value="inactive" {% if item and item.status.value == 'inactive' %}selected{% endif %}>Inativo</option>
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('E-mail', false, 'email') }}
+          <input class="form-input" type="email" id="email" name="email" value="{{ item.email if item else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Telefone', false, 'telefone') }}
+          <input class="form-input" id="telefone" name="telefone" placeholder="(00) 0000-0000" value="{{ item.telefone if item else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Filial', false, 'filial_id') }}
+          <select class="form-input" id="filial_id" name="filial_id">
+            <option value="">—</option>
+            {% for f in filiais %}
+            <option value="{{ f.id }}" {% if item and item.filial_id == f.id %}selected{% endif %}>{{ f.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
       </div>
-      <div class="form-group"><label class="form-label" for="email">E-mail</label><input class="form-input" id="email" name="email" value="{{ item.email if item else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="telefone">Telefone</label><input class="form-input" id="telefone" name="telefone" value="{{ item.telefone if item else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="filial_id">Filial</label>
-        <select class="form-input" id="filial_id" name="filial_id">
-          <option value="">—</option>
-          {% for f in filiais %}
-          <option value="{{ f.id }}" {% if item and item.filial_id == f.id %}selected{% endif %}>{{ f.name }}</option>
-          {% endfor %}
-        </select>
+    </fieldset>
+    <fieldset class="form-fieldset">
+      <legend>Metas e comissões</legend>
+      <div class="form-grid">
+        <div class="form-group">
+          {{ field_label('Comissão %', false, 'comissao_percentual') }}
+          <input class="form-input" id="comissao_percentual" name="comissao_percentual" data-mask="percent"
+                 value="{{ item.comissao_percentual if item else '0' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Meta contratos/mês', false, 'meta_contratos_mes') }}
+          <input class="form-input" type="number" min="0" id="meta_contratos_mes" name="meta_contratos_mes"
+                 value="{{ item.meta_contratos_mes if item else 0 }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Meta faturamento/mês', false, 'meta_faturamento_mes') }}
+          <input class="form-input" id="meta_faturamento_mes" name="meta_faturamento_mes" data-money="1"
+                 value="{{ item.meta_faturamento_mes if item else '0' }}">
+        </div>
       </div>
-      <div class="form-group"><label class="form-label" for="comissao_percentual">Comissão %</label><input class="form-input" type="number" step="0.01" id="comissao_percentual" name="comissao_percentual" value="{{ item.comissao_percentual if item else '0' }}"></div>
-      <div class="form-group"><label class="form-label" for="meta_contratos_mes">Meta contratos/mês</label><input class="form-input" type="number" id="meta_contratos_mes" name="meta_contratos_mes" value="{{ item.meta_contratos_mes if item else 0 }}"></div>
-      <div class="form-group"><label class="form-label" for="meta_faturamento_mes">Meta faturamento/mês</label><input class="form-input" type="number" step="0.01" id="meta_faturamento_mes" name="meta_faturamento_mes" value="{{ item.meta_faturamento_mes if item else '0' }}"></div>
+    </fieldset>
+    <div class="form-group">
+      {{ field_label('Observações', false, 'observacoes') }}
+      <textarea class="form-input" id="observacoes" name="observacoes" rows="3">{{ item.observacoes if item else '' }}</textarea>
     </div>
-    <div class="form-group" style="margin-top:12px"><label class="form-label" for="observacoes">Observações</label><textarea class="form-input" id="observacoes" name="observacoes" rows="3">{{ item.observacoes if item else '' }}</textarea></div>
-    <div class="form-actions" style="margin-top:16px"><button class="btn btn-primary" type="submit">Salvar</button><a class="btn" href="/cadastros/vendedores">Cancelar</a></div>
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Salvar</button>
+      <a class="btn" href="/cadastros/vendedores">Cancelar</a>
+    </div>
+    {{ form_legend() }}
   </form>
 </div>
 {% endblock %}

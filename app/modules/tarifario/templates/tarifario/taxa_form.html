@@ -1,37 +1,61 @@
 {% extends "base.html" %}
+{% from "macros/forms.html" import field_label, form_legend %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
-<div class="card" style="max-width:800px">
+<div class="card erp-form-card" style="max-width:800px">
   <h2 class="card-title">{{ title }}</h2>
   {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
-  <form method="post" action="{{ action }}">
+  <form method="post" action="{{ action }}" class="erp-form">
     <div class="form-grid">
-      <div class="form-group"><label class="form-label" for="nome">Nome</label><input class="form-input" id="nome" name="nome" required value="{{ taxa.nome if taxa else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="tipo_calculo">Tipo de cálculo</label>
-        <select class="form-input" id="tipo_calculo" name="tipo_calculo">
+      <div class="form-group">
+        {{ field_label('Nome', true, 'nome') }}
+        <input class="form-input" id="nome" name="nome" required value="{{ taxa.nome if taxa else '' }}">
+      </div>
+      <div class="form-group">
+        {{ field_label('Tipo de cálculo', true, 'tipo_calculo') }}
+        <select class="form-input" id="tipo_calculo" name="tipo_calculo" required>
           {% for t in ['fixo','percentual','por_dia','por_ocorrencia'] %}
-          <option value="{{ t }}" {% if taxa and taxa.tipo_calculo.value == t %}selected{% endif %}>{{ t }}</option>
+          <option value="{{ t }}" {% if taxa and taxa.tipo_calculo.value == t %}selected{% endif %}>{{ t|replace('_',' ') }}</option>
           {% endfor %}
         </select>
       </div>
-      <div class="form-group"><label class="form-label" for="valor">Valor</label><input class="form-input" id="valor" name="valor" value="{{ taxa.valor if taxa else '0' }}"></div>
-      <div class="form-group"><label class="form-label" for="aplicacao">Aplicação</label>
-        <select class="form-input" id="aplicacao" name="aplicacao">
+      <div class="form-group">
+        {{ field_label('Valor', true, 'valor') }}
+        <input class="form-input" id="valor" name="valor" required value="{{ taxa.valor if taxa else '0' }}">
+        <p class="form-help">Máscara muda conforme o tipo: R$ ou %.</p>
+      </div>
+      <div class="form-group">
+        {{ field_label('Aplicação', true, 'aplicacao') }}
+        <select class="form-input" id="aplicacao" name="aplicacao" required>
           <option value="opcional" {% if taxa and taxa.aplicacao.value == 'opcional' %}selected{% elif not taxa %}selected{% endif %}>Opcional</option>
           <option value="automatica" {% if taxa and taxa.aplicacao.value == 'automatica' %}selected{% endif %}>Automática</option>
         </select>
       </div>
-      <div class="form-group"><label class="form-label" for="regra_codigo">Código da regra</label><input class="form-input" id="regra_codigo" name="regra_codigo" value="{{ taxa.regra_codigo if taxa else '' }}" placeholder="one_way, condutor_adicional..."></div>
-      <div class="form-group"><label class="form-label" for="status">Status</label>
-        <select class="form-input" id="status" name="status">
+      <div class="form-group">
+        {{ field_label('Código da regra', false, 'regra_codigo') }}
+        <input class="form-input" id="regra_codigo" name="regra_codigo" value="{{ taxa.regra_codigo if taxa else '' }}" placeholder="one_way, condutor_adicional...">
+      </div>
+      <div class="form-group">
+        {{ field_label('Status', true, 'status') }}
+        <select class="form-input" id="status" name="status" required>
           <option value="active" {% if taxa and taxa.status.value == 'active' %}selected{% elif not taxa %}selected{% endif %}>Ativo</option>
           <option value="inactive" {% if taxa and taxa.status.value == 'inactive' %}selected{% endif %}>Inativo</option>
         </select>
       </div>
-      <div class="form-group"><label class="form-label"><input type="checkbox" name="tributavel" value="1" {% if not taxa or taxa.tributavel %}checked{% endif %}> Tributável</label></div>
+      <div class="form-group form-check-row">
+        <input type="checkbox" id="tributavel" name="tributavel" value="1" {% if not taxa or taxa.tributavel %}checked{% endif %}>
+        <label class="form-label" for="tributavel">Tributável</label>
+      </div>
     </div>
-    <div class="form-group" style="margin-top:12px"><label class="form-label" for="descricao">Descrição</label><textarea class="form-input" id="descricao" name="descricao" rows="2">{{ taxa.descricao if taxa else '' }}</textarea></div>
-    <div class="form-actions" style="margin-top:16px"><button class="btn btn-primary" type="submit">Salvar</button><a class="btn" href="/tarifario/taxas">Cancelar</a></div>
+    <div class="form-group" style="margin-top:12px">
+      {{ field_label('Descrição', false, 'descricao') }}
+      <textarea class="form-input" id="descricao" name="descricao" rows="2">{{ taxa.descricao if taxa else '' }}</textarea>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Salvar</button>
+      <a class="btn" href="/tarifario/taxas">Cancelar</a>
+    </div>
+    {{ form_legend() }}
   </form>
 </div>
 {% endblock %}

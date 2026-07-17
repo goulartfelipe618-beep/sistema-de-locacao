@@ -1,63 +1,117 @@
 {% extends "base.html" %}
+{% from "macros/forms.html" import field_label, form_legend %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
-<div class="card" style="max-width:950px">
+<div class="card erp-form-card" style="max-width:980px">
   <div class="toolbar">
     <h2 class="card-title" style="margin:0">{{ title }}</h2>
     <a class="btn btn-sm" href="/locacoes/checkin">← Voltar</a>
   </div>
   {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
 
-  <div class="form-grid" style="margin-bottom:16px">
-    <div><strong>Contrato:</strong> {{ contrato.numero }}</div>
-    <div><strong>Cliente:</strong> {{ cliente_nomes.get(contrato.cliente_id|string, '') }}</div>
-    <div><strong>Veículo:</strong> {{ veiculo.placa }}</div>
-    <div><strong>Km saída:</strong> {{ contrato.km_saida or '—' }}</div>
-    <div><strong>Comb. saída:</strong> {{ contrato.combustivel_saida or '—' }}/8</div>
-    <div><strong>Caução:</strong> {{ contrato.caucao|currency }}</div>
+  <div class="form-summary-panel" style="margin:16px 0">
+    <div><strong>Contrato</strong>{{ contrato.numero }}</div>
+    <div><strong>Cliente</strong>{{ cliente_nomes.get(contrato.cliente_id|string, '—') }}</div>
+    <div><strong>Veículo</strong>{{ veiculo.placa }}</div>
+    <div><strong>Km saída</strong>{{ contrato.km_saida or '—' }}</div>
+    <div><strong>Comb. saída</strong>{{ contrato.combustivel_saida or '—' }}/8</div>
+    <div><strong>Caução</strong>{{ contrato.caucao|currency }}</div>
   </div>
 
-  <form method="post" action="/locacoes/checkin/{{ contrato.id }}/concluir">
+  <form method="post" action="/locacoes/checkin/{{ contrato.id }}/concluir" class="erp-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <div class="form-grid">
-      <div class="form-group"><label class="form-label">Km entrada</label><input class="form-input" name="km_entrada" type="number" min="{{ contrato.km_saida or 0 }}" required value="{{ veiculo.km_atual or contrato.km_saida or 0 }}"></div>
-      <div class="form-group"><label class="form-label">Combustível (0-8)</label><input class="form-input" name="combustivel_entrada" type="number" min="0" max="8" required value="{{ veiculo.nivel_combustivel_atual or 8 }}"></div>
-      <div class="form-group"><label class="form-label">Atraso (horas)</label><input class="form-input" name="atraso_horas" value="0"></div>
-      <div class="form-group"><label class="form-label">Valor km excedente</label><input class="form-input" name="valor_km_excedente" value="0"></div>
-      <div class="form-group"><label class="form-label">Caução devolvida</label><input class="form-input" name="caucao_devolvida" value="{{ contrato.caucao }}"></div>
-      <div class="form-group"><label class="form-label">Caução retida</label><input class="form-input" name="caucao_retida" value="0"></div>
-    </div>
 
-    <h4>Fotos (storage keys)</h4>
-    <div class="form-grid">
-      {% for ang in foto_angulos %}
-      <div class="form-group"><label class="form-label">{{ ang }}</label><input class="form-input" name="foto_{{ ang }}" placeholder="storage/key/foto.jpg"></div>
-      {% endfor %}
-    </div>
-
-    <div class="form-group"><label class="form-label">Checklist</label><textarea class="form-input" name="checklist" rows="3"></textarea></div>
-
-    <h4>Avarias extras (opcional)</h4>
-    <div class="form-grid">
-      <div class="form-group"><label class="form-label">Localização</label><input class="form-input" name="avaria_localizacao" placeholder="Para-choque dianteiro"></div>
-      <div class="form-group"><label class="form-label">Severidade</label>
-        <select class="form-input" name="avaria_severidade">
-          <option value="leve">leve</option>
-          <option value="media">media</option>
-          <option value="grave">grave</option>
-        </select>
+    <fieldset class="form-fieldset">
+      <legend>1. Leituras de entrada</legend>
+      <div class="form-grid">
+        <div class="form-group">
+          {{ field_label('Km entrada', true, 'km_entrada') }}
+          <input class="form-input" id="km_entrada" name="km_entrada" type="number" min="{{ contrato.km_saida or 0 }}" required value="{{ veiculo.km_atual or contrato.km_saida or 0 }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Combustível (0–8)', true, 'combustivel_entrada') }}
+          <input class="form-input" id="combustivel_entrada" name="combustivel_entrada" type="number" min="0" max="8" required value="{{ veiculo.nivel_combustivel_atual or 8 }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Atraso (horas)', false, 'atraso_horas') }}
+          <input class="form-input" id="atraso_horas" name="atraso_horas" type="number" min="0" step="0.5" value="0">
+        </div>
+        <div class="form-group">
+          {{ field_label('Valor km excedente (R$)', false, 'valor_km_excedente') }}
+          <input class="form-input" id="valor_km_excedente" name="valor_km_excedente" data-money="1" value="0">
+        </div>
+        <div class="form-group">
+          {{ field_label('Caução devolvida (R$)', false, 'caucao_devolvida') }}
+          <input class="form-input" id="caucao_devolvida" name="caucao_devolvida" data-money="1" value="{{ contrato.caucao }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Caução retida (R$)', false, 'caucao_retida') }}
+          <input class="form-input" id="caucao_retida" name="caucao_retida" data-money="1" value="0">
+        </div>
       </div>
-      <div class="form-group"><label class="form-label">Laudo</label><input class="form-input" name="avaria_laudo"></div>
-      <div class="form-group"><label class="form-label">Valor reparo</label><input class="form-input" name="avaria_valor" value="0"></div>
-    </div>
+    </fieldset>
 
-    <div class="form-group"><label class="form-label">Observações</label><textarea class="form-input" name="observacoes" rows="2"></textarea></div>
-    <div class="form-group"><label><input type="checkbox" name="pendencia_financeira"> Pendência financeira</label></div>
+    <fieldset class="form-fieldset">
+      <legend>2. Fotos (storage keys)</legend>
+      <div class="form-grid">
+        {% for ang in foto_angulos %}
+        <div class="form-group">
+          {{ field_label(ang, false, 'foto_' ~ ang) }}
+          <input class="form-input" id="foto_{{ ang }}" name="foto_{{ ang }}" placeholder="storage/key/foto.jpg">
+        </div>
+        {% endfor %}
+      </div>
+    </fieldset>
 
-    <div class="form-actions" style="margin-top:16px">
-      <button class="btn btn-primary" type="submit">Concluir check-in</button>
-      <a class="btn" href="/locacoes/contratos/{{ contrato.id }}">Cancelar</a>
-    </div>
+    <fieldset class="form-fieldset">
+      <legend>3. Checklist</legend>
+      <div class="form-group">
+        {{ field_label('Itens verificados', false, 'checklist') }}
+        <textarea class="form-input" id="checklist" name="checklist" rows="3" placeholder="Pneus OK&#10;Interior limpo"></textarea>
+      </div>
+    </fieldset>
+
+    <fieldset class="form-fieldset">
+      <legend>4. Avarias extras (opcional)</legend>
+      <div class="form-grid">
+        <div class="form-group">
+          {{ field_label('Localização', false, 'avaria_localizacao') }}
+          <input class="form-input" id="avaria_localizacao" name="avaria_localizacao" placeholder="Para-choque dianteiro">
+        </div>
+        <div class="form-group">
+          {{ field_label('Severidade', false, 'avaria_severidade') }}
+          <select class="form-input" id="avaria_severidade" name="avaria_severidade">
+            <option value="leve">Leve</option>
+            <option value="media">Média</option>
+            <option value="grave">Grave</option>
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('Laudo', false, 'avaria_laudo') }}
+          <input class="form-input" id="avaria_laudo" name="avaria_laudo" placeholder="Referência ou número do laudo">
+        </div>
+        <div class="form-group">
+          {{ field_label('Valor reparo (R$)', false, 'avaria_valor') }}
+          <input class="form-input" id="avaria_valor" name="avaria_valor" data-money="1" value="0">
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="form-fieldset">
+      <legend>5. Encerramento</legend>
+      <div class="form-group">
+        {{ field_label('Observações', false, 'observacoes') }}
+        <textarea class="form-input" id="observacoes" name="observacoes" rows="2"></textarea>
+      </div>
+      <div class="form-group">
+        <label><input type="checkbox" name="pendencia_financeira"> Pendência financeira (não liberar caução integral)</label>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">Concluir check-in</button>
+        <a class="btn" href="/locacoes/contratos/{{ contrato.id }}">Cancelar</a>
+      </div>
+      {{ form_legend() }}
+    </fieldset>
   </form>
 </div>
 {% endblock %}

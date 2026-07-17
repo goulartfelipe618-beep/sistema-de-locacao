@@ -8,7 +8,7 @@ from decimal import Decimal, InvalidOperation
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db_session
@@ -63,6 +63,63 @@ from app.shared.enums import (
 
 router = APIRouter()
 SessionDep = Annotated[AsyncSession, Depends(get_db_session)]
+
+
+@router.get("/frota/modelos/json")
+async def modelos_json(
+    session: SessionDep,
+    _user: Annotated[AuthenticatedUser, Depends(require_web_permission("frota.veiculo.visualizar"))],
+    marca_id: str = "",
+) -> JSONResponse:
+    """Lista modelos filtrados por marca (cascata no formulário de veículo)."""
+    mid: uuid.UUID | None = None
+    if marca_id.strip():
+        try:
+            mid = uuid.UUID(marca_id.strip())
+        except ValueError:
+            return JSONResponse(content=[])
+    page = await ModelosService(session).list_items(
+        PageParams(page=1, size=500), marca_id=mid
+    )
+    return JSONResponse(content=[{"id": str(m.id), "nome": m.nome} for m in page.items])
+
+
+@router.get("/frota/veiculos/json")
+async def veiculos_json(
+    session: SessionDep,
+    _user: Annotated[AuthenticatedUser, Depends(require_web_permission("frota.veiculo.visualizar"))],
+    q: str = "",
+    page: int = 1,
+    categoria_id: str = "",
+) -> JSONResponse:
+    """Busca async de veículos (placa/chassi) para combobox."""
+    cid: uuid.UUID | None = None
+    if categoria_id.strip():
+        try:
+            cid = uuid.UUID(categoria_id.strip())
+        except ValueError:
+            pass
+    page_result = await VeiculoService(session).list_items(
+        PageParams(page=page, size=25),
+        search=q or None,
+        categoria_id=cid,
+    )
+    items = [
+        {"id": str(v.id), "label": v.placa + (f" — {v.cor}" if v.cor else ""), "placa": v.placa}
+        for v in page_result.items
+    ]
+    return JSONResponse(content={"items": items, "total": page_result.total, "page": page})
+
+
+@router.get("/frota/veiculos/{veiculo_id}/impacto")
+async def veiculo_impacto_web(
+    veiculo_id: uuid.UUID,
+    session: SessionDep,
+    _user: Annotated[AuthenticatedUser, Depends(require_web_permission("frota.veiculo.visualizar"))],
+) -> JSONResponse:
+    from app.shared.entity_impact import veiculo_impact
+
+    return JSONResponse(content=await veiculo_impact(session, veiculo_id))
 
 
 def _dec(raw: str | None, default: str = "0") -> Decimal:

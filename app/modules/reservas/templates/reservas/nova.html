@@ -1,14 +1,16 @@
 {% extends "base.html" %}
+{% from "macros/forms.html" import form_legend %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
-<div class="card" style="max-width:1100px">
+<div class="card erp-form-card" style="max-width:1100px">
   <h2 class="card-title">{{ title }}</h2>
   {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
 
-  <form method="post" action="/reservas/nova" id="form-reserva">
+  <form method="post" action="/reservas/nova" id="form-reserva" class="erp-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
-    <h3>1. Período e filiais</h3>
+    <fieldset class="form-fieldset">
+      <legend>1. Período e filiais</legend>
     <div class="form-grid">
       <div class="form-group"><label class="form-label">Filial retirada</label>
         <select class="form-input" name="filial_retirada_id" required>
@@ -35,9 +37,11 @@
     <div class="form-actions" style="margin:8px 0">
       <a class="btn btn-sm" href="?filial_retirada_id={{ form.filial_retirada_id }}&filial_devolucao_id={{ form.filial_devolucao_id }}&retirada_em={{ form.retirada_em }}&devolucao_em={{ form.devolucao_em }}&consultar=1">Consultar disponibilidade</a>
     </div>
+    </fieldset>
 
     {% if disponibilidade %}
-    <h3>2. Disponibilidade</h3>
+    <fieldset class="form-fieldset">
+      <legend>2. Disponibilidade</legend>
     <table class="table">
       <thead><tr><th>Categoria</th><th>Frota</th><th>Ocupados</th><th>Livres</th><th>Veículos</th></tr></thead>
       <tbody>
@@ -56,9 +60,11 @@
       {% endfor %}
       </tbody>
     </table>
+    </fieldset>
     {% endif %}
 
-    <h3>3. Categoria e veículo</h3>
+    <fieldset class="form-fieldset">
+      <legend>3. Categoria e veículo</legend>
     <div class="form-grid">
       <div class="form-group"><label class="form-label">Categoria</label>
         <select class="form-input" name="categoria_id" required>
@@ -67,18 +73,20 @@
         </select>
       </div>
       <div class="form-group"><label class="form-label">Veículo (opcional)</label>
-        <select class="form-input" name="veiculo_id">
-          <option value="">Por categoria</option>
+        <select class="form-input" name="veiculo_id" data-combobox="veiculo">
+          <option value="">Por categoria — buscar placa</option>
           {% for v in veiculos %}<option value="{{ v.id }}" {% if form.veiculo_id == v.id|string %}selected{% endif %}>{{ v.placa }} — {{ categoria_nomes.get(v.categoria_id|string, '') }}</option>{% endfor %}
         </select>
       </div>
     </div>
+    </fieldset>
 
-    <h3>4. Cliente e motoristas</h3>
+    <fieldset class="form-fieldset">
+      <legend>4. Cliente e motoristas</legend>
     <div class="form-grid">
-      <div class="form-group"><label class="form-label">Cliente</label>
-        <select class="form-input" name="cliente_id" required>
-          <option value="">Selecionar</option>
+      <div class="form-group"><label class="form-label form-label--required">Cliente</label>
+        <select class="form-input" name="cliente_id" required data-combobox="cliente">
+          <option value="">Buscar cliente...</option>
           {% for c in clientes %}<option value="{{ c.id }}" {% if form.cliente_id == c.id|string %}selected{% endif %}>{{ c.nome }}</option>{% endfor %}
         </select>
       </div>
@@ -101,8 +109,10 @@
       </div>
       <div class="form-group"><label class="form-label">Endereço entrega</label><input class="form-input" name="endereco_entrega" value="{{ form.endereco_entrega }}"></div>
     </div>
+    </fieldset>
 
-    <h3>5. Opcionais</h3>
+    <fieldset class="form-fieldset">
+      <legend>5. Opcionais</legend>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
       <div>
         <h4>Proteções</h4>
@@ -128,8 +138,10 @@
         {% endfor %}
       </div>
     </div>
+    </fieldset>
 
-    <h3>6. Pagamento e política</h3>
+    <fieldset class="form-fieldset">
+      <legend>6. Pagamento e política</legend>
     <div class="form-grid">
       <div class="form-group"><label class="form-label">Forma de pagamento</label>
         <input class="form-input" name="forma_pagamento_prevista" value="{{ form.forma_pagamento_prevista }}" placeholder="Cartão, PIX, faturado...">
@@ -140,12 +152,14 @@
           {% for p in politicas %}<option value="{{ p.id }}" {% if form.politica_cancelamento_id == p.id|string %}selected{% endif %}>{{ p.nome }}</option>{% endfor %}
         </select>
       </div>
-      <div class="form-group"><label class="form-label">Desconto (R$)</label><input class="form-input" name="desconto" value="{{ form.desconto or '0' }}"></div>
+      <div class="form-group"><label class="form-label form-label--required">Desconto (R$)</label><input class="form-input" name="desconto" data-money="1" value="{{ form.desconto or '0' }}"></div>
       <div class="form-group"><label class="form-label">Cupom de desconto</label><input class="form-input" name="cupom_codigo" value="{{ form.cupom_codigo or '' }}" placeholder="Código do cupom"></div>
       <div class="form-group" style="grid-column:1/-1"><label class="form-label">Observações</label><textarea class="form-input" name="observacoes" rows="2">{{ form.observacoes }}</textarea></div>
     </div>
+    </fieldset>
 
-    <h3>7. Confirmar</h3>
+    <fieldset class="form-fieldset">
+      <legend>7. Confirmar</legend>
     <div id="preco-box" style="margin-bottom:16px">
       <button class="btn btn-sm" type="button" id="btn-calcular-preco">Recalcular preço</button>
       <div id="preco-resultado"></div>
@@ -155,6 +169,8 @@
       <button class="btn btn-primary" type="submit">Criar reserva (pendente)</button>
       <a class="btn" href="/reservas">Cancelar</a>
     </div>
+    {{ form_legend() }}
+    </fieldset>
   </form>
 </div>
 

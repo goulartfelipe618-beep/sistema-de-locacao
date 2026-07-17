@@ -1,86 +1,171 @@
 {% extends "base.html" %}
+{% from "macros/forms.html" import field_label, form_legend, tarifa_item_row %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
-<div class="card" style="max-width:1100px">
+<div class="card erp-form-card" style="max-width:1180px">
   <h2 class="card-title">{{ title }}</h2>
   {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
-  <form method="post" action="{{ action }}">
-    <div class="form-grid">
-      <div class="form-group"><label class="form-label" for="nome">Nome</label><input class="form-input" id="nome" name="nome" required value="{{ tabela.nome if tabela else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="vigencia_inicio">Vigência início</label><input class="form-input" type="date" id="vigencia_inicio" name="vigencia_inicio" required value="{{ tabela.vigencia_inicio if tabela else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="vigencia_fim">Vigência fim</label><input class="form-input" type="date" id="vigencia_fim" name="vigencia_fim" value="{{ tabela.vigencia_fim if tabela and tabela.vigencia_fim else '' }}"></div>
-      <div class="form-group"><label class="form-label" for="canal">Canal</label>
-        <select class="form-input" id="canal" name="canal">
-          {% for c in ['todos','balcao','site','app','parceiro','telefone'] %}
-          <option value="{{ c }}" {% if tabela and tabela.canal.value == c %}selected{% elif not tabela and c == 'todos' %}selected{% endif %}>{{ c }}</option>
-          {% endfor %}
-        </select>
+
+  <form method="post" action="{{ action }}" class="erp-form" id="form-tabela">
+    <fieldset class="form-fieldset">
+      <legend>1. Dados gerais</legend>
+      <div class="form-grid">
+        <div class="form-group">
+          {{ field_label('Nome', true, 'nome') }}
+          <input class="form-input" id="nome" name="nome" required value="{{ tabela.nome if tabela else '' }}" placeholder="Ex.: Tabela verão 2026">
+        </div>
+        <div class="form-group">
+          {{ field_label('Vigência início', true, 'vigencia_inicio') }}
+          <input class="form-input" type="date" id="vigencia_inicio" name="vigencia_inicio" required value="{{ tabela.vigencia_inicio if tabela else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Vigência fim', false, 'vigencia_fim') }}
+          <input class="form-input" type="date" id="vigencia_fim" name="vigencia_fim" value="{{ tabela.vigencia_fim if tabela and tabela.vigencia_fim else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Canal', true, 'canal') }}
+          <select class="form-input" id="canal" name="canal">
+            {% for c in ['todos','balcao','site','app','parceiro','telefone'] %}
+            <option value="{{ c }}" {% if tabela and tabela.canal.value == c %}selected{% elif not tabela and c == 'todos' %}selected{% endif %}>{{ c }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('Filial', false, 'filial_id') }}
+          <select class="form-input" id="filial_id" name="filial_id">
+            <option value="">Todas</option>
+            {% for f in filiais %}<option value="{{ f.id }}" {% if tabela and tabela.filial_id == f.id %}selected{% endif %}>{{ f.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('Parceiro', false, 'parceiro_id') }}
+          <select class="form-input" id="parceiro_id" name="parceiro_id">
+            <option value="">—</option>
+            {% for p in parceiros %}<option value="{{ p.id }}" {% if tabela and tabela.parceiro_id == p.id %}selected{% endif %}>{{ p.nome }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('Cliente', false, 'cliente_id') }}
+          <select class="form-input" id="cliente_id" name="cliente_id" data-combobox="cliente">
+            <option value="">—</option>
+            {% for c in clientes %}<option value="{{ c.id }}" {% if tabela and tabela.cliente_id == c.id %}selected{% endif %}>{{ c.nome }}</option>{% endfor %}
+          </select>
+          <p class="form-help">Opcional — tabela exclusiva para um cliente (maior prioridade).</p>
+        </div>
+        <div class="form-group">
+          {{ field_label('Prioridade', true, 'prioridade') }}
+          <input class="form-input" type="number" id="prioridade" name="prioridade" min="0" value="{{ tabela.prioridade if tabela else '0' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Status', true, 'status') }}
+          <select class="form-input" id="status" name="status">
+            <option value="active" {% if tabela and tabela.status.value == 'active' %}selected{% elif not tabela %}selected{% endif %}>Ativo</option>
+            <option value="inactive" {% if tabela and tabela.status.value == 'inactive' %}selected{% endif %}>Inativo</option>
+          </select>
+        </div>
       </div>
-      <div class="form-group"><label class="form-label" for="filial_id">Filial</label>
-        <select class="form-input" id="filial_id" name="filial_id"><option value="">Todas</option>{% for f in filiais %}<option value="{{ f.id }}" {% if tabela and tabela.filial_id == f.id %}selected{% endif %}>{{ f.name }}</option>{% endfor %}</select>
+      <div class="form-group" style="margin-top:8px">
+        {{ field_label('Observações', false, 'observacoes') }}
+        <textarea class="form-input" id="observacoes" name="observacoes" rows="2">{{ tabela.observacoes if tabela else '' }}</textarea>
       </div>
-      <div class="form-group"><label class="form-label" for="parceiro_id">Parceiro</label>
-        <select class="form-input" id="parceiro_id" name="parceiro_id"><option value="">—</option>{% for p in parceiros %}<option value="{{ p.id }}" {% if tabela and tabela.parceiro_id == p.id %}selected{% endif %}>{{ p.nome }}</option>{% endfor %}</select>
+    </fieldset>
+
+    {% if not tabela %}
+    <fieldset class="form-fieldset">
+      <legend>2. Itens por categoria</legend>
+      <p class="form-help" style="margin:0 0 10px">Informe ao menos uma categoria com valores diários por faixa.</p>
+      <div class="form-repeater form-repeater--tarifa" data-repeater-min="1" data-repeater-validate data-repeater-key="item_categoria_id"
+           data-repeater-error="Selecione ao menos uma categoria com valores.">
+        <div class="form-repeater-head">
+          <span>Categoria</span><span>1–3d</span><span>4–7d</span><span>8–15d</span><span>16–30d</span><span>Mensal</span><span>KM</span><span></span>
+        </div>
+        <div class="form-repeater-rows">
+          {{ tarifa_item_row(categorias) }}
+        </div>
+        <template class="form-repeater-template">
+          {{ tarifa_item_row(categorias) }}
+        </template>
+        <div class="form-repeater-actions">
+          <button type="button" class="btn btn-sm form-repeater-add">+ Adicionar categoria</button>
+        </div>
       </div>
-      <div class="form-group"><label class="form-label" for="cliente_id">Cliente</label>
-        <select class="form-input" id="cliente_id" name="cliente_id"><option value="">—</option>{% for c in clientes %}<option value="{{ c.id }}" {% if tabela and tabela.cliente_id == c.id %}selected{% endif %}>{{ c.nome }}</option>{% endfor %}</select>
+    </fieldset>
+
+    <fieldset class="form-fieldset">
+      <legend>3. Salvar</legend>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">Criar tabela</button>
+        <a class="btn" href="/tarifario/tabelas">Cancelar</a>
       </div>
-      <div class="form-group"><label class="form-label" for="prioridade">Prioridade</label><input class="form-input" type="number" id="prioridade" name="prioridade" value="{{ tabela.prioridade if tabela else '0' }}"></div>
-      <div class="form-group"><label class="form-label" for="status">Status</label>
-        <select class="form-input" id="status" name="status">
-          <option value="active" {% if tabela and tabela.status.value == 'active' %}selected{% elif not tabela %}selected{% endif %}>Ativo</option>
-          <option value="inactive" {% if tabela and tabela.status.value == 'inactive' %}selected{% endif %}>Inativo</option>
-        </select>
+      {{ form_legend() }}
+    </fieldset>
+    {% else %}
+    <fieldset class="form-fieldset">
+      <legend>2. Salvar cabeçalho</legend>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">Salvar alterações</button>
+        <a class="btn" href="/tarifario/tabelas">Voltar</a>
       </div>
-    </div>
-    <div class="form-group" style="margin-top:12px"><label class="form-label" for="observacoes">Observações</label><textarea class="form-input" id="observacoes" name="observacoes" rows="2">{{ tabela.observacoes if tabela else '' }}</textarea></div>
-    <div class="form-actions" style="margin-top:16px"><button class="btn btn-primary" type="submit">Salvar</button><a class="btn" href="/tarifario/tabelas">Cancelar</a></div>
+    </fieldset>
+    {% endif %}
   </form>
 
   {% if tabela %}
-  <div style="margin-top:24px;border-top:1px solid var(--border);padding-top:16px">
-    <h3>Itens por categoria</h3>
+  <fieldset class="form-fieldset" style="margin-top:24px;border-top:1px solid var(--border);padding-top:16px">
+    <legend>Itens cadastrados</legend>
     {% if itens %}
     <table class="table">
-      <thead><tr><th>Categoria</th><th>1-3d</th><th>4-7d</th><th>8-15d</th><th>16-30d</th><th>Mensal</th><th>KM</th><th></th></tr></thead>
+      <thead><tr><th>Categoria</th><th>1–3d</th><th>4–7d</th><th>8–15d</th><th>16–30d</th><th>Mensal</th><th>KM</th><th></th></tr></thead>
       <tbody>
       {% for item in itens %}
       <tr>
         <td><strong>{{ categoria_nomes.get(item.categoria_id|string, item.categoria_id) }}</strong></td>
         <td colspan="6">
-          <form method="post" action="/tarifario/tabelas/{{ tabela.id }}/itens/{{ item.id }}/editar" style="display:grid;grid-template-columns:repeat(6,1fr) auto;gap:6px;align-items:center">
-            <input class="form-input" name="valor_1_3" value="{{ item.valor_1_3 }}">
-            <input class="form-input" name="valor_4_7" value="{{ item.valor_4_7 }}">
-            <input class="form-input" name="valor_8_15" value="{{ item.valor_8_15 }}">
-            <input class="form-input" name="valor_16_30" value="{{ item.valor_16_30 }}">
-            <input class="form-input" name="valor_mensal" value="{{ item.valor_mensal }}">
-            <label><input type="checkbox" name="km_livre" value="1" {% if item.km_livre %}checked{% endif %}> Livre</label>
+          <form method="post" action="/tarifario/tabelas/{{ tabela.id }}/itens/{{ item.id }}/editar" class="erp-form" style="display:grid;grid-template-columns:repeat(6,1fr) auto;gap:6px;align-items:center">
+            <input class="form-input" name="valor_1_3" data-money="1" value="{{ item.valor_1_3 }}">
+            <input class="form-input" name="valor_4_7" data-money="1" value="{{ item.valor_4_7 }}">
+            <input class="form-input" name="valor_8_15" data-money="1" value="{{ item.valor_8_15 }}">
+            <input class="form-input" name="valor_16_30" data-money="1" value="{{ item.valor_16_30 }}">
+            <input class="form-input" name="valor_mensal" data-money="1" value="{{ item.valor_mensal }}">
+            <label style="font-size:12px"><input type="checkbox" name="km_livre" value="1" {% if item.km_livre %}checked{% endif %}> Livre</label>
             <button class="btn btn-sm" type="submit">Atualizar</button>
           </form>
         </td>
-        <td class="num"><form method="post" action="/tarifario/tabelas/{{ tabela.id }}/itens/{{ item.id }}/remover"><button class="btn btn-sm" type="submit">Remover</button></form></td>
+        <td class="num">
+          <form method="post" action="/tarifario/tabelas/{{ tabela.id }}/itens/{{ item.id }}/remover" class="erp-form"
+                data-confirm="Remover este item da tabela?"
+                data-confirm-title="Remover categoria">
+            <button class="btn btn-sm btn-danger" type="submit">Remover</button>
+          </form>
+        </td>
       </tr>
       {% endfor %}
       </tbody>
     </table>
-    {% else %}<div class="empty-state">Nenhum item cadastrado nesta tabela.</div>{% endif %}
+    {% else %}
+    <div class="empty-state">Nenhum item cadastrado nesta tabela.</div>
+    {% endif %}
 
-    <form method="post" action="/tarifario/tabelas/{{ tabela.id }}/itens" style="margin-top:16px">
-      <h4>Adicionar categoria</h4>
-      <div class="form-grid">
-        <div class="form-group"><label class="form-label">Categoria</label>
-          <select class="form-input" name="categoria_id" required><option value="">Selecionar</option>{% for c in categorias %}<option value="{{ c.id }}">{{ c.nome }}</option>{% endfor %}</select>
+    <form method="post" action="/tarifario/tabelas/{{ tabela.id }}/itens/lote" class="erp-form" style="margin-top:20px">
+      <h4 style="margin:0 0 10px">Adicionar categorias</h4>
+      <div class="form-repeater form-repeater--tarifa" data-repeater-min="1" data-repeater-validate data-repeater-key="item_categoria_id"
+           data-repeater-error="Selecione ao menos uma categoria para adicionar.">
+        <div class="form-repeater-head">
+          <span>Categoria</span><span>1–3d</span><span>4–7d</span><span>8–15d</span><span>16–30d</span><span>Mensal</span><span>KM</span><span></span>
         </div>
-        <div class="form-group"><label class="form-label">1-3 dias</label><input class="form-input" name="valor_1_3" value="0"></div>
-        <div class="form-group"><label class="form-label">4-7 dias</label><input class="form-input" name="valor_4_7" value="0"></div>
-        <div class="form-group"><label class="form-label">8-15 dias</label><input class="form-input" name="valor_8_15" value="0"></div>
-        <div class="form-group"><label class="form-label">16-30 dias</label><input class="form-input" name="valor_16_30" value="0"></div>
-        <div class="form-group"><label class="form-label">Mensal</label><input class="form-input" name="valor_mensal" value="0"></div>
-        <div class="form-group"><label class="form-label"><input type="checkbox" name="km_livre" value="1" checked> KM livre</label></div>
+        <div class="form-repeater-rows">
+          {{ tarifa_item_row(categorias) }}
+        </div>
+        <template class="form-repeater-template">
+          {{ tarifa_item_row(categorias) }}
+        </template>
+        <div class="form-repeater-actions">
+          <button type="button" class="btn btn-sm form-repeater-add">+ Adicionar linha</button>
+          <button class="btn btn-sm btn-primary" type="submit">Adicionar itens</button>
+        </div>
       </div>
-      <button class="btn btn-sm btn-primary" type="submit" style="margin-top:8px">Adicionar item</button>
     </form>
-  </div>
+  </fieldset>
   {% endif %}
 </div>
 {% endblock %}
