@@ -15,10 +15,11 @@ def test_supabase_mcp_config_exists() -> None:
 def test_supabase_split_migrations_complete() -> None:
     split = Path("supabase/migrations/split")
     files = sorted(split.glob("*.sql"))
-    assert len(files) >= 22
+    assert len(files) >= 23
     names = {p.name for p in files}
     assert "0001_foundation.sql" in names
     assert "0022_remove_whatsapp_redes.sql" in names
+    assert "0023_intermediacao.sql" in names
 
 
 def test_config_supabase_db_url_override() -> None:

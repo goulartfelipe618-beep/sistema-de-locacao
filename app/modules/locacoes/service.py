@@ -479,6 +479,16 @@ class ContratoService:
                 "Somente reservas confirmadas geram contrato.",
                 code="reserva_nao_confirmada",
             )
+        if reserva.intermediacao_status == IntermediacaoStatus.PENDENTE_APROVACAO:
+            raise BusinessRuleError(
+                "Intermediação aguarda aprovação da locadora parceira.",
+                code="intermediacao_pendente",
+            )
+        if reserva.intermediacao_status == IntermediacaoStatus.REJEITADO_FORNECEDOR:
+            raise BusinessRuleError(
+                "Intermediação rejeitada pela locadora parceira.",
+                code="intermediacao_rejeitada",
+            )
         if not reserva.veiculo_id:
             raise BusinessRuleError(
                 "Reserva deve ter veículo alocado para gerar contrato.",

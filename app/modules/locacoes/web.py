@@ -21,7 +21,7 @@ from app.core.pagination import PageParams
 from app.core.storage import StorageService, storage_service
 from app.core.templating import render
 from app.modules.cadastros.service import ClienteService
-from app.modules.cadastros.service_extra import MotoristaService, ParceiroService
+from app.modules.cadastros.service_extra import MotoristaService, ParceiroService, FornecedorService
 from app.modules.frota.service import AcessoriosService, CategoriasService, VeiculoService
 from app.modules.identity.service import AuthenticatedUser
 from app.modules.locacoes.models import LocContratoAditivo, LocContratoItem, LocContratoMotorista
@@ -179,6 +179,7 @@ async def _locacoes_lookups(session: AsyncSession, tenant_id: uuid.UUID) -> dict
     motoristas = await MotoristaService(session).list_items(PageParams(page=1, size=300))
     veiculos = await VeiculoService(session).list_items(PageParams(page=1, size=500))
     parceiros = await ParceiroService(session).list_items(PageParams(page=1, size=200))
+    fornecedores = await FornecedorService(session).list_items(PageParams(page=1, size=200))
     taxas = await TaxaService(session).list_items(PageParams(page=1, size=200))
     protecoes = await ProtecaoService(session).list_items(PageParams(page=1, size=200))
     politicas = await PoliticaCancelamentoService(session).list_items(PageParams(page=1, size=100))
@@ -200,6 +201,7 @@ async def _locacoes_lookups(session: AsyncSession, tenant_id: uuid.UUID) -> dict
         "motorista_nomes": {str(m.id): m.nome for m in motoristas.items},
         "veiculo_placas": {str(v.id): v.placa for v in veiculos.items},
         "parceiro_nomes": {str(p.id): p.nome for p in parceiros.items},
+        "fornecedor_nomes": {str(f.id): f.nome for f in fornecedores.items},
     }
 
 

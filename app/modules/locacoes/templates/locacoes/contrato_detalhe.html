@@ -23,6 +23,17 @@
     {% if contrato.checkout_em %}<div><strong>Check-out:</strong> {{ contrato.checkout_em|datetime }} (km {{ contrato.km_saida }}, comb. {{ contrato.combustivel_saida }}/8)</div>{% endif %}
     {% if contrato.checkin_em %}<div><strong>Check-in:</strong> {{ contrato.checkin_em|datetime }} (km {{ contrato.km_entrada }}, comb. {{ contrato.combustivel_entrada }}/8)</div>{% endif %}
     {% if contrato.pendencia_financeira %}<div><span class="badge badge-danger">Pendência financeira</span></div>{% endif %}
+    {% if contrato.intermediacao_status and contrato.intermediacao_status.value != 'nao_aplicavel' %}
+    <div style="grid-column:1/-1;margin-top:8px;padding:12px;background:var(--surface-alt);border-radius:8px">
+      <strong>Intermediação:</strong>
+      <span class="badge badge-info">{{ contrato.intermediacao_status.value }}</span>
+      {% if contrato.modelo_negocio_terceiro %} — {{ contrato.modelo_negocio_terceiro.value }}{% endif %}
+      {% if contrato.fornecedor_id %}<br><small>Parceiro: {{ fornecedor_nomes.get(contrato.fornecedor_id|string, contrato.fornecedor_id) }}</small>{% endif %}
+      {% if contrato.valor_repasse_total %}<br><small>Repasse: {{ contrato.valor_repasse_total|currency }}</small>{% endif %}
+      {% if contrato.valor_comissao %}<br><small>Comissão: {{ contrato.valor_comissao|currency }}</small>{% endif %}
+      {% if contrato.valor_margem %}<br><small>Margem: {{ contrato.valor_margem|currency }}</small>{% endif %}
+    </div>
+    {% endif %}
   </div>
 
   {% if motoristas_vinc %}

@@ -292,7 +292,7 @@ async def veiculo_create(
             propriedade=VeiculoPropriedade(propriedade),
             fornecedor_id=_uuid(fornecedor_id),
             contrato_fornecedor_id=_uuid(contrato_fornecedor_id),
-            publicar_site=bool(publicar_site),
+            publicar_site=publicar_site == "1" if publicar_site else True,
             exige_aprovacao_fornecedor=exige_aprovacao_fornecedor != "0",
             data_compra=_date(data_compra),
             valor_aquisicao=_dec(valor_aquisicao) if valor_aquisicao.strip() else None,

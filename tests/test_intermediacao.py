@@ -19,6 +19,8 @@ INTERMEDIACAO_PERMS = {
     "intermediacao.config.visualizar",
     "intermediacao.contrato.visualizar",
     "intermediacao.indisponibilidade.visualizar",
+    "intermediacao.reserva.aprovar",
+    "intermediacao.repasse.visualizar",
 }
 
 
@@ -43,9 +45,24 @@ def test_menu_intermediacao_enabled() -> None:
         ("Configurações", "/intermediacao/config"),
         ("Contratos Parceiros", "/intermediacao/contratos-fornecedor"),
         ("Indisponibilidades", "/intermediacao/indisponibilidades"),
+        ("Aprovações pendentes", "/intermediacao/aprovacoes"),
+        ("Repasses / Comissões", "/intermediacao/repasses"),
     ):
         assert by_label[label]["enabled"] is True
         assert by_label[label]["url"] == url
+
+
+def test_gerente_role_includes_intermediacao_permissions() -> None:
+    from app.core.rbac import SYSTEM_ROLE_TEMPLATES, expand_permissions
+
+    gerente = next(t for t in SYSTEM_ROLE_TEMPLATES if t.slug == "gerente-filial")
+    codes = expand_permissions(set(gerente.permissions))
+    for code in (
+        "intermediacao.config.editar",
+        "intermediacao.reserva.aprovar",
+        "intermediacao.repasse.visualizar",
+    ):
+        assert code in codes
 
 
 def test_enums_intermediacao() -> None:

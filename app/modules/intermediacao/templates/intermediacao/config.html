@@ -62,13 +62,15 @@
     {% if current_user.is_superuser or 'intermediacao.config.editar' in current_user.permissions %}
     <div class="form-actions">
       <button class="btn btn-primary" type="submit">Salvar configurações</button>
-      <form method="post" action="/intermediacao/site/sincronizar" style="display:inline;margin-left:8px">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <button class="btn" type="submit">Sincronizar catálogo do site</button>
-      </form>
     </div>
     {% endif %}
     {{ form_legend() }}
   </form>
+  {% if current_user.is_superuser or 'intermediacao.config.editar' in current_user.permissions %}
+  <form method="post" action="/intermediacao/site/sincronizar" class="form-actions" style="margin-top:8px">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button class="btn" type="submit">Sincronizar catálogo do site</button>
+  </form>
+  {% endif %}
 </div>
 {% endblock %}

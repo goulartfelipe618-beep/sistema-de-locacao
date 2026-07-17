@@ -537,6 +537,9 @@ class IntermediacaoService:
         await ReservaService(self.session).cancelar(
             reserva_id, ReservaCancelInput(motivo=motivo or "Rejeitada pela locadora parceira")
         )
+        refreshed = (await self.session.execute(stmt)).scalar_one_or_none()
+        if refreshed is not None:
+            reserva = refreshed
         from app.modules.intermediacao.hooks import fire_intermediacao_event
 
         await fire_intermediacao_event(

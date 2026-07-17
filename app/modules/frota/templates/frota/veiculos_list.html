@@ -18,11 +18,12 @@
     {% endif %}
   </div>
   {% if page_result.items %}
-  <table class="table"><thead><tr><th>Placa</th><th>Ano</th><th>KM</th><th>Combustível</th><th>Status</th><th></th></tr></thead>
+  <table class="table"><thead><tr><th>Placa</th><th>Propriedade</th><th>Ano</th><th>KM</th><th>Combustível</th><th>Status</th><th></th></tr></thead>
   <tbody>
   {% for v in page_result.items %}
   <tr>
     <td><strong>{{ v.placa }}</strong></td>
+    <td>{% if v.propriedade.value == 'terceirizada' %}<span class="badge badge-info">terceirizada</span>{% else %}própria{% endif %}</td>
     <td>{{ v.ano_modelo }}</td>
     <td class="num">{{ v.km_atual or '-' }}</td>
     <td class="num">{{ v.nivel_combustivel_atual }}/8</td>

@@ -61,7 +61,7 @@
   {% if rows %}
   <table class="table">
     <thead>
-      <tr><th>Veículo</th><th>Parceiro</th><th>Período</th><th>Motivo</th><th>Site</th></tr>
+      <tr><th>Veículo</th><th>Parceiro</th><th>Período</th><th>Motivo</th><th>Site</th><th></th></tr>
     </thead>
     <tbody>
     {% for r in rows %}
@@ -71,6 +71,14 @@
       <td>{{ r.inicio_em|datetime }}{% if r.fim_em %} → {{ r.fim_em|datetime }}{% else %} → indefinido{% endif %}</td>
       <td>{{ r.motivo.value }}</td>
       <td>{% if r.sincronizar_site %}Sim{% else %}Não{% endif %}</td>
+      <td class="num">
+        {% if not r.fim_em and (current_user.is_superuser or 'intermediacao.indisponibilidade.editar' in current_user.permissions) %}
+        <form method="post" action="/intermediacao/indisponibilidades/{{ r.id }}/encerrar" style="display:inline;margin:0">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button class="btn btn-sm" type="submit">Encerrar</button>
+        </form>
+        {% endif %}
+      </td>
     </tr>
     {% endfor %}
     </tbody>

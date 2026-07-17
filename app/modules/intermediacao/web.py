@@ -355,6 +355,24 @@ async def indisponibilidade_create(
     return RedirectResponse(url="/intermediacao/indisponibilidades", status_code=303)
 
 
+@router.post("/intermediacao/indisponibilidades/{indisp_id}/encerrar")
+async def indisponibilidade_encerrar(
+    indisp_id: uuid.UUID,
+    request: Request,
+    session: SessionDep,
+    current_user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("intermediacao.indisponibilidade.editar"))
+    ],
+) -> RedirectResponse:
+    try:
+        await IntermediacaoService(session).encerrar_indisponibilidade(indisp_id)
+        request.session["_flash"] = {"type": "success", "message": "Indisponibilidade encerrada."}
+    except (AppError, ValueError) as exc:
+        await session.rollback()
+        request.session["_flash"] = {"type": "danger", "message": _msg(exc)}
+    return RedirectResponse(url="/intermediacao/indisponibilidades", status_code=303)
+
+
 @router.get("/intermediacao/contratos-fornecedor/json")
 async def contratos_json(
     session: SessionDep,
