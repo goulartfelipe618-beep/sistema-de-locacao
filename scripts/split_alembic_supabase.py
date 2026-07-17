@@ -53,10 +53,6 @@ def split_migrations() -> list[Path]:
         prelude = "CREATE EXTENSION IF NOT EXISTS pgcrypto;\n\n"
         sql = prelude + block + "\n"
 
-        # Alembic version tracking (compatível com re-seed local)
-        if "INSERT INTO alembic_version" not in sql:
-            sql += f"\nINSERT INTO alembic_version (version_num) VALUES ('{to_rev.split(',')[0].strip()}') ON CONFLICT (version_num) DO NOTHING;\n"
-
         path = OUT_DIR / f"{slug}.sql"
         path.write_text(sql, encoding="utf-8")
         written.append(path)

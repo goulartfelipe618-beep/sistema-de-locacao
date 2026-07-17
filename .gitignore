@@ -44,6 +44,9 @@ e2e/blob-report/
 supabase/migrations/_full_upgrade.sql
 supabase/.temp/
 
+# Payloads temporários de apply MCP
+scripts/_*
+
 # Dados locais (volumes Docker gerenciam persistência na VPS)
 pgdata/
 data/
