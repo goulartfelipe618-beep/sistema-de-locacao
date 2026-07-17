@@ -70,5 +70,13 @@
   </form>
 </div>
 {% endif %}
+{% if sessao.status.value == 'fechada' and (current_user.is_superuser or 'financeiro.caixa.visualizar' in current_user.permissions) %}
+<div class="card" style="margin-bottom:16px">
+  <form method="post" action="/documentos/emitir/fechamento_caixa/{{ sessao.id }}" style="margin:0">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button class="btn" type="submit">PDF Fechamento de Caixa</button>
+  </form>
+</div>
+{% endif %}
 <a class="btn" href="/financeiro/caixa">Voltar</a>
 {% endblock %}

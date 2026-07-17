@@ -14,7 +14,7 @@ def test_permissoes_documentos_registradas() -> None:
 
 
 def test_catalogo_templates_completo() -> None:
-    assert len(TEMPLATES) >= 21
+    assert len(TEMPLATES) >= 26
     assert "contrato_locacao" in TEMPLATES_BY_ID
     assert "reserva_confirmacao" in TEMPLATES_BY_ID
     assert "danfe" in TEMPLATES_BY_ID
@@ -26,6 +26,11 @@ def test_catalogo_templates_completo() -> None:
     assert "extrato_cliente" in TEMPLATES_BY_ID
     assert "multa_condutor" in TEMPLATES_BY_ID
     assert "auditoria_export" in TEMPLATES_BY_ID
+    assert "termo_responsabilidade" in TEMPLATES_BY_ID
+    assert "aditivo_contratual" in TEMPLATES_BY_ID
+    assert "declaracao_quitacao" in TEMPLATES_BY_ID
+    assert "certidao_regularidade_frota" in TEMPLATES_BY_ID
+    assert "fechamento_caixa" in TEMPLATES_BY_ID
     assert TEMPLATES_BY_ID["relatorio_analitico"].pesado is True
     assert TEMPLATES_BY_ID["auditoria_export"].pesado is True
 

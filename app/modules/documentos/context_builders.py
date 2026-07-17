@@ -2,15 +2,17 @@
 
 from __future__ import annotations
 
+import base64
 import uuid
 from datetime import date, timedelta
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundError
 from app.core.pagination import PageParams
+from app.core.storage import storage_service
 from app.modules.audit.models import AuditLog
 from app.modules.audit.repository import AuditRepository
 from app.modules.cadastros.models import Cliente
@@ -19,11 +21,11 @@ from app.modules.cadastros.service import ClienteService
 from app.modules.comercial.models import CrmProposta, CrmPropostaItem
 from app.modules.comercial.service import PropostaService
 from app.modules.financeiro.models import FinContaReceber
-from app.modules.financeiro.service import ContaReceberService, FaturamentoService
+from app.modules.financeiro.service import CaixaService, ContaReceberService, FaturamentoService
 from app.modules.fiscal.service import NfeService, NfseService
 from app.modules.frota.models import FrotaCategoria, FrotaDocumento, FrotaMarca, FrotaModelo, FrotaVeiculo
 from app.modules.frota.service import VeiculoService
-from app.modules.locacoes.models import LocAvaria, LocContrato, LocMulta, LocVistoria
+from app.modules.locacoes.models import LocAvaria, LocContrato, LocContratoAditivo, LocMulta, LocVistoria
 from app.modules.locacoes.service import AvariaService, ContratoService, MultaService
 from app.modules.manutencao.models import ManOsItem
 from app.modules.manutencao.service import OrdemServicoService
@@ -32,11 +34,27 @@ from app.modules.reservas.service import CotacaoService, ReservaService
 from app.modules.tenants.models import Filial
 from app.modules.tenants.branding import branding_pdf_context
 from app.modules.tenants.repository import TenantRepository
-from app.shared.enums import VistoriaTipo
+from app.shared.enums import DocumentoVeiculoStatus, TituloStatus, VeiculoStatus, VistoriaTipo
 
 
 def _qr(url: str | None, label: str = "Validação online") -> dict[str, Any]:
     return {"qr_url": url, "qr_label": label} if url else {}
+
+
+def _assinatura_b64_from_key(assinatura_key: str | None) -> str | None:
+    """Resolve assinatura canvas (R2 key, data URL ou prefixo b64:) para embed no PDF."""
+    if not assinatura_key:
+        return None
+    if assinatura_key.startswith("data:"):
+        return assinatura_key.split(",", 1)[-1] if "," in assinatura_key else None
+    if assinatura_key.startswith("b64:"):
+        return assinatura_key[4:]
+    if storage_service.is_configured():
+        try:
+            return base64.b64encode(storage_service.download_bytes(assinatura_key)).decode("ascii")
+        except Exception:  # noqa: BLE001
+            return None
+    return None
 
 
 async def _empresa(session: AsyncSession, tenant_id: uuid.UUID) -> dict[str, Any]:
@@ -140,7 +158,7 @@ async def build_contrato(session: AsyncSession, tenant_id: uuid.UUID, contrato_i
             "filial_retirada": await _filial_nome(session, contrato.filial_retirada_id),
             "filial_devolucao": await _filial_nome(session, contrato.filial_devolucao_id),
             "watermark": watermark,
-            "assinatura_b64": None,
+            "assinatura_b64": _assinatura_b64_from_key(contrato.assinatura_key),
             **_qr(f"/locacoes/contratos/{contrato_id}"),
         }
     )
@@ -538,6 +556,134 @@ async def build_auditoria_export(
     return ctx
 
 
+async def build_termo_responsabilidade(
+    session: AsyncSession, tenant_id: uuid.UUID, contrato_id: uuid.UUID
+) -> dict:
+    ctx = await build_contrato(session, tenant_id, contrato_id)
+    ctx["doc_titulo"] = f"Termo de Responsabilidade — {ctx['contrato'].numero}"
+    return ctx
+
+
+async def build_aditivo_contratual(
+    session: AsyncSession, tenant_id: uuid.UUID, aditivo_id: uuid.UUID
+) -> dict:
+    aditivo = await session.get(LocContratoAditivo, aditivo_id)
+    if aditivo is None or aditivo.deleted_at is not None:
+        raise NotFoundError("Aditivo contratual não encontrado.")
+    contrato = await ContratoService(session).get(aditivo.contrato_id)
+    ctx = await _empresa(session, tenant_id)
+    ctx.update(
+        {
+            "doc_titulo": f"Aditivo v{aditivo.versao} — Contrato {contrato.numero}",
+            "aditivo": aditivo,
+            "contrato": contrato,
+            "cliente_nome": await _cliente_nome(session, contrato.cliente_id),
+            "veiculo_label": await _veiculo_label(session, contrato.veiculo_id),
+            "filial_nome": await _filial_nome(session, contrato.filial_retirada_id),
+            "watermark": None,
+            **_qr(f"/locacoes/contratos/{contrato.id}"),
+        }
+    )
+    return ctx
+
+
+async def build_declaracao_quitacao(
+    session: AsyncSession, tenant_id: uuid.UUID, cliente_id: uuid.UUID
+) -> dict:
+    cliente = await ClienteService(session).get(cliente_id)
+    pendentes = (
+        await session.execute(
+            select(func.count())
+            .select_from(FinContaReceber)
+            .where(
+                FinContaReceber.tenant_id == tenant_id,
+                FinContaReceber.cliente_id == cliente_id,
+                FinContaReceber.deleted_at.is_(None),
+                FinContaReceber.status.in_(
+                    (TituloStatus.EM_ABERTO, TituloStatus.VENCIDO, TituloStatus.PAGO_PARCIAL)
+                ),
+            )
+        )
+    ).scalar_one()
+    ctx = await _empresa(session, tenant_id)
+    ctx.update(
+        {
+            "doc_titulo": f"Declaração de Quitação — {cliente.nome}",
+            "cliente": cliente,
+            "filial_nome": await _filial_nome(session, cliente.filial_id),
+            "quitado": int(pendentes or 0) == 0,
+            "titulos_pendentes": int(pendentes or 0),
+            "watermark": "PENDÊNCIAS" if int(pendentes or 0) > 0 else None,
+        }
+    )
+    return ctx
+
+
+async def build_certidao_regularidade_frota(
+    session: AsyncSession, tenant_id: uuid.UUID, scope_id: uuid.UUID
+) -> dict:
+    _ = scope_id
+    veiculos = (
+        await session.execute(
+            select(FrotaVeiculo).where(
+                FrotaVeiculo.tenant_id == tenant_id,
+                FrotaVeiculo.deleted_at.is_(None),
+                FrotaVeiculo.status != VeiculoStatus.BAIXADO,
+            )
+        )
+    ).scalars().all()
+    irregular: list[dict[str, str]] = []
+    for v in veiculos:
+        vencidos = (
+            await session.execute(
+                select(FrotaDocumento).where(
+                    FrotaDocumento.veiculo_id == v.id,
+                    FrotaDocumento.deleted_at.is_(None),
+                    FrotaDocumento.status == DocumentoVeiculoStatus.VENCIDO,
+                )
+            )
+        ).scalars().all()
+        if vencidos:
+            irregular.append(
+                {
+                    "placa": v.placa,
+                    "pendencias": ", ".join(d.tipo.value for d in vencidos),
+                }
+            )
+    ctx = await _empresa(session, tenant_id)
+    ctx.update(
+        {
+            "doc_titulo": "Certidão de Regularidade da Frota",
+            "total_veiculos": len(veiculos),
+            "veiculos_irregulares": irregular,
+            "regular": len(irregular) == 0,
+            "watermark": "IRREGULAR" if irregular else None,
+        }
+    )
+    return ctx
+
+
+async def build_fechamento_caixa(
+    session: AsyncSession, tenant_id: uuid.UUID, sessao_id: uuid.UUID
+) -> dict:
+    caixa_svc = CaixaService(session)
+    sessao = await caixa_svc.get(sessao_id)
+    lancamentos = await caixa_svc.list_lancamentos(sessao_id)
+    saldo = await caixa_svc.calcular_saldo(sessao_id)
+    ctx = await _empresa(session, tenant_id)
+    ctx.update(
+        {
+            "doc_titulo": f"Fechamento de Caixa — {sessao.aberta_em:%d/%m/%Y}",
+            "sessao": sessao,
+            "lancamentos": lancamentos,
+            "saldo_calculado": saldo,
+            "filial_nome": await _filial_nome(session, sessao.filial_id),
+            "watermark": None,
+        }
+    )
+    return ctx
+
+
 BUILDERS: dict[str, str] = {
     "reserva_confirmacao": "reserva",
     "reserva_voucher": "reserva",
@@ -557,6 +703,11 @@ BUILDERS: dict[str, str] = {
     "extrato_cliente": "cliente",
     "multa_condutor": "multa",
     "auditoria_export": "tenant",
+    "termo_responsabilidade": "contrato",
+    "aditivo_contratual": "aditivo",
+    "declaracao_quitacao": "cliente",
+    "certidao_regularidade_frota": "tenant",
+    "fechamento_caixa": "caixa_sessao",
 }
 
 
@@ -620,4 +771,14 @@ async def build_context(
         return await build_multa_condutor(session, tenant_id, entidade_id)
     if template_id == "auditoria_export":
         return await build_auditoria_export(session, tenant_id, entidade_id)
+    if template_id == "termo_responsabilidade":
+        return await build_termo_responsabilidade(session, tenant_id, entidade_id)
+    if template_id == "aditivo_contratual":
+        return await build_aditivo_contratual(session, tenant_id, entidade_id)
+    if template_id == "declaracao_quitacao":
+        return await build_declaracao_quitacao(session, tenant_id, entidade_id)
+    if template_id == "certidao_regularidade_frota":
+        return await build_certidao_regularidade_frota(session, tenant_id, entidade_id)
+    if template_id == "fechamento_caixa":
+        return await build_fechamento_caixa(session, tenant_id, entidade_id)
     raise NotFoundError(f"Template desconhecido: {template_id}")

@@ -21,6 +21,7 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
+from sqlalchemy.pool import NullPool
 
 from app.core.config import settings
 from app.core.context import get_tenant_id
@@ -28,16 +29,39 @@ from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
+
+def _uses_supabase_transaction_pooler() -> bool:
+    return ":6543" in settings.supabase_db_url and "pooler.supabase.com" in settings.supabase_db_url
+
+
+def _asyncpg_connect_args() -> dict[str, int]:
+    """Desabilita cache de prepared statements no PgBouncer transaction mode."""
+    if _uses_supabase_transaction_pooler():
+        return {"statement_cache_size": 0}
+    return {}
+
+
+def _engine_kwargs() -> dict:
+    """Parâmetros do engine SQLAlchemy."""
+    kwargs: dict = {
+        "echo": settings.db_echo,
+        "pool_pre_ping": True,
+        "pool_recycle": 1800,
+        "future": True,
+        "connect_args": _asyncpg_connect_args(),
+        "pool_size": settings.db_pool_size,
+        "max_overflow": settings.db_max_overflow,
+    }
+    if _uses_supabase_transaction_pooler():
+        kwargs["poolclass"] = NullPool
+        kwargs.pop("pool_size", None)
+        kwargs.pop("max_overflow", None)
+        kwargs.pop("pool_recycle", None)
+    return kwargs
+
+
 # Engine assíncrono único da aplicação.
-engine = create_async_engine(
-    settings.database_url_async,
-    echo=settings.db_echo,
-    pool_size=settings.db_pool_size,
-    max_overflow=settings.db_max_overflow,
-    pool_pre_ping=True,
-    pool_recycle=1800,
-    future=True,
-)
+engine = create_async_engine(settings.database_url_async, **_engine_kwargs())
 
 # Fábrica de sessões assíncronas. ``expire_on_commit=False`` permite usar os
 # objetos após o commit (útil para renderização de templates/serialização).

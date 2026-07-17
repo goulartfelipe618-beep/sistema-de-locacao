@@ -1,0 +1,15 @@
+{% extends "documentos/base_pdf.html" %}
+{% block doc_body %}
+<h2>Aditivo Contratual de Renovação</h2>
+<p><strong>Contrato original:</strong> {{ contrato.numero }}</p>
+<p><strong>Aditivo:</strong> versão {{ aditivo.versao }}</p>
+<p><strong>Cliente:</strong> {{ cliente_nome }}</p>
+<p><strong>Veículo:</strong> {{ veiculo_label }}</p>
+<p><strong>Filial:</strong> {{ filial_nome }}</p>
+<p><strong>Devolução anterior:</strong> {{ aditivo.devolucao_anterior|datetime }}</p>
+<p><strong>Nova devolução:</strong> {{ aditivo.devolucao_nova|datetime }}</p>
+<p><strong>Dias adicionais:</strong> {{ aditivo.dias_extra }}</p>
+<p><strong>Valor do aditivo:</strong> {{ aditivo.valor_aditivo|currency }}</p>
+{% if aditivo.motivo %}<p><strong>Motivo:</strong> {{ aditivo.motivo }}</p>{% endif %}
+<p class="legal">As demais cláusulas do contrato original permanecem válidas. Este aditivo integra o contrato de locação para todos os efeitos legais.</p>
+{% endblock %}

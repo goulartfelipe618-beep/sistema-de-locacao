@@ -5,15 +5,16 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.core.config import settings
+from app.shared.value_objects import AppEmail
 
 
 class LoginRequest(BaseModel):
     """Credenciais de autenticação."""
 
-    email: EmailStr
+    email: AppEmail
     password: str = Field(min_length=1, max_length=128)
 
 
@@ -123,7 +124,7 @@ class RoleUpdate(BaseModel):
 class UserBase(BaseModel):
     """Campos comuns de usuário."""
 
-    email: EmailStr
+    email: AppEmail
     full_name: str = Field(min_length=2, max_length=200)
     is_active: bool = True
 
@@ -155,7 +156,7 @@ class UserRead(BaseModel):
 
     id: uuid.UUID
     tenant_id: uuid.UUID
-    email: EmailStr
+    email: AppEmail
     full_name: str
     is_active: bool
     is_superuser: bool
@@ -169,7 +170,7 @@ class CurrentUserRead(BaseModel):
 
     id: uuid.UUID
     tenant_id: uuid.UUID
-    email: EmailStr
+    email: AppEmail
     full_name: str
     is_active: bool
     is_superuser: bool

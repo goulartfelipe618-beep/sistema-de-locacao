@@ -79,6 +79,11 @@ class StorageService:
             ExpiresIn=settings.r2_presign_expire_seconds,
         )
 
+    def download_bytes(self, key: str) -> bytes:
+        """Baixa o conteúdo bruto de um objeto do armazenamento."""
+        resp = _get_s3_client().get_object(Bucket=self._bucket, Key=key)
+        return resp["Body"].read()
+
     def delete(self, key: str) -> None:
         """Remove um objeto do armazenamento."""
         _get_s3_client().delete_object(Bucket=self._bucket, Key=key)

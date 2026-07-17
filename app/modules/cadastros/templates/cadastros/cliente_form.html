@@ -173,6 +173,9 @@
     <form method="post" action="/documentos/emitir/extrato_cliente/{{ cliente.id }}" style="display:inline;margin:0">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn" type="submit">PDF Extrato</button>
     </form>
+    <form method="post" action="/documentos/emitir/declaracao_quitacao/{{ cliente.id }}" style="display:inline;margin:0">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn" type="submit">PDF Declaração Quitação</button>
+    </form>
   </div>
   {% endif %}
 

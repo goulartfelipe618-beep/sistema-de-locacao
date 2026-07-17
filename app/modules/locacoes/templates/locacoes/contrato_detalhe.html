@@ -42,9 +42,34 @@
   </table>
   {% endif %}
 
+  {% if aditivos %}
+  <h4>Aditivos / Renovações</h4>
+  <table class="table">
+    <thead><tr><th>Versão</th><th>Nova devolução</th><th>Dias</th><th>Valor</th><th></th></tr></thead>
+    <tbody>
+    {% for a in aditivos %}
+    <tr>
+      <td>v{{ a.versao }}</td>
+      <td>{{ a.devolucao_nova|datetime }}</td>
+      <td class="num">+{{ a.dias_extra }}</td>
+      <td class="num">{{ a.valor_aditivo|currency }}</td>
+      <td>
+        {% if current_user.is_superuser or 'locacoes.renovacao.visualizar' in current_user.permissions %}
+        <form method="post" action="/documentos/emitir/aditivo_contratual/{{ a.id }}" style="display:inline;margin:0">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-sm" type="submit">PDF Aditivo</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
   <div class="form-actions" style="margin-top:16px;flex-wrap:wrap;gap:8px">
     {% if current_user.is_superuser or 'locacoes.contrato.visualizar' in current_user.permissions %}
     <form method="post" action="/documentos/emitir/contrato_locacao/{{ contrato.id }}" style="display:inline"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn" type="submit">PDF Contrato</button></form>
+    <form method="post" action="/documentos/emitir/termo_responsabilidade/{{ contrato.id }}" style="display:inline"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn" type="submit">PDF Termo Responsabilidade</button></form>
     {% endif %}
     {% if current_user.is_superuser or 'locacoes.checkout.visualizar' in current_user.permissions %}
     <form method="post" action="/documentos/emitir/vistoria_checkout/{{ contrato.id }}" style="display:inline"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn" type="submit">PDF Vistoria Saída</button></form>

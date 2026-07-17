@@ -39,6 +39,7 @@ e2e/node_modules/
 e2e/test-results/
 e2e/playwright-report/
 e2e/blob-report/
+e2e_result*.txt
 
 # Supabase (SQL exportado localmente)
 supabase/migrations/_full_upgrade.sql

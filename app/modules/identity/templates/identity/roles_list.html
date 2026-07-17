@@ -4,9 +4,12 @@
 <div class="card">
   <div class="toolbar">
     <h2 class="card-title" style="margin:0">Papéis (RBAC)</h2>
-    {% if can_create %}
-    <a class="btn btn-primary" href="/configuracoes/papeis/novo">+ Novo Papel</a>
-    {% endif %}
+    <div class="actions-group">
+      <a class="btn" href="/configuracoes/usuarios">Usuários</a>
+      {% if can_create %}
+      <a class="btn btn-primary" href="/configuracoes/papeis/novo">+ Novo Papel</a>
+      {% endif %}
+    </div>
   </div>
   {% if roles %}
   <table class="table">
@@ -35,9 +38,24 @@
         </td>
         <td class="num">{{ role_perms[role.id] }}</td>
         <td>
+          <div class="actions-group">
           {% if can_edit %}
           <a class="btn btn-sm" href="/configuracoes/papeis/{{ role.id }}/editar">Permissões</a>
           {% endif %}
+          {% if can_delete and not role.is_system %}
+          <form method="post"
+                action="/configuracoes/papeis/{{ role.id }}/excluir"
+                class="actions-inline-form"
+                hx-post="/configuracoes/papeis/{{ role.id }}/excluir"
+                hx-target="#app-content"
+                hx-select="#app-content"
+                hx-swap="innerHTML"
+                onsubmit="return confirm('Excluir o papel {{ role.name|e }}?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button type="submit" class="btn btn-sm btn-danger-outline">Excluir</button>
+          </form>
+          {% endif %}
+          </div>
         </td>
       </tr>
       {% endfor %}

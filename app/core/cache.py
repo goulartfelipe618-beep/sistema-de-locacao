@@ -31,7 +31,11 @@ redis_client: Redis = aioredis.from_url(
 
 async def cache_get_json(key: str) -> Any | None:
     """Recupera e desserializa um valor JSON do cache."""
-    raw = await redis_client.get(key)
+    try:
+        raw = await redis_client.get(key)
+    except Exception as exc:  # pragma: no cover - Redis indisponível
+        logger.debug("Cache GET ignorado (%s): %s", key, exc)
+        return None
     if raw is None:
         return None
     try:
@@ -44,13 +48,20 @@ async def cache_get_json(key: str) -> Any | None:
 async def cache_set_json(key: str, value: Any, *, ttl_seconds: int | None = None) -> None:
     """Serializa e armazena um valor JSON no cache com TTL opcional."""
     payload = json.dumps(value, ensure_ascii=False, default=str)
-    await redis_client.set(key, payload, ex=ttl_seconds)
+    try:
+        await redis_client.set(key, payload, ex=ttl_seconds)
+    except Exception as exc:  # pragma: no cover - Redis indisponível
+        logger.debug("Cache SET ignorado (%s): %s", key, exc)
 
 
 async def cache_delete(*keys: str) -> None:
     """Remove uma ou mais chaves do cache."""
-    if keys:
+    if not keys:
+        return
+    try:
         await redis_client.delete(*keys)
+    except Exception as exc:  # pragma: no cover - Redis indisponível
+        logger.debug("Cache DELETE ignorado: %s", exc)
 
 
 @asynccontextmanager

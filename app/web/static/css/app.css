@@ -488,3 +488,135 @@ a:hover { text-decoration: underline; }
 .error-code { font-size: 48px; font-weight: 700; color: var(--primary); }
 .error-title { margin: 6px 0; }
 .error-message { color: var(--text-muted); margin-bottom: 18px; }
+
+/* ---------------------------------------------------------- Theme switch - */
+.navbar-right { display: flex; align-items: center; gap: 10px; }
+
+.theme-switcher { position: relative; }
+.theme-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: transparent; border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 5px 10px;
+  cursor: pointer; font: inherit; color: var(--text);
+}
+.theme-btn:hover { background: var(--bg); }
+.theme-btn-icon { font-size: 14px; line-height: 1; }
+.theme-btn-label { font-size: 12px; font-weight: 600; }
+
+.theme-menu {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 30;
+  min-width: 220px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: 0 6px 18px rgba(0,0,0,.14); overflow: hidden;
+}
+.theme-option {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  width: 100%; padding: 10px 12px; border: 0; background: transparent;
+  cursor: pointer; font: inherit; text-align: left; color: var(--text);
+}
+.theme-option:hover { background: var(--bg); }
+.theme-option.is-active { background: color-mix(in srgb, var(--primary) 12%, var(--surface)); }
+.theme-option strong { font-size: 12.5px; }
+.theme-option span { font-size: 11px; color: var(--text-muted); }
+
+/* SPA loading indicator */
+.htmx-request #app-content,
+#app-content.is-loading {
+  opacity: 0.72;
+  pointer-events: none;
+  transition: opacity .12s ease;
+}
+
+/* -------------------------------------------------------- Themes: hybrid -- */
+:root,
+[data-theme="hybrid"] {
+  color-scheme: light;
+}
+
+/* Sidebar escuro + área principal clara (padrão intermediário) */
+[data-theme="hybrid"] .sidebar,
+:root:not([data-theme]) .sidebar {
+  --sidebar-bg: #1f2a37;
+  --sidebar-bg-hover: #2b3947;
+  --sidebar-fg: #c7d0da;
+  --sidebar-fg-muted: #8a97a6;
+}
+
+/* ---------------------------------------------------------- Theme: light -- */
+[data-theme="light"] {
+  color-scheme: light;
+  --bg: #eef1f4;
+  --surface: #ffffff;
+  --navbar-bg: #ffffff;
+  --sidebar-bg: #ffffff;
+  --sidebar-bg-hover: #eef1f4;
+  --sidebar-fg: #23303d;
+  --sidebar-fg-muted: #6b7885;
+  --border: #d3dae2;
+  --text: #23303d;
+  --text-muted: #6b7885;
+  --danger-bg: #fdecea;
+}
+
+[data-theme="light"] .brand { border-bottom-color: var(--border); }
+[data-theme="light"] .brand-name { color: var(--text); }
+[data-theme="light"] .nav-ico {
+  background: var(--bg);
+  color: var(--primary);
+}
+[data-theme="light"] .nav-sub {
+  background: var(--bg);
+}
+[data-theme="light"] .nav-sub-link.is-active,
+[data-theme="light"] .nav-group-link.is-active {
+  color: #fff;
+}
+
+/* ----------------------------------------------------------- Theme: dark -- */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0f1419;
+  --surface: #1a2330;
+  --navbar-bg: #1a2330;
+  --sidebar-bg: #0c1016;
+  --sidebar-bg-hover: #232f3f;
+  --sidebar-fg: #c7d0da;
+  --sidebar-fg-muted: #8a97a6;
+  --border: #2b3947;
+  --text: #e8edf2;
+  --text-muted: #9aa8b6;
+  --danger-bg: #3a1f1f;
+  --primary-hover: #4a8fd4;
+}
+
+[data-theme="dark"] .form-input,
+[data-theme="dark"] .form-select,
+[data-theme="dark"] .form-textarea {
+  background: #121820;
+  color: var(--text);
+  border-color: var(--border);
+}
+[data-theme="dark"] .table th { background: #121820; }
+[data-theme="dark"] .table tr:nth-child(even) { background: rgba(255,255,255,.02); }
+[data-theme="dark"] .login-wrap {
+  background: linear-gradient(160deg, #0c1016 0%, #1a2330 100%);
+}
+
+/* User admin actions */
+.actions-group { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.actions-inline-form { display: inline; margin: 0; }
+.btn-danger-outline {
+  background: transparent;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+}
+.btn-danger-outline:hover {
+  background: var(--danger-bg);
+  text-decoration: none;
+}
+.perm-hint {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+.perm-hint a { font-weight: 600; }

@@ -1,0 +1,18 @@
+{% extends "documentos/base_pdf.html" %}
+{% block doc_body %}
+<h2>Certidão de Regularidade Documental da Frota</h2>
+<p><strong>Total de veículos ativos:</strong> {{ total_veiculos }}</p>
+{% if regular %}
+<p class="legal">Certificamos que, na data de emissão deste documento, todos os veículos ativos da frota possuem documentação obrigatória regular (sem registros vencidos).</p>
+{% else %}
+<p class="legal">Atenção: os veículos abaixo possuem documentação vencida ou irregular:</p>
+<table class="doc-table">
+  <thead><tr><th>Placa</th><th>Pendências</th></tr></thead>
+  <tbody>
+  {% for v in veiculos_irregulares %}
+  <tr><td>{{ v.placa }}</td><td>{{ v.pendencias }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

@@ -30,7 +30,11 @@
   </div>
   {% endif %}
 
-  <form method="post" action="{{ action }}" autocomplete="off">
+  <form method="post" action="{{ action }}" autocomplete="off"
+        hx-post="{{ action }}"
+        hx-target="#app-content"
+        hx-select="#app-content"
+        hx-swap="innerHTML">
     <div class="form-grid">
       <div class="form-group">
         <label class="form-label" for="full_name">Nome completo</label>
@@ -60,7 +64,13 @@
         </label>
       </div>
       <div class="form-group">
-        <label class="form-label">Papéis (RBAC)</label>
+        <label class="form-label">Papéis e permissões de acesso</label>
+        <p class="perm-hint">
+          Marque os papéis deste usuário. Cada papel agrupa permissões do sistema.
+          {% if current_user.is_superuser or 'identidade.papel.editar' in current_user.permissions %}
+          <a href="/configuracoes/papeis">Editar matriz de permissões dos papéis</a>
+          {% endif %}
+        </p>
         <div class="multi-list">
           {% for role in roles %}
           <label class="form-check">
@@ -96,9 +106,14 @@
     </div>
   </form>
 
-  {% if user and (current_user.is_superuser or 'identidade.usuario.excluir' in current_user.permissions) and not user.is_superuser %}
+  {% if user and (current_user.is_superuser or 'identidade.usuario.excluir' in current_user.permissions) and not user.is_superuser and user.id != current_user.id %}
   <form method="post" action="/configuracoes/usuarios/{{ user.id }}/excluir" style="margin-top:12px"
-        onsubmit="return confirm('Remover este usuário?');">
+        hx-post="/configuracoes/usuarios/{{ user.id }}/excluir"
+        hx-target="#app-content"
+        hx-select="#app-content"
+        hx-swap="innerHTML"
+        onsubmit="return confirm('Remover este usuário permanentemente?');">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <button type="submit" class="btn btn-danger">Excluir usuário</button>
   </form>
   {% endif %}

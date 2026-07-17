@@ -194,6 +194,46 @@ TEMPLATES: tuple[TemplateDef, ...] = (
         sincrono=False,
         pesado=True,
     ),
+    TemplateDef(
+        "termo_responsabilidade",
+        "documentos/termo_responsabilidade.html",
+        "Termo de Responsabilidade",
+        DocFamilia.TRANSACIONAL,
+        "contrato",
+        "locacoes.contrato.visualizar",
+    ),
+    TemplateDef(
+        "aditivo_contratual",
+        "documentos/aditivo_contratual.html",
+        "Aditivo Contratual",
+        DocFamilia.TRANSACIONAL,
+        "aditivo",
+        "locacoes.renovacao.visualizar",
+    ),
+    TemplateDef(
+        "declaracao_quitacao",
+        "documentos/declaracao_quitacao.html",
+        "Declaração de Quitação",
+        DocFamilia.TRANSACIONAL,
+        "cliente",
+        "cadastros.cliente.visualizar",
+    ),
+    TemplateDef(
+        "certidao_regularidade_frota",
+        "documentos/certidao_regularidade_frota.html",
+        "Certidão de Regularidade da Frota",
+        DocFamilia.ANALITICO,
+        "tenant",
+        "frota.documentacao.visualizar",
+    ),
+    TemplateDef(
+        "fechamento_caixa",
+        "documentos/fechamento_caixa.html",
+        "Relatório de Fechamento de Caixa",
+        DocFamilia.TRANSACIONAL,
+        "caixa_sessao",
+        "financeiro.caixa.visualizar",
+    ),
 )
 
 TEMPLATES_BY_ID: dict[str, TemplateDef] = {t.template_id: t for t in TEMPLATES}

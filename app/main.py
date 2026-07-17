@@ -128,11 +128,17 @@ def _register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(RequestValidationError)
     async def _validation_handler(request: Request, exc: RequestValidationError) -> Response:
+        details = _serialize_validation_errors(exc.errors())
         if _is_api_request(request):
             return JSONResponse(
                 status_code=422,
-                content={"error": {"code": "validation_error", "message": "Dados inválidos.",
-                                    "details": exc.errors()}},
+                content={
+                    "error": {
+                        "code": "validation_error",
+                        "message": "Dados inválidos.",
+                        "details": details,
+                    }
+                },
             )
         return render(
             request,
@@ -180,6 +186,21 @@ def _register_exception_handlers(app: FastAPI) -> None:
              "error_message": "Ocorreu um erro inesperado. Tente novamente."},
             status_code=500,
         )
+
+
+def _serialize_validation_errors(errors: list) -> list:
+    """Converte erros Pydantic para JSON (ctx pode conter exceções não serializáveis)."""
+
+    def _safe(value: object) -> object:
+        if isinstance(value, (str, int, float, bool)) or value is None:
+            return value
+        if isinstance(value, (list, tuple)):
+            return [_safe(v) for v in value]
+        if isinstance(value, dict):
+            return {str(k): _safe(v) for k, v in value.items()}
+        return str(value)
+
+    return [_safe(dict(err)) for err in errors]
 
 
 app = create_app()

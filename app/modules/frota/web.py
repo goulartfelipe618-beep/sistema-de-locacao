@@ -1499,6 +1499,46 @@ async def telemetria_list(
     )
 
 
+@router.get("/frota/telemetria/mapa", response_class=HTMLResponse)
+async def telemetria_mapa(
+    request: Request,
+    session: SessionDep,
+    user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("frota.telemetria.visualizar"))
+    ],
+) -> HTMLResponse:
+    from app.modules.frota.models import FrotaTelemetriaDispositivo, FrotaVeiculo
+
+    stmt = (
+        select(FrotaTelemetriaDispositivo, FrotaVeiculo)
+        .join(FrotaVeiculo, FrotaVeiculo.id == FrotaTelemetriaDispositivo.veiculo_id)
+        .where(
+            FrotaTelemetriaDispositivo.tenant_id == user.tenant_id,
+            FrotaTelemetriaDispositivo.deleted_at.is_(None),
+            FrotaTelemetriaDispositivo.lat.is_not(None),
+            FrotaTelemetriaDispositivo.lng.is_not(None),
+        )
+    )
+    rows = (await session.execute(stmt)).all()
+    markers = [
+        {
+            "placa": v.placa,
+            "lat": float(d.lat),
+            "lng": float(d.lng),
+            "status": d.conn_status.value,
+            "provedor": d.provedor,
+            "km": d.km_telemetria,
+            "url": f"/frota/telemetria/{d.veiculo_id}",
+        }
+        for d, v in rows
+    ]
+    return render(
+        request,
+        "frota/telemetria_mapa.html",
+        {"title": "Mapa da Frota", "markers": markers},
+    )
+
+
 @router.get("/frota/telemetria/novo", response_class=HTMLResponse)
 async def telemetria_new_form(
     request: Request,

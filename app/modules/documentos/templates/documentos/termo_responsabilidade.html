@@ -1,0 +1,15 @@
+{% extends "documentos/base_pdf.html" %}
+{% block doc_body %}
+<h2>Termo de Responsabilidade pelo Veículo Locado</h2>
+<p><strong>Contrato:</strong> {{ contrato.numero }} (v{{ contrato.versao }})</p>
+<p><strong>Cliente / Locatário:</strong> {{ cliente_nome }}</p>
+<p><strong>Veículo:</strong> {{ veiculo_label }}</p>
+<p><strong>Período:</strong> {{ contrato.retirada_prevista_em|datetime }} até {{ contrato.devolucao_prevista_em|datetime }}</p>
+<p class="legal">O locatário declara-se responsável pelo veículo durante todo o período de locação, comprometendo-se a utilizá-lo em conformidade com a legislação de trânsito, a devolvê-lo nas mesmas condições de vistoria de saída (salvo desgaste natural), e a arcar com multas, avarias, combustível faltante, km excedente e demais encargos previstos contratualmente.</p>
+<p class="legal">Estou ciente de que a não devolução, uso indevido ou entrega do veículo em condições diversas das registradas na vistoria poderá ensejar cobranças adicionais e medidas administrativas/judiciais cabíveis.</p>
+{% if assinatura_b64 %}
+<div class="assinatura"><img src="data:image/png;base64,{{ assinatura_b64 }}" alt="Assinatura" style="max-height:80px"></div>
+{% else %}
+<p class="legal"><em>Assinatura do locatário: _________________________________________</em></p>
+{% endif %}
+{% endblock %}

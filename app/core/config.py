@@ -159,12 +159,19 @@ class Settings(BaseSettings):
         """Indica se a aplicação está rodando em ambiente de produção."""
         return self.environment == "production"
 
+    @staticmethod
+    def _normalize_supabase_async_url(url: str) -> str:
+        """PgBouncer transaction mode (:6543) não suporta prepared statements do asyncpg/SQLAlchemy."""
+        if "pooler.supabase.com" in url and ":6543" in url:
+            return url.replace(":6543", ":5432")
+        return url
+
     @computed_field  # type: ignore[prop-decorator]
     @property
     def database_url_async(self) -> str:
         """URL de conexão assíncrona (asyncpg) usada pela aplicação web/API."""
         if self.supabase_db_url:
-            url = self.supabase_db_url
+            url = self._normalize_supabase_async_url(self.supabase_db_url)
             if url.startswith("postgresql://"):
                 return url.replace("postgresql://", "postgresql+asyncpg://", 1)
             if url.startswith("postgresql+psycopg://"):

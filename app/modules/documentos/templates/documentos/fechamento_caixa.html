@@ -1,0 +1,30 @@
+{% extends "documentos/base_pdf.html" %}
+{% block doc_body %}
+<h2>Relatório de Fechamento de Caixa</h2>
+<p><strong>Filial:</strong> {{ filial_nome }}</p>
+<p><strong>Abertura:</strong> {{ sessao.aberta_em|datetime }}</p>
+{% if sessao.fechada_em %}<p><strong>Fechamento:</strong> {{ sessao.fechada_em|datetime }}</p>{% endif %}
+<p><strong>Valor de abertura:</strong> {{ sessao.valor_abertura|currency }}</p>
+<p><strong>Saldo calculado:</strong> {{ saldo_calculado|currency }}</p>
+{% if sessao.valor_fechamento_informado is not none %}
+<p><strong>Valor informado (contado):</strong> {{ sessao.valor_fechamento_informado|currency }}</p>
+<p><strong>Divergência:</strong> {{ sessao.divergencia|currency }}</p>
+{% endif %}
+{% if lancamentos %}
+<h3>Movimentações</h3>
+<table class="doc-table">
+  <thead><tr><th>Tipo</th><th>Forma</th><th>Descrição</th><th>Valor</th></tr></thead>
+  <tbody>
+  {% for l in lancamentos %}
+  <tr>
+    <td>{{ l.tipo.value }}</td>
+    <td>{{ l.forma_pagamento.value }}</td>
+    <td>{{ l.descricao or '—' }}</td>
+    <td>{{ l.valor|currency }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% if sessao.observacoes %}<p class="legal"><strong>Observações:</strong> {{ sessao.observacoes }}</p>{% endif %}
+{% endblock %}

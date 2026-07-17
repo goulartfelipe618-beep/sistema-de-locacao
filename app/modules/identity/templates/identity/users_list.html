@@ -3,14 +3,24 @@
 {% block content %}
 <div class="card">
   <div class="toolbar">
-    <form method="get" action="/configuracoes/usuarios" style="display:flex; gap:8px;">
+    <form method="get" action="/configuracoes/usuarios" style="display:flex; gap:8px;"
+          hx-get="/configuracoes/usuarios"
+          hx-target="#app-content"
+          hx-select="#app-content"
+          hx-swap="innerHTML"
+          hx-push-url="true">
       <input class="form-input" type="text" name="search" value="{{ search }}"
              placeholder="Buscar por nome ou e-mail">
       <button class="btn" type="submit">Buscar</button>
     </form>
-    {% if current_user.is_superuser or 'identidade.usuario.criar' in current_user.permissions %}
-    <a class="btn btn-primary" href="/configuracoes/usuarios/novo">+ Novo Usuário</a>
-    {% endif %}
+    <div class="actions-group">
+      {% if current_user.is_superuser or 'identidade.papel.visualizar' in current_user.permissions %}
+      <a class="btn" href="/configuracoes/papeis">Papéis e Permissões</a>
+      {% endif %}
+      {% if current_user.is_superuser or 'identidade.usuario.criar' in current_user.permissions %}
+      <a class="btn btn-primary" href="/configuracoes/usuarios/novo">+ Novo Usuário</a>
+      {% endif %}
+    </div>
   </div>
 
   {% if page_result.items %}
@@ -22,7 +32,7 @@
         <th>Situação</th>
         <th>Último acesso</th>
         <th>Criado em</th>
-        <th></th>
+        <th>Ações</th>
       </tr>
     </thead>
     <tbody>
@@ -40,12 +50,29 @@
         </td>
         <td>{{ user.last_login_at|datetime }}</td>
         <td>{{ user.created_at|datetime }}</td>
-        <td class="actions">
-          {% if current_user.is_superuser or 'identidade.usuario.editar' in current_user.permissions %}
-          <a class="btn btn-sm" href="/configuracoes/usuarios/{{ user.id }}/editar">Editar</a>
-          {% endif %}
-          <a class="btn btn-sm" href="/configuracoes/usuarios/{{ user.id }}/acessos">Acessos</a>
+        <td>
+          <div class="actions-group">
+            {% if current_user.is_superuser or 'identidade.usuario.editar' in current_user.permissions %}
+            <a class="btn btn-sm" href="/configuracoes/usuarios/{{ user.id }}/editar">Editar</a>
+            {% endif %}
+            <a class="btn btn-sm" href="/configuracoes/usuarios/{{ user.id }}/acessos">Acessos</a>
+            {% if (current_user.is_superuser or 'identidade.usuario.excluir' in current_user.permissions)
+                  and not user.is_superuser and user.id != current_user.id %}
+            <form method="post"
+                  action="/configuracoes/usuarios/{{ user.id }}/excluir"
+                  class="actions-inline-form"
+                  hx-post="/configuracoes/usuarios/{{ user.id }}/excluir"
+                  hx-target="#app-content"
+                  hx-select="#app-content"
+                  hx-swap="innerHTML"
+                  onsubmit="return confirm('Excluir a conta de {{ user.full_name|e }}? Esta ação não pode ser desfeita.');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <button type="submit" class="btn btn-sm btn-danger-outline">Excluir</button>
+            </form>
+            {% endif %}
+          </div>
         </td>
+      </tr>
       {% endfor %}
     </tbody>
   </table>
@@ -63,4 +90,10 @@
   <div class="empty-state">Nenhum usuário encontrado.</div>
   {% endif %}
 </div>
+<p class="perm-hint">
+  Permissões de acesso são definidas pelos <strong>papéis (RBAC)</strong> atribuídos a cada usuário.
+  {% if current_user.is_superuser or 'identidade.papel.editar' in current_user.permissions %}
+  <a href="/configuracoes/papeis">Gerenciar papéis e permissões</a>
+  {% endif %}
+</p>
 {% endblock %}

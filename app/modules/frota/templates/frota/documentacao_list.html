@@ -29,6 +29,9 @@
     <form method="post" action="/documentos/emitir/doc_vencimentos/{{ current_user.tenant_id }}" style="margin:0;display:inline">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-sm" type="submit">PDF Vencimentos</button>
     </form>
+    <form method="post" action="/documentos/emitir/certidao_regularidade_frota/{{ current_user.tenant_id }}" style="margin:0;display:inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-sm" type="submit">PDF Certidão Regularidade</button>
+    </form>
     {% endif %}
   </div>
   {% if page_result.items %}

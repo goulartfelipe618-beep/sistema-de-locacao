@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-app-name="{{ app_name }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -11,9 +11,11 @@
   {% if tenant_branding and tenant_branding.brand_primary_color %}
   <style>:root { --primary: {{ tenant_branding.brand_primary_color }}; --sidebar-bg: {{ tenant_branding.brand_primary_color }}; }</style>
   {% endif %}
+  <script src="/static/js/theme.js"></script>
   <script src="/static/js/htmx.min.js" defer></script>
   <script src="/static/js/alpine.min.js" defer></script>
   <script src="/static/js/app.js" defer></script>
+  <script src="/static/js/spa-nav.js" defer></script>
   <script src="/static/js/form-engine.js" defer></script>
   <script src="/static/js/form-repeater.js" defer></script>
   <script src="/static/js/form-upload.js" defer></script>
@@ -26,7 +28,7 @@
     {% include "partials/sidebar.html" %}
     <div class="main">
       {% include "partials/navbar.html" %}
-      <main class="content">
+      <main class="content" id="app-content" data-page-title="{{ title|default('Painel') }}">
         {% block breadcrumb %}
         <div class="breadcrumb">
           <span>Início</span>

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<div class="card">
+  <div class="toolbar">
+    <h2 class="card-title" style="margin:0">{{ title }}</h2>
+    <a class="btn btn-sm" href="/frota/telemetria">← Lista</a>
+  </div>
+  {% if markers %}
+  <div id="mapa-frota" style="height:480px;border-radius:8px;border:1px solid var(--border)"></div>
+  <p class="form-help" style="margin-top:8px">{{ markers|length }} veículo(s) com posição GPS registrada.</p>
+  {% else %}
+  <div class="empty-state">Nenhum dispositivo com coordenadas. Cadastre telemetria com lat/lng ou sincronize via Integrações.</div>
+  {% endif %}
+</div>
+{% if markers %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+(function () {
+  const markers = {{ markers|tojson }};
+  const map = L.map('mapa-frota');
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap'
+  }).addTo(map);
+  const bounds = [];
+  markers.forEach(m => {
+    const popup = `<strong>${m.placa}</strong><br>${m.provedor} · ${m.status}${m.km ? '<br>Km: ' + m.km : ''}<br><a href="${m.url}">Detalhe</a>`;
+    L.marker([m.lat, m.lng]).addTo(map).bindPopup(popup);
+    bounds.push([m.lat, m.lng]);
+  });
+  if (bounds.length === 1) map.setView(bounds[0], 13);
+  else map.fitBounds(bounds, { padding: [24, 24] });
+})();
+</script>
+{% endif %}
+{% endblock %}

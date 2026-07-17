@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import base64
+import re
 import uuid
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
@@ -16,12 +18,13 @@ from app.core.database import get_db_session
 from app.core.deps import require_web_permission
 from app.core.exceptions import AppError
 from app.core.pagination import PageParams
+from app.core.storage import StorageService, storage_service
 from app.core.templating import render
 from app.modules.cadastros.service import ClienteService
 from app.modules.cadastros.service_extra import MotoristaService, ParceiroService
 from app.modules.frota.service import AcessoriosService, CategoriasService, VeiculoService
 from app.modules.identity.service import AuthenticatedUser
-from app.modules.locacoes.models import LocContratoItem, LocContratoMotorista
+from app.modules.locacoes.models import LocContratoAditivo, LocContratoItem, LocContratoMotorista
 from app.modules.locacoes.schemas import (
     AvariaCheckinInput,
     AvariaCreate,
@@ -209,9 +212,40 @@ async def _contrato_extras(session: AsyncSession, contrato_id: uuid.UUID) -> dic
         LocContratoMotorista.contrato_id == contrato_id,
         LocContratoMotorista.deleted_at.is_(None),
     )
+    adit_stmt = (
+        select(LocContratoAditivo)
+        .where(
+            LocContratoAditivo.contrato_id == contrato_id,
+            LocContratoAditivo.deleted_at.is_(None),
+        )
+        .order_by(LocContratoAditivo.versao.desc())
+    )
     itens = list((await session.execute(itens_stmt)).scalars().all())
     motoristas = list((await session.execute(mot_stmt)).scalars().all())
-    return {"itens": itens, "motoristas_vinc": motoristas}
+    aditivos = list((await session.execute(adit_stmt)).scalars().all())
+    return {"itens": itens, "motoristas_vinc": motoristas, "aditivos": aditivos}
+
+
+def _persist_assinatura_canvas(tenant_id: uuid.UUID, data_url: str) -> tuple[str, str] | None:
+    """Grava assinatura PNG (canvas) no R2 ou inline compacto para dev."""
+    raw = (data_url or "").strip()
+    if not raw:
+        return None
+    match = re.match(r"data:image/png;base64,(.+)", raw, re.DOTALL)
+    if not match:
+        return None
+    b64 = match.group(1).strip()
+    try:
+        png = base64.b64decode(b64)
+    except (ValueError, TypeError):
+        return None
+    if storage_service.is_configured():
+        key = StorageService.build_key(tenant_id, "locacoes", "assinatura", "assinatura.png")
+        storage_service.upload_bytes(key, png, "image/png")
+        return ("canvas", key)
+    if len(b64) <= 480:
+        return ("canvas", f"b64:{b64}")
+    return None
 
 
 def _parse_fotos_vistoria(foto_keys: dict[str, str]) -> list[VistoriaFotoInput]:
@@ -558,6 +592,7 @@ async def checkout_concluir(
     foto_lateral_direita: Annotated[str, Form()] = "",
     foto_painel: Annotated[str, Form()] = "",
     foto_odometro: Annotated[str, Form()] = "",
+    assinatura_data: Annotated[str, Form()] = "",
 ) -> HTMLResponse:
     contrato = await ContratoService(session).get(contrato_id)
     lookups = await _locacoes_lookups(session, current_user.tenant_id)
@@ -579,6 +614,7 @@ async def checkout_concluir(
         **lookups,
     }
     try:
+        assinatura = _persist_assinatura_canvas(current_user.tenant_id, assinatura_data)
         await CheckoutService(session).concluir(
             contrato_id,
             CheckoutConcluirInput(
@@ -590,6 +626,8 @@ async def checkout_concluir(
                 allow_force=allow_force in ("on", "true", "1"),
                 realizado_por_user_id=current_user.id,
                 observacoes=observacoes or None,
+                assinatura_tipo=assinatura[0] if assinatura else None,
+                assinatura_key=assinatura[1] if assinatura else None,
             ),
         )
     except (AppError, ValueError) as exc:

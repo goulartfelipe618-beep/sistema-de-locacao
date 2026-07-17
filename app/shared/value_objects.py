@@ -8,9 +8,24 @@ from __future__ import annotations
 
 import re
 import unicodedata
+from typing import Annotated
+
+from pydantic import BeforeValidator
 
 _NON_DIGITS = re.compile(r"\D")
 _SLUG_INVALID = re.compile(r"[^a-z0-9]+")
+_EMAIL_BASIC = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+def normalize_app_email(value: str) -> str:
+    """Valida e-mail de login/cadastro (aceita domínios reservados como ``.local`` em dev)."""
+    email = str(value).strip().lower()
+    if not _EMAIL_BASIC.match(email):
+        raise ValueError("E-mail inválido.")
+    return email
+
+
+AppEmail = Annotated[str, BeforeValidator(normalize_app_email)]
 
 
 def only_digits(value: str) -> str:
