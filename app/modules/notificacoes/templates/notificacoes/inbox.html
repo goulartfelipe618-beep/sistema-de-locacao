@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <h2 class="card-title" style="margin:0">{{ title }}</h2>
+    {% if nao_lidas > 0 %}
+    <form method="post" action="/notificacoes/marcar-todas-lidas" style="margin:0">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button class="btn" type="submit">Marcar todas como lidas ({{ nao_lidas }})</button>
+    </form>
+    {% endif %}
+  </div>
+  {% if notificacoes %}
+  <table class="table">
+    <thead><tr><th>Título</th><th>Mensagem</th><th>Status</th><th>Quando</th><th></th></tr></thead>
+    <tbody>
+    {% for n in notificacoes %}
+    <tr class="{% if not n.lida %}row-highlight{% endif %}">
+      <td>
+        {% if n.link %}<a href="{{ n.link }}">{{ n.titulo }}</a>{% else %}{{ n.titulo }}{% endif %}
+      </td>
+      <td>{{ n.mensagem[:120] }}{% if n.mensagem|length > 120 %}…{% endif %}</td>
+      <td><span class="badge {% if n.lida %}badge-muted{% else %}badge-info{% endif %}">{% if n.lida %}Lida{% else %}Nova{% endif %}</span></td>
+      <td>{{ n.created_at|datetime }}</td>
+      <td>
+        {% if not n.lida %}
+        <form method="post" action="/notificacoes/{{ n.id }}/lida" style="margin:0">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button class="btn btn-sm" type="submit">Marcar lida</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">Nenhuma notificação.</div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -663,6 +663,30 @@ class ReservaService:
             "reserva.confirmada",
             {"id": str(reserva.id), "numero": reserva.numero, "status": reserva.status.value},
         )
+        from app.modules.cadastros.service import ClienteService
+        from app.modules.notificacoes.schemas import NotificacaoSendInput
+        from app.modules.notificacoes.service import NotificationService
+        from app.shared.enums import NotificacaoCanal
+
+        cliente = await ClienteService(self.session).get(reserva.cliente_id)
+        canais = [NotificacaoCanal.EMAIL]
+        if cliente.email:
+            await NotificationService(self.session).send(
+                reserva.tenant_id,
+                NotificacaoSendInput(
+                    titulo=f"Reserva {reserva.numero} confirmada",
+                    mensagem=(
+                        f"Olá {cliente.nome}, sua reserva {reserva.numero} foi confirmada. "
+                        f"Retirada prevista em {reserva.retirada_em.strftime('%d/%m/%Y %H:%M')}."
+                    ),
+                    email=cliente.email,
+                    telefone=cliente.celular or cliente.telefone,
+                    canais=canais + ([NotificacaoCanal.SMS] if cliente.celular else []),
+                    evento="reserva.confirmada",
+                    referencia_tipo="res_reserva",
+                    referencia_id=reserva.id,
+                ),
+            )
         return reserva
 
     async def aprovar_bloqueado(self, reserva_id: uuid.UUID) -> ResReserva:

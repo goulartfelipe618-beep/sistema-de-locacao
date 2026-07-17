@@ -83,6 +83,32 @@
       </div>
 
       <div class="form-group">
+        <label class="form-label" for="cep">CEP</label>
+        <input class="form-input" id="cep" name="cep" maxlength="9"
+               value="{{ cliente.cep if cliente else '' }}" placeholder="00000-000">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="endereco">Endereço</label>
+        <input class="form-input" id="endereco" name="endereco"
+               value="{{ cliente.endereco if cliente else '' }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="numero">Número</label>
+        <input class="form-input" id="numero" name="numero"
+               value="{{ cliente.numero if cliente else '' }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="complemento">Complemento</label>
+        <input class="form-input" id="complemento" name="complemento"
+               value="{{ cliente.complemento if cliente else '' }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="bairro">Bairro</label>
+        <input class="form-input" id="bairro" name="bairro"
+               value="{{ cliente.bairro if cliente else '' }}">
+      </div>
+
+      <div class="form-group">
         <label class="form-label" for="cidade">Cidade</label>
         <input class="form-input" id="cidade" name="cidade"
                value="{{ cliente.cidade if cliente else '' }}">
@@ -147,4 +173,27 @@
   </form>
   {% endif %}
 </div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  const cepInput = document.getElementById('cep');
+  if (!cepInput) return;
+  cepInput.addEventListener('blur', async function () {
+    const digits = (this.value || '').replace(/\D/g, '');
+    if (digits.length !== 8) return;
+    try {
+      const resp = await fetch('/cadastros/cep/' + digits);
+      if (!resp.ok) return;
+      const data = await resp.json();
+      const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
+      set('endereco', data.endereco);
+      set('complemento', data.complemento);
+      set('bairro', data.bairro);
+      set('cidade', data.cidade);
+      set('uf', data.uf);
+    } catch (_) { /* silencioso */ }
+  });
+})();
+</script>
 {% endblock %}

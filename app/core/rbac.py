@@ -332,6 +332,10 @@ SYSTEM_PERMISSIONS: tuple[PermissionDef, ...] = (
     _perm("automacoes", "agendamentos", "visualizar", "Visualizar jobs Celery Beat"),
     _perm("automacoes", "agendamentos", "executar", "Disparar jobs manualmente"),
     _perm("automacoes", "historico", "visualizar", "Visualizar histórico de automações"),
+    # ---- Notificações ----
+    _perm("notificacoes", "inbox", "visualizar", "Visualizar caixa de notificações in-app"),
+    _perm("notificacoes", "envios", "visualizar", "Visualizar histórico de envios e-mail/SMS"),
+    _perm("notificacoes", "enviar", "criar", "Enviar notificações manualmente (teste/admin)"),
     # ---- Administração SaaS (super-admin) ----
     _perm("admin", "tenant", "visualizar", "Visualizar empresas (tenants) da plataforma"),
     _perm("admin", "tenant", "criar", "Criar empresas (tenants)"),
@@ -575,6 +579,9 @@ GERENTE_FILIAL = RoleTemplate(
         "automacoes.agendamentos.visualizar",
         "automacoes.agendamentos.executar",
         "automacoes.historico.visualizar",
+        "notificacoes.inbox.visualizar",
+        "notificacoes.envios.visualizar",
+        "notificacoes.enviar.criar",
         "auditoria.trilha.visualizar",
     ),
 )
@@ -672,6 +679,7 @@ OPERADOR = RoleTemplate(
         "integracoes.transito.visualizar",
         "integracoes.credito.consultar",
         "automacoes.historico.visualizar",
+        "notificacoes.inbox.visualizar",
     ),
 )
 

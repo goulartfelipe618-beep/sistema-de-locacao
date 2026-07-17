@@ -140,6 +140,24 @@ class ReportService:
 
             doc.status = DocGeradoStatus.CONCLUIDO
             doc.concluido_em = _now()
+            if doc.user_id:
+                from app.modules.notificacoes.schemas import NotificacaoSendInput
+                from app.modules.notificacoes.service import NotificationService
+                from app.shared.enums import NotificacaoCanal
+
+                await NotificationService(self.session).send(
+                    doc.tenant_id,
+                    NotificacaoSendInput(
+                        titulo=f"PDF pronto: {doc.titulo}",
+                        mensagem=f"O documento «{doc.titulo}» foi gerado com sucesso.",
+                        user_id=doc.user_id,
+                        link=f"/documentos/{doc.id}/download",
+                        canais=[NotificacaoCanal.IN_APP, NotificacaoCanal.EMAIL],
+                        evento="documento.concluido",
+                        referencia_tipo="documento_gerado",
+                        referencia_id=doc.id,
+                    ),
+                )
         except Exception as exc:
             doc.status = DocGeradoStatus.ERRO
             doc.erro_mensagem = str(exc)

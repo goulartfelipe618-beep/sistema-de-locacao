@@ -558,6 +558,25 @@ NAVIGATION: tuple[MenuSection, ...] = (
         ),
     ),
     MenuSection(
+        label="Notificações",
+        icon="bell",
+        implemented=True,
+        items=(
+            MenuItem(
+                "Caixa de Entrada",
+                url="/notificacoes",
+                permission="notificacoes.inbox.visualizar",
+                implemented=True,
+            ),
+            MenuItem(
+                "Histórico de Envios",
+                url="/notificacoes/envios",
+                permission="notificacoes.envios.visualizar",
+                implemented=True,
+            ),
+        ),
+    ),
+    MenuSection(
         label="Configurações",
         icon="settings",
         items=(

@@ -321,3 +321,15 @@ async def api_update_vendedor(
     _user: Annotated[AuthenticatedUser, Depends(require_api_permission("cadastros.vendedor.editar"))],
 ) -> VendedorRead:
     return VendedorRead.model_validate(await VendedorService(session).update(item_id, payload))
+
+
+@router.get("/cep/{cep}")
+async def api_consultar_cep(
+    cep: str,
+    _user: Annotated[
+        AuthenticatedUser, Depends(require_api_permission("cadastros.cliente.visualizar"))
+    ],
+) -> dict:
+    from app.shared.viacep import consultar_cep
+
+    return await consultar_cep(cep)

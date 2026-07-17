@@ -81,6 +81,31 @@ class AcaoExecutor:
     ) -> dict[str, Any]:
         if acao == AutoAcaoTipo.NOTIFICAR:
             msg = params.get("mensagem") or context.get("mensagem") or "Alerta de automação"
+            titulo = params.get("titulo") or "Automação"
+            canais_raw = params.get("canais") or ["in_app", "email"]
+            from app.modules.notificacoes.schemas import NotificacaoSendInput
+            from app.modules.notificacoes.service import NotificationService
+            from app.shared.enums import NotificacaoCanal
+
+            user_id = params.get("user_id") or context.get("user_id")
+            await NotificationService(self.session).send(
+                tenant_id,
+                NotificacaoSendInput(
+                    titulo=titulo,
+                    mensagem=msg,
+                    canais=[NotificacaoCanal(c) for c in canais_raw],
+                    user_id=uuid.UUID(str(user_id)) if user_id else None,
+                    email=params.get("email") or context.get("email"),
+                    telefone=params.get("telefone") or context.get("telefone"),
+                    evento=params.get("evento") or context.get("evento") or "automacao",
+                    referencia_tipo=context.get("referencia_tipo"),
+                    referencia_id=(
+                        uuid.UUID(str(context["referencia_id"]))
+                        if context.get("referencia_id")
+                        else None
+                    ),
+                ),
+            )
             await audit_service.record(
                 AuditAction.UPDATE,
                 description=f"[Automação] Notificação: {msg}",

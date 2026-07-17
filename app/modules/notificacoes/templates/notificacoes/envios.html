@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <h2 class="card-title">{{ title }}</h2>
+  {% if envios %}
+  <table class="table">
+    <thead><tr><th>Canal</th><th>Destino</th><th>Assunto</th><th>Status</th><th>Enviado</th></tr></thead>
+    <tbody>
+    {% for e in envios %}
+    <tr>
+      <td>{{ e.canal.value }}</td>
+      <td>{{ e.destino }}</td>
+      <td>{{ e.assunto or '-' }}</td>
+      <td><span class="badge {% if e.status.value=='enviado' %}badge-success{% elif e.status.value=='falha' %}badge-danger{% endif %}">{{ e.status.value }}</span></td>
+      <td>{{ e.enviado_em|datetime if e.enviado_em else '-' }}</td>
+    </tr>
+    {% if e.erro_mensagem %}<tr><td colspan="5"><small class="text-danger">{{ e.erro_mensagem }}</small></td></tr>{% endif %}
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">Nenhum envio registrado.</div>
+  {% endif %}
+</div>
+{% endblock %}

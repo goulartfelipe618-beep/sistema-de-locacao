@@ -87,6 +87,16 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------ CORS
     cors_origins: str = ""
 
+    # ----------------------------------------------------------- Notificações
+    notification_email_provider: Literal["simulador", "smtp"] = "simulador"
+    notification_sms_provider: Literal["simulador", "http"] = "simulador"
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = ""
+    smtp_use_tls: bool = True
+
     # ----------------------------------------------------------- Validadores
     @field_validator("log_level")
     @classmethod

@@ -954,3 +954,20 @@ class DocGeradoStatus(str, enum.Enum):
     ERRO = "erro"
 
 
+class NotificacaoCanal(str, enum.Enum):
+    """Canal de entrega de notificação."""
+
+    IN_APP = "in_app"
+    EMAIL = "email"
+    SMS = "sms"
+    WHATSAPP = "whatsapp"
+
+
+class NotificacaoEnvioStatus(str, enum.Enum):
+    """Status de envio externo (e-mail/SMS)."""
+
+    PENDENTE = "pendente"
+    ENVIADO = "enviado"
+    FALHA = "falha"
+
+

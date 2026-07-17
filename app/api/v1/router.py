@@ -14,6 +14,7 @@ from app.modules.comercial.api import router as comercial_router
 from app.modules.financeiro.api import router as financeiro_router
 from app.modules.fiscal.api import router as fiscal_router
 from app.modules.automacoes.api import router as automacoes_router
+from app.modules.notificacoes.api import router as notificacoes_router
 from app.modules.integracoes.api import router as integracoes_router, webhooks_router
 from app.modules.integracoes.public_api import public_router
 from app.modules.documentos.api import router as documentos_router
@@ -43,6 +44,7 @@ api_router.include_router(financeiro_router)
 api_router.include_router(comercial_router)
 api_router.include_router(fiscal_router)
 api_router.include_router(automacoes_router)
+api_router.include_router(notificacoes_router)
 api_router.include_router(integracoes_router)
 api_router.include_router(webhooks_router)
 api_router.include_router(public_router)

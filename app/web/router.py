@@ -16,6 +16,7 @@ from app.modules.dashboard.web import router as dashboard_router
 from app.modules.financeiro.web import router as financeiro_router
 from app.modules.fiscal.web import router as fiscal_router
 from app.modules.automacoes.web import router as automacoes_router
+from app.modules.notificacoes.web import router as notificacoes_router
 from app.modules.integracoes.web import router as integracoes_router
 from app.modules.relatorios.web import router as relatorios_router
 from app.modules.frota.web import router as frota_router
@@ -43,6 +44,7 @@ web_router.include_router(financeiro_router)
 web_router.include_router(comercial_router)
 web_router.include_router(fiscal_router)
 web_router.include_router(automacoes_router)
+web_router.include_router(notificacoes_router)
 web_router.include_router(integracoes_router)
 web_router.include_router(relatorios_router)
 web_router.include_router(documentos_router)

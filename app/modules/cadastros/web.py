@@ -7,7 +7,7 @@ from decimal import Decimal, InvalidOperation
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db_session
@@ -24,6 +24,19 @@ from app.shared.enums import ClienteStatus, PersonType
 router = APIRouter()
 router.include_router(cadastros_extra_router)
 SessionDep = Annotated[AsyncSession, Depends(get_db_session)]
+
+
+@router.get("/cadastros/cep/{cep}")
+async def consultar_cep_web(
+    cep: str,
+    _user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("cadastros.cliente.visualizar"))
+    ],
+) -> JSONResponse:
+    from app.shared.viacep import consultar_cep
+
+    data = await consultar_cep(cep)
+    return JSONResponse(content=data)
 
 
 def _parse_decimal(raw: str | None) -> Decimal:
@@ -100,6 +113,11 @@ async def cliente_create(
     telefone: Annotated[str, Form()] = "",
     celular: Annotated[str, Form()] = "",
     whatsapp: Annotated[str, Form()] = "",
+    cep: Annotated[str, Form()] = "",
+    endereco: Annotated[str, Form()] = "",
+    numero: Annotated[str, Form()] = "",
+    complemento: Annotated[str, Form()] = "",
+    bairro: Annotated[str, Form()] = "",
     cidade: Annotated[str, Form()] = "",
     uf: Annotated[str, Form()] = "",
     categoria_codigo: Annotated[str, Form()] = "",
@@ -122,6 +140,11 @@ async def cliente_create(
             telefone=telefone or None,
             celular=celular or None,
             whatsapp=bool(whatsapp),
+            cep=cep or None,
+            endereco=endereco or None,
+            numero=numero or None,
+            complemento=complemento or None,
+            bairro=bairro or None,
             cidade=cidade or None,
             uf=uf or None,
             categoria_codigo=categoria_codigo or None,
@@ -197,6 +220,11 @@ async def cliente_update(
     telefone: Annotated[str, Form()] = "",
     celular: Annotated[str, Form()] = "",
     whatsapp: Annotated[str, Form()] = "",
+    cep: Annotated[str, Form()] = "",
+    endereco: Annotated[str, Form()] = "",
+    numero: Annotated[str, Form()] = "",
+    complemento: Annotated[str, Form()] = "",
+    bairro: Annotated[str, Form()] = "",
     cidade: Annotated[str, Form()] = "",
     uf: Annotated[str, Form()] = "",
     categoria_codigo: Annotated[str, Form()] = "",
@@ -216,6 +244,11 @@ async def cliente_update(
             telefone=telefone or None,
             celular=celular or None,
             whatsapp=bool(whatsapp),
+            cep=cep or None,
+            endereco=endereco or None,
+            numero=numero or None,
+            complemento=complemento or None,
+            bairro=bairro or None,
             cidade=cidade or None,
             uf=uf or None,
             categoria_codigo=categoria_codigo or None,
