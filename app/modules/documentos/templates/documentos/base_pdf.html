@@ -29,7 +29,9 @@
   <div class="header">
     {% if empresa_logo_url %}<img class="header-logo" src="{{ empresa_logo_url }}" alt="Logo">{% endif %}
     <h1>{{ empresa_nome }}</h1>
-    <div class="meta">CNPJ: {{ empresa_cnpj }} · {{ empresa_email }} · {{ empresa_phone }}</div>
+    <div class="meta">CNPJ: {{ empresa_cnpj }}{% if empresa_ie and empresa_ie != '—' %} · IE: {{ empresa_ie }}{% endif %}</div>
+    <div class="meta">{{ empresa_email }} · {{ empresa_phone }}{% if empresa_website and empresa_website != '—' %} · {{ empresa_website }}{% endif %}</div>
+    {% if empresa_endereco and empresa_endereco != '—' %}<div class="meta">{{ empresa_endereco }}</div>{% endif %}
     <div class="meta"><strong>{{ doc_titulo }}</strong></div>
   </div>
   {% block doc_body %}{% endblock %}
@@ -40,7 +42,7 @@
   </div>
   {% endif %}
   <div class="footer">
-    Documento gerado pelo ERP Locadora · {{ empresa_razao }}
+    {% if document_footer_text %}{{ document_footer_text }}{% else %}Documento gerado pelo ERP Locadora · {{ empresa_razao }}{% endif %}
   </div>
 </body>
 </html>

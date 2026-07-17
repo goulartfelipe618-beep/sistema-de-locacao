@@ -28,9 +28,9 @@ from app.modules.identity.service import (
 )
 from app.modules.identity.twofa_service import TwoFactorService
 from app.modules.identity.totp import decrypt_recovery_codes
-from app.modules.tenants.branding import branding_session_payload
 from app.modules.tenants.repository import TenantRepository
 from app.modules.tenants.service import FilialService
+from app.modules.tenants.setup import populate_authenticated_session, post_login_redirect_url
 
 router = APIRouter()
 
@@ -42,7 +42,7 @@ SessionDep = Annotated[AsyncSession, Depends(get_db_session)]
 async def login_form(request: Request) -> HTMLResponse:
     """Exibe o formulário de login (ou redireciona se já autenticado)."""
     if request.session.get("user_id"):
-        return RedirectResponse(url="/", status_code=303)
+        return RedirectResponse(url=post_login_redirect_url(request.session), status_code=303)
     return render(request, "identity/login.html", {"error": None, "email": ""})
 
 
@@ -98,15 +98,22 @@ async def login_submit(
 
     # Resolve a filial padrão do usuário (primeira vinculada, se houver).
     async with UnitOfWork(tenant_id=tenant.id) as uow:
-        filial_ids = await UserRepository(uow.session).get_filial_ids(user.id)
+        user_repo = UserRepository(uow.session)
+        filial_ids = await user_repo.get_filial_ids(user.id)
+        permissions = await user_repo.get_permission_codes(user.id)
+        tenant_row = await TenantRepository(uow.session).get(tenant.id)
 
     request.session.clear()
-    request.session["user_id"] = str(user.id)
-    request.session["tenant_id"] = str(user.tenant_id)
-    request.session["filial_id"] = str(filial_ids[0]) if filial_ids else None
-    request.session["is_superuser"] = user.is_superuser
-    request.session["tenant_branding"] = branding_session_payload(tenant)
-    return RedirectResponse(url="/", status_code=303)
+    populate_authenticated_session(
+        request.session,
+        user_id=user.id,
+        tenant_id=user.tenant_id,
+        filial_id=filial_ids[0] if filial_ids else None,
+        is_superuser=user.is_superuser,
+        tenant=tenant_row or tenant,
+        permission_codes=permissions,
+    )
+    return RedirectResponse(url=post_login_redirect_url(request.session), status_code=303)
 
 
 @router.get("/login/2fa", response_class=HTMLResponse)
@@ -169,17 +176,22 @@ async def login_2fa_submit(
     )
 
     async with UnitOfWork(tenant_id=tenant_id) as uow:
+        user_repo = UserRepository(uow.session)
         tenant = await TenantRepository(uow.session).get(tenant_id)
-        filial_ids = await UserRepository(uow.session).get_filial_ids(user.id)
+        filial_ids = await user_repo.get_filial_ids(user.id)
+        permissions = await user_repo.get_permission_codes(user.id)
 
     request.session.clear()
-    request.session["user_id"] = str(user.id)
-    request.session["tenant_id"] = str(user.tenant_id)
-    request.session["filial_id"] = str(filial_ids[0]) if filial_ids else None
-    request.session["is_superuser"] = user.is_superuser
-    if tenant:
-        request.session["tenant_branding"] = branding_session_payload(tenant)
-    return RedirectResponse(url="/", status_code=303)
+    populate_authenticated_session(
+        request.session,
+        user_id=user.id,
+        tenant_id=user.tenant_id,
+        filial_id=filial_ids[0] if filial_ids else None,
+        is_superuser=user.is_superuser,
+        tenant=tenant,
+        permission_codes=permissions,
+    )
+    return RedirectResponse(url=post_login_redirect_url(request.session), status_code=303)
 
 
 @router.post("/logout", name="logout")

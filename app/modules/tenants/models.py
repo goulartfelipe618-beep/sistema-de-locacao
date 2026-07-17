@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import uuid
-from datetime import date
+from datetime import date, datetime
 
-from sqlalchemy import Date, Enum as SAEnum
+from sqlalchemy import Date, DateTime, Enum as SAEnum
 from sqlalchemy import ForeignKey, Index, String, Text, text
 from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -51,9 +51,23 @@ class Tenant(BaseModel):
     email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
+    app_display_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    setup_completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    ie: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    website: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    document_footer_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     logo_storage_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    logo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    logo_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     brand_primary_color: Mapped[str | None] = mapped_column(String(7), nullable=True)
+
+    zip_code: Mapped[str | None] = mapped_column(String(8), nullable=True)
+    address: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    number: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    complement: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    district: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    city: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    state: Mapped[str | None] = mapped_column(String(2), nullable=True)
     cert_a1_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
     cert_a1_password_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
     cert_a1_valid_until: Mapped[date | None] = mapped_column(Date, nullable=True)
@@ -71,6 +85,18 @@ class Tenant(BaseModel):
     @property
     def cert_configured(self) -> bool:
         return bool(self.cert_a1_encrypted)
+
+    @property
+    def setup_complete(self) -> bool:
+        return self.setup_completed_at is not None
+
+    @property
+    def sidebar_display_name(self) -> str:
+        return self.app_display_name or self.trade_name or self.legal_name
+
+    @property
+    def has_logo(self) -> bool:
+        return bool(self.logo_url or self.logo_storage_key)
 
 
 class Filial(BaseModel):

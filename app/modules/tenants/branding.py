@@ -34,18 +34,26 @@ def resolve_logo_url(tenant: Tenant) -> str | None:
 def branding_session_payload(tenant: Tenant) -> dict[str, Any]:
     """Resumo leve para sessão/UI (sidebar, CSS)."""
     return {
-        "display_name": tenant.trade_name or tenant.legal_name,
+        "display_name": tenant.sidebar_display_name,
         "brand_primary_color": tenant.brand_primary_color or "#1e5a8a",
         "logo_url": resolve_logo_url(tenant),
+        "setup_complete": tenant.setup_complete,
     }
 
 
 def branding_pdf_context(tenant: Tenant) -> dict[str, Any]:
     """Campos extras para templates PDF."""
+    from app.modules.tenants.setup import format_tenant_address
+
     color = tenant.brand_primary_color or "#1e5a8a"
     return {
         "empresa_logo_url": resolve_logo_url(tenant),
         "brand_primary_color": color,
+        "empresa_display_name": tenant.sidebar_display_name,
+        "empresa_endereco": format_tenant_address(tenant),
+        "empresa_ie": tenant.ie or "—",
+        "empresa_website": tenant.website or "—",
+        "document_footer_text": tenant.document_footer_text,
         "cert_configured": bool(tenant.cert_a1_encrypted),
         "cert_valid_until": tenant.cert_a1_valid_until,
         "cert_subject": tenant.cert_a1_subject,

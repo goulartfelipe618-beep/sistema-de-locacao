@@ -30,6 +30,7 @@ from app.core.database import dispose_engine
 from app.core.exceptions import AppError, AuthenticationError
 from app.core.logging import configure_logging, get_logger
 from app.core.middleware import RequestContextMiddleware
+from app.core.tenant_setup import TenantSetupMiddleware
 from app.core.templating import render
 from app.web.router import web_router
 
@@ -70,6 +71,7 @@ def create_app() -> FastAPI:
     # ---------------------------------------------------------- Middlewares
     # Ordem de registro (o último adicionado é o mais externo):
     #   CORS -> Session -> CSRF -> RequestContext -> app
+    app.add_middleware(TenantSetupMiddleware)
     app.add_middleware(RequestContextMiddleware)
     app.add_middleware(CSRFMiddleware)
     app.add_middleware(

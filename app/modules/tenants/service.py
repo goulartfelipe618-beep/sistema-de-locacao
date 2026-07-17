@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import base64
 import uuid
+from datetime import UTC, datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,6 +12,7 @@ from app.core.crypto import encrypt_secret
 from app.core.exceptions import ConflictError, NotFoundError, ValidationError
 from app.core.logging import get_logger
 from app.core.pagination import Page, PageParams
+from app.core.storage import storage_service
 from app.modules.audit.service import audit_service
 from app.modules.tenants.branding import (
     branding_session_payload,
@@ -18,7 +21,8 @@ from app.modules.tenants.branding import (
 )
 from app.modules.tenants.models import Filial, Tenant
 from app.modules.tenants.repository import FilialRepository, TenantRepository
-from app.modules.tenants.schemas import FilialCreate, FilialUpdate, TenantUpdate
+from app.modules.tenants.schemas import FilialCreate, FilialUpdate, TenantSystemUpdate, TenantUpdate
+from app.modules.tenants.setup import can_complete_setup
 from app.shared.enums import AuditAction
 
 logger = get_logger(__name__)
@@ -53,6 +57,84 @@ class TenantService:
             entity="tenant",
             entity_id=tenant.id,
             description=f"Empresa atualizada: {tenant.legal_name}",
+        )
+        return tenant
+
+    async def update_system_config(
+        self,
+        tenant_id: uuid.UUID,
+        data: TenantSystemUpdate,
+        *,
+        complete_setup: bool = False,
+    ) -> Tenant:
+        """Atualiza configurações white label e contato da empresa."""
+        tenant = await self.get_tenant(tenant_id)
+        if data.cnpj != tenant.cnpj:
+            existing = await self.tenants.get_by_cnpj(data.cnpj)
+            if existing is not None and existing.id != tenant_id:
+                raise ConflictError("CNPJ já cadastrado para outra empresa.", code="cnpj_taken")
+
+        tenant.legal_name = data.legal_name.strip()
+        tenant.trade_name = (data.trade_name or "").strip() or None
+        tenant.app_display_name = data.app_display_name.strip()
+        tenant.cnpj = data.cnpj
+        tenant.email = data.email.strip()
+        tenant.phone = data.phone
+        tenant.ie = (data.ie or "").strip() or None
+        tenant.website = (data.website or "").strip() or None
+        tenant.document_footer_text = (data.document_footer_text or "").strip() or None
+        tenant.brand_primary_color = data.brand_primary_color
+        if data.logo_url is not None:
+            tenant.logo_url = data.logo_url.strip() or None
+        tenant.zip_code = data.zip_code
+        tenant.address = data.address.strip()
+        tenant.number = data.number.strip()
+        tenant.complement = (data.complement or "").strip() or None
+        tenant.district = (data.district or "").strip() or None
+        tenant.city = data.city.strip()
+        tenant.state = data.state
+
+        if complete_setup:
+            if not can_complete_setup(tenant):
+                raise ValidationError(
+                    "Preencha todos os campos obrigatórios e envie a logo antes de concluir."
+                )
+            tenant.setup_completed_at = datetime.now(tz=UTC)
+
+        await audit_service.record(
+            AuditAction.UPDATE,
+            entity="tenant",
+            entity_id=tenant.id,
+            description="Configurações do sistema atualizadas",
+        )
+        return tenant
+
+    async def upload_logo(
+        self,
+        tenant_id: uuid.UUID,
+        file_bytes: bytes,
+        filename: str,
+        content_type: str,
+    ) -> Tenant:
+        """Envia logo para R2 ou armazena inline (dev) e associa ao tenant."""
+        if not file_bytes:
+            raise ValidationError("Arquivo de logo vazio.")
+        tenant = await self.get_tenant(tenant_id)
+        safe_type = content_type or "image/png"
+        if storage_service.is_configured():
+            key = storage_service.build_key(tenant_id, "tenants", "logo", filename or "logo.png")
+            storage_service.upload_bytes(key, file_bytes, safe_type)
+            tenant.logo_storage_key = key
+            tenant.logo_url = None
+        else:
+            encoded = base64.b64encode(file_bytes).decode("ascii")
+            tenant.logo_url = f"data:{safe_type};base64,{encoded}"
+            tenant.logo_storage_key = None
+        await audit_service.record(
+            AuditAction.UPDATE,
+            entity="tenant",
+            entity_id=tenant.id,
+            description="Logo da empresa atualizada",
         )
         return tenant
 

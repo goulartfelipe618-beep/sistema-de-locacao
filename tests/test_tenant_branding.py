@@ -21,6 +21,7 @@ def _tenant(**kwargs) -> Tenant:
         slug="demo",
         legal_name="Locadora Demo LTDA",
         trade_name="Demo Locações",
+        app_display_name="Demo ERP",
         cnpj="12345678000199",
         status=TenantStatus.ACTIVE,
         plan="standard",
@@ -39,9 +40,15 @@ def test_permissoes_empresa_editar_registrada() -> None:
 
 def test_branding_session_payload() -> None:
     payload = branding_session_payload(_tenant())
-    assert payload["display_name"] == "Demo Locações"
+    assert payload["display_name"] == "Demo ERP"
     assert payload["brand_primary_color"] == "#2563eb"
     assert payload["logo_url"] == "https://example.com/logo.png"
+    assert payload["setup_complete"] is False
+
+
+def test_branding_session_payload_app_display_name_priority() -> None:
+    payload = branding_session_payload(_tenant(app_display_name="Minha Marca"))
+    assert payload["display_name"] == "Minha Marca"
 
 
 def test_branding_pdf_context() -> None:

@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+{% block title %}Configurações do Sistema{% endblock %}
+{% block content %}
+<div class="card" style="max-width: 960px;">
+  <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+    <div>
+      <h2 class="card-title" style="margin:0">Configurações do Sistema</h2>
+      <p class="form-help" style="margin-top:6px">
+        Identidade visual, dados cadastrais e contato reutilizados em contratos, reservas e PDFs.
+      </p>
+    </div>
+    {% if can_edit and not edit_mode and not setup_mode %}
+    <a href="/configuracoes/sistema/editar" class="btn btn-primary" title="Editar configurações">
+      Editar
+    </a>
+    {% endif %}
+  </div>
+
+  {% if setup_mode %}
+  <div class="alert alert-warning">
+    <strong>Configuração inicial obrigatória.</strong>
+    Preencha os dados da sua empresa para utilizar o sistema.
+    {% if setup_missing %}
+    <br>Campos pendentes: {{ setup_missing|join(', ') }}.
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+
+  {% if edit_mode %}
+  <form method="post" action="/configuracoes/sistema" enctype="multipart/form-data"
+        hx-post="/configuracoes/sistema"
+        hx-target="#app-content"
+        hx-select="#app-content"
+        hx-swap="innerHTML"
+        hx-encoding="multipart/form-data">
+
+    <h3 style="margin-top:0">Identidade no sistema</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label" for="app_display_name">Nome exibido (menu lateral) *</label>
+        <input class="form-input" id="app_display_name" name="app_display_name" required
+               value="{{ tenant.app_display_name or tenant.trade_name or '' }}"
+               placeholder="Ex.: Minha Locadora">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="brand_primary_color">Cor primária *</label>
+        <input class="form-input" type="color" id="brand_primary_color" name="brand_primary_color"
+               value="{{ tenant.brand_primary_color or '#1e5a8a' }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="logo_file">Logo (PNG/JPG/SVG)</label>
+        <input class="form-input" type="file" id="logo_file" name="logo_file" accept="image/*">
+        {% if logo_preview %}
+        <p class="form-help">Atual: <img src="{{ logo_preview }}" alt="Logo" style="max-height:40px;vertical-align:middle"></p>
+        {% endif %}
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="logo_url">Ou URL externa da logo</label>
+        <input class="form-input" id="logo_url" name="logo_url"
+               value="{{ tenant.logo_url if tenant.logo_url and not tenant.logo_url.startswith('data:') else '' }}"
+               placeholder="https://...">
+      </div>
+    </div>
+
+    <h3 style="margin-top:24px">Dados cadastrais</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Identificador (slug)</label>
+        <input class="form-input" value="{{ tenant.slug }}" disabled>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="cnpj">CNPJ *</label>
+        <input class="form-input" id="cnpj" name="cnpj" required
+               value="{{ tenant.cnpj or '' }}" placeholder="00.000.000/0000-00">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="legal_name">Razão social *</label>
+        <input class="form-input" id="legal_name" name="legal_name" required
+               value="{{ tenant.legal_name }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="trade_name">Nome fantasia</label>
+        <input class="form-input" id="trade_name" name="trade_name"
+               value="{{ tenant.trade_name or '' }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="ie">Inscrição estadual</label>
+        <input class="form-input" id="ie" name="ie" value="{{ tenant.ie or '' }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Plano</label>
+        <input class="form-input" value="{{ tenant.plan }}" disabled>
+      </div>
+    </div>
+
+    <h3 style="margin-top:24px">Contato</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label" for="email">E-mail *</label>
+        <input class="form-input" type="email" id="email" name="email" required
+               value="{{ tenant.email or '' }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="phone">Telefone *</label>
+        <input class="form-input" id="phone" name="phone" required
+               value="{{ tenant.phone or '' }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="website">Site</label>
+        <input class="form-input" id="website" name="website"
+               value="{{ tenant.website or '' }}" placeholder="https://...">
+      </div>
+    </div>
+
+    <h3 style="margin-top:24px">Endereço da sede</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label" for="zip_code">CEP *</label>
+        <input class="form-input" id="zip_code" name="zip_code" required
+               value="{{ tenant.zip_code or '' }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="address">Logradouro *</label>
+        <input class="form-input" id="address" name="address" required
+               value="{{ tenant.address or '' }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="number">Número *</label>
+        <input class="form-input" id="number" name="number" required
+               value="{{ tenant.number or '' }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="complement">Complemento</label>
+        <input class="form-input" id="complement" name="complement"
+               value="{{ tenant.complement or '' }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="district">Bairro</label>
+        <input class="form-input" id="district" name="district"
+               value="{{ tenant.district or '' }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="city">Cidade *</label>
+        <input class="form-input" id="city" name="city" required
+               value="{{ tenant.city or '' }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="state">UF *</label>
+        <input class="form-input" id="state" name="state" required maxlength="2"
+               value="{{ tenant.state or '' }}">
+      </div>
+    </div>
+
+    <h3 style="margin-top:24px">Documentos (contratos, reservas, PDFs)</h3>
+    <div class="form-group">
+      <label class="form-label" for="document_footer_text">Texto de rodapé personalizado</label>
+      <textarea class="form-input" id="document_footer_text" name="document_footer_text" rows="3"
+                placeholder="Opcional — ex.: informações legais ou aviso comercial">{{ tenant.document_footer_text or '' }}</textarea>
+    </div>
+
+    <h3 style="margin-top:24px">Certificado digital A1 (NF-e / NFS-e)</h3>
+    {% if tenant.cert_configured %}
+    <div class="alert alert-info">
+      Certificado configurado{% if tenant.cert_a1_subject %}: {{ tenant.cert_a1_subject }}{% endif %}
+      {% if tenant.cert_a1_valid_until %} · válido até {{ tenant.cert_a1_valid_until|date }}{% endif %}
+    </div>
+    {% else %}
+    <p class="form-help">Opcional nesta etapa. A emissão fiscal usa simulador até configurar.</p>
+    {% endif %}
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label" for="cert_file">Arquivo .pfx / .p12</label>
+        <input class="form-input" type="file" id="cert_file" name="cert_file" accept=".pfx,.p12">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="cert_password">Senha do certificado</label>
+        <input class="form-input" type="password" id="cert_password" name="cert_password" autocomplete="new-password">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label"><input type="checkbox" name="remove_cert" value="on"> Remover certificado atual</label>
+    </div>
+
+    <div class="form-actions">
+      {% if setup_mode %}
+      <button type="submit" class="btn btn-primary">Salvar e concluir configuração</button>
+      {% else %}
+      <button type="submit" class="btn btn-primary">Salvar alterações</button>
+      <a href="/configuracoes/sistema" class="btn btn-secondary">Cancelar</a>
+      {% endif %}
+    </div>
+  </form>
+
+  {% else %}
+  {# Modo visualização (somente leitura) #}
+  <section class="detail-grid" style="display:grid;gap:20px;margin-top:8px;">
+    <div>
+      <h3 style="margin-top:0">Identidade no sistema</h3>
+      <dl class="detail-list">
+        <dt>Nome no menu</dt><dd>{{ tenant.app_display_name or tenant.trade_name or tenant.legal_name }}</dd>
+        <dt>Cor primária</dt>
+        <dd><span style="display:inline-block;width:18px;height:18px;border-radius:4px;background:{{ tenant.brand_primary_color or '#1e5a8a' }};vertical-align:middle"></span> {{ tenant.brand_primary_color or '#1e5a8a' }}</dd>
+        <dt>Logo</dt>
+        <dd>{% if logo_preview %}<img src="{{ logo_preview }}" alt="Logo" style="max-height:48px">{% else %}—{% endif %}</dd>
+      </dl>
+    </div>
+    <div>
+      <h3>Dados cadastrais</h3>
+      <dl class="detail-list">
+        <dt>Slug</dt><dd>{{ tenant.slug }}</dd>
+        <dt>CNPJ</dt><dd>{{ tenant.cnpj or '—' }}</dd>
+        <dt>Razão social</dt><dd>{{ tenant.legal_name }}</dd>
+        <dt>Nome fantasia</dt><dd>{{ tenant.trade_name or '—' }}</dd>
+        <dt>IE</dt><dd>{{ tenant.ie or '—' }}</dd>
+        <dt>Plano</dt><dd>{{ tenant.plan }}</dd>
+      </dl>
+    </div>
+    <div>
+      <h3>Contato</h3>
+      <dl class="detail-list">
+        <dt>E-mail</dt><dd>{{ tenant.email or '—' }}</dd>
+        <dt>Telefone</dt><dd>{{ tenant.phone or '—' }}</dd>
+        <dt>Site</dt><dd>{{ tenant.website or '—' }}</dd>
+      </dl>
+    </div>
+    <div>
+      <h3>Endereço</h3>
+      <dl class="detail-list">
+        <dt>Sede</dt><dd>{{ formatted_address }}</dd>
+      </dl>
+    </div>
+    <div>
+      <h3>Documentos</h3>
+      <dl class="detail-list">
+        <dt>Rodapé personalizado</dt><dd>{{ tenant.document_footer_text or '—' }}</dd>
+      </dl>
+    </div>
+    <div>
+      <h3>Certificado A1</h3>
+      {% if tenant.cert_configured %}
+      <p class="form-help">
+        Configurado{% if tenant.cert_a1_subject %}: {{ tenant.cert_a1_subject }}{% endif %}
+        {% if tenant.cert_a1_valid_until %} · válido até {{ tenant.cert_a1_valid_until|date }}{% endif %}
+      </p>
+      {% else %}
+      <p class="form-help">Não configurado.</p>
+      {% endif %}
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

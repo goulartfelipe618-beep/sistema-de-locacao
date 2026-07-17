@@ -62,7 +62,7 @@ async def _empresa(session: AsyncSession, tenant_id: uuid.UUID) -> dict[str, Any
     if tenant is None:
         raise NotFoundError("Empresa não encontrada.")
     return {
-        "empresa_nome": tenant.trade_name or tenant.legal_name,
+        "empresa_nome": tenant.sidebar_display_name,
         "empresa_razao": tenant.legal_name,
         "empresa_cnpj": tenant.cnpj or "—",
         "empresa_email": tenant.email or "—",

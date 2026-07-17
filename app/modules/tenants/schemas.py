@@ -25,6 +25,18 @@ class TenantRead(BaseModel):
     plan: str
     email: str | None
     phone: str | None
+    app_display_name: str | None = None
+    setup_completed_at: datetime | None = None
+    ie: str | None = None
+    website: str | None = None
+    document_footer_text: str | None = None
+    zip_code: str | None = None
+    address: str | None = None
+    number: str | None = None
+    complement: str | None = None
+    district: str | None = None
+    city: str | None = None
+    state: str | None = None
     logo_storage_key: str | None = None
     logo_url: str | None = None
     brand_primary_color: str | None = None
@@ -42,7 +54,7 @@ class TenantUpdate(BaseModel):
     email: str | None = Field(default=None, max_length=255)
     phone: str | None = Field(default=None, max_length=20)
     logo_storage_key: str | None = Field(default=None, max_length=500)
-    logo_url: str | None = Field(default=None, max_length=500)
+    logo_url: str | None = Field(default=None)
     brand_primary_color: str | None = Field(default=None, max_length=7)
 
     @field_validator("brand_primary_color")
@@ -54,6 +66,69 @@ class TenantUpdate(BaseModel):
         if not color.startswith("#") or len(color) not in (4, 7):
             raise ValueError("Cor deve ser hexadecimal (#RGB ou #RRGGBB).")
         return color
+
+
+class TenantSystemUpdate(BaseModel):
+    """Configurações completas do sistema (white label + contato + endereço)."""
+
+    legal_name: str = Field(min_length=2, max_length=200)
+    trade_name: str | None = Field(default=None, max_length=200)
+    app_display_name: str = Field(min_length=2, max_length=200)
+    cnpj: str = Field(min_length=14, max_length=18)
+    email: str = Field(min_length=5, max_length=255)
+    phone: str = Field(min_length=8, max_length=20)
+    ie: str | None = Field(default=None, max_length=20)
+    website: str | None = Field(default=None, max_length=255)
+    document_footer_text: str | None = Field(default=None, max_length=2000)
+    brand_primary_color: str = Field(default="#1e5a8a", max_length=7)
+    logo_url: str | None = Field(default=None)
+    zip_code: str = Field(min_length=8, max_length=9)
+    address: str = Field(min_length=2, max_length=255)
+    number: str = Field(min_length=1, max_length=20)
+    complement: str | None = Field(default=None, max_length=100)
+    district: str | None = Field(default=None, max_length=100)
+    city: str = Field(min_length=2, max_length=100)
+    state: str = Field(min_length=2, max_length=2)
+
+    @field_validator("cnpj")
+    @classmethod
+    def _validate_cnpj(cls, value: str) -> str:
+        digits = only_digits(value)
+        if not is_valid_cnpj(digits):
+            raise ValueError("CNPJ inválido.")
+        return digits
+
+    @field_validator("zip_code")
+    @classmethod
+    def _validate_zip(cls, value: str) -> str:
+        digits = only_digits(value)
+        if len(digits) != 8:
+            raise ValueError("CEP inválido.")
+        return digits
+
+    @field_validator("state")
+    @classmethod
+    def _validate_state(cls, value: str) -> str:
+        uf = value.strip().upper()
+        if len(uf) != 2:
+            raise ValueError("UF inválida.")
+        return uf
+
+    @field_validator("brand_primary_color")
+    @classmethod
+    def _validate_color(cls, value: str) -> str:
+        color = value.strip()
+        if not color.startswith("#") or len(color) not in (4, 7):
+            raise ValueError("Cor deve ser hexadecimal (#RGB ou #RRGGBB).")
+        return color
+
+    @field_validator("phone")
+    @classmethod
+    def _normalize_phone(cls, value: str) -> str:
+        digits = only_digits(value)
+        if len(digits) < 10:
+            raise ValueError("Telefone inválido.")
+        return digits
 
 
 class FilialBase(BaseModel):

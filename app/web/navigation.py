@@ -617,8 +617,8 @@ NAVIGATION: tuple[MenuSection, ...] = (
         icon="settings",
         items=(
             MenuItem(
-                "Dados da Empresa",
-                url="/configuracoes/empresa",
+                "Configurações do Sistema",
+                url="/configuracoes/sistema",
                 permission="configuracoes.empresa.visualizar",
                 implemented=True,
             ),
