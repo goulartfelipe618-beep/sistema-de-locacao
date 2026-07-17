@@ -1,6 +1,21 @@
 {% extends "base.html" %}
 {% block title %}Visão Geral{% endblock %}
 {% block content %}
+<div class="sector-banner" style="--sector-color: {{ sector.color }}">
+  <div class="sector-banner-main">
+    <span class="sector-badge">{{ sector.name }}</span>
+    <h2 class="sector-greeting">Olá, {{ current_user.full_name }}</h2>
+    <p class="sector-desc">{{ sector.description }}</p>
+  </div>
+  {% if quick_links %}
+  <div class="sector-quick-links">
+    {% for link in quick_links %}
+    <a class="btn {% if loop.first %}btn-primary{% endif %}" href="{{ link.url }}">{{ link.label }}</a>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
 <div class="toolbar" style="margin-bottom:1rem;flex-wrap:wrap">
   <h2 class="card-title" style="margin:0">Visão Geral</h2>
   <form method="get" action="/" style="display:flex;gap:8px;margin:0;align-items:center">
@@ -169,25 +184,4 @@
 </div>
 {% endif %}
 
-<div class="card" style="margin-top: 1rem;">
-  <h2 class="card-title">Bem-vindo(a), {{ current_user.full_name }}</h2>
-  <p class="form-help">
-    Visão executiva consolidada do ERP. Os indicadores exibidos respeitam suas permissões
-    de acesso aos módulos de origem.
-  </p>
-  <div class="toolbar" style="margin-top: 1rem;">
-    {% if current_user.is_superuser or 'reservas.reserva.criar' in current_user.permissions %}
-    <a class="btn btn-primary" href="/reservas/nova">Nova Reserva</a>
-    {% endif %}
-    {% if current_user.is_superuser or 'locacoes.contrato.criar' in current_user.permissions %}
-    <a class="btn" href="/locacoes/contratos/novo">Novo Contrato</a>
-    {% endif %}
-    {% if current_user.is_superuser or 'cadastros.cliente.criar' in current_user.permissions %}
-    <a class="btn" href="/cadastros/clientes/novo">Novo Cliente</a>
-    {% endif %}
-    {% if current_user.is_superuser or 'manutencao.os.criar' in current_user.permissions %}
-    <a class="btn" href="/manutencao/os/novo">Nova OS</a>
-    {% endif %}
-  </div>
-</div>
 {% endblock %}

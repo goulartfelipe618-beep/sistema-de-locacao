@@ -16,6 +16,7 @@ from app.core.templating import render
 from app.modules.dashboard.service import DashboardService
 from app.modules.identity.service import AuthenticatedUser
 from app.modules.tenants.service import FilialService
+from app.web.sectors import build_quick_links, resolve_primary_sector
 
 router = APIRouter()
 
@@ -42,6 +43,7 @@ async def dashboard_home(
         tenant_id=current_user.tenant_id,
     )
     filiais = await FilialService(session).list_filiais(PageParams(page=1, size=100))
+    sector = resolve_primary_sector(current_user)
     return render(
         request,
         "dashboard/home.html",
@@ -51,5 +53,7 @@ async def dashboard_home(
             "filial_id": parsed_filial,
             "filiais": filiais.items,
             "materialized_at": materialized_at,
+            "sector": sector,
+            "quick_links": build_quick_links(current_user),
         },
     )

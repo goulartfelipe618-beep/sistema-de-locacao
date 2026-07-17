@@ -37,6 +37,15 @@ ADMIN_EMAIL = os.getenv("SEED_ADMIN_EMAIL", "admin@locadora.local")
 ADMIN_PASSWORD = os.getenv("SEED_ADMIN_PASSWORD", "Admin@123")
 ADMIN_NAME = os.getenv("SEED_ADMIN_NAME", "Administrador do Sistema")
 TENANT_NAME = os.getenv("SEED_TENANT_NAME", "Locadora Matriz LTDA")
+SEED_DEMO_USERS = os.getenv("SEED_DEMO_USERS", "true").lower() in ("1", "true", "yes")
+
+# Usuários demo por setor (somente desenvolvimento / SEED_DEMO_USERS=true).
+DEMO_USERS: tuple[tuple[str, str, str, str], ...] = (
+    ("vendedor@locadora.local", "Vendedor@123", "Maria Vendas", "vendedor"),
+    ("operador@locadora.local", "Operador@123", "João Balcão", "operador"),
+    ("financeiro@locadora.local", "Financeiro@123", "Ana Financeiro", "financeiro"),
+    ("diretoria@locadora.local", "Diretoria@123", "Carlos Diretor", "diretoria"),
+)
 
 _WEAK_PASSWORDS = {"Admin@123", "admin", "password", "123456", "changeme"}
 
@@ -198,6 +207,67 @@ async def _seed_admin(tenant_id, filial_id) -> None:
             uow.session.add(UserFilial(tenant_id=tenant_id, user_id=user.id, filial_id=filial_id))
 
 
+async def _seed_demo_user(
+    tenant_id,
+    filial_id,
+    email: str,
+    password: str,
+    full_name: str,
+    role_slug: str,
+) -> None:
+    """Cria usuário demo vinculado a um papel-modelo (sem superuser)."""
+    async with UnitOfWork(tenant_id=tenant_id) as uow:
+        user_repo = UserRepository(uow.session)
+        role_repo = RoleRepository(uow.session)
+
+        user = await user_repo.get_by_email(tenant_id, email)
+        if user is None:
+            user = User(
+                tenant_id=tenant_id,
+                email=email.lower(),
+                full_name=full_name,
+                hashed_password=hash_password(password),
+                is_active=True,
+                is_superuser=False,
+            )
+            user_repo.add(user)
+            await uow.session.flush()
+            logger.info("Usuário demo criado: %s (%s)", email, role_slug)
+        else:
+            user.full_name = full_name
+            user.hashed_password = hash_password(password)
+            user.is_active = True
+            user.is_superuser = False
+            user.failed_login_attempts = 0
+            user.locked_until = None
+
+        role = await role_repo.get_by_slug(tenant_id, role_slug)
+        if role is None:
+            logger.warning("Papel %s não encontrado; usuário %s sem vínculo.", role_slug, email)
+            return
+
+        existing_roles = set(await user_repo.get_role_ids(user.id))
+        if role.id not in existing_roles:
+            uow.session.add(UserRole(tenant_id=tenant_id, user_id=user.id, role_id=role.id))
+
+        existing_filiais = set(await user_repo.get_filial_ids(user.id))
+        if filial_id not in existing_filiais:
+            uow.session.add(UserFilial(tenant_id=tenant_id, user_id=user.id, filial_id=filial_id))
+
+
+async def _seed_demo_users(tenant_id, filial_id) -> None:
+    """Semeia usuários de demonstração por setor (MVP)."""
+    if not SEED_DEMO_USERS:
+        logger.info("Usuários demo desabilitados (SEED_DEMO_USERS=false).")
+        return
+    if settings.environment != "development":
+        logger.info("Usuários demo ignorados fora de development.")
+        return
+    for email, password, name, role_slug in DEMO_USERS:
+        await _seed_demo_user(tenant_id, filial_id, email, password, name, role_slug)
+    logger.info("Usuários demo por setor garantidos (%d).", len(DEMO_USERS))
+
+
 async def _seed_cadastros_defaults(tenant_id) -> None:
     """Semeia tabelas auxiliares padrão (categorias de cliente)."""
     from app.modules.cadastros.service import TabelaAuxiliarService
@@ -217,6 +287,7 @@ async def main() -> None:
     await _seed_roles(tenant.id)
     filial = await _seed_filial(tenant.id)
     await _seed_admin(tenant.id, filial.id)
+    await _seed_demo_users(tenant.id, filial.id)
     await _seed_cadastros_defaults(tenant.id)
     await dispose_engine()
 
@@ -228,6 +299,10 @@ async def main() -> None:
     print(f" Login .........: {ADMIN_EMAIL}")
     if settings.environment == "development":
         print(f" Senha .........: {ADMIN_PASSWORD}")
+        if SEED_DEMO_USERS:
+            print("\n Usuários demo (setores MVP):")
+            for email, password, name, role in DEMO_USERS:
+                print(f"   • {role:12} {email} / {password}")
     else:
         print(" Senha .........: (definida via SEED_ADMIN_PASSWORD — não exibida)")
     print(" Acesse ........: http://localhost:8000/login")
