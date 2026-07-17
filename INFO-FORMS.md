@@ -1,879 +1,1166 @@
-# INFO-FORMS — Especificação Robusta de Formulários do ERP Locadora
+# INFO-FORMS — Manual do Administrador para Testes Ponta a Ponta
 
-**Versão:** 1.0  
-**Data:** 2026-07-16  
-**Escopo:** 100% dos formulários web do painel administrativo (100 formulários/interações catalogados)  
-**Objetivo:** Elevar formulários funcionais porém simples para formulários **intuitivos, validados, encadeados e seguros**, com máscaras, sinalização de obrigatoriedade, campos dependentes, lookups assíncronos e matriz clara de impacto entre entidades.
+**Versão:** 2.0  
+**Data:** 2026-07-17  
+**Público:** Administrador da plataforma (admin da empresa / superusuário)  
+**Objetivo:** Guiar você, passo a passo, para **configurar, operar e validar 100% do ERP** — do cadastro inicial até encerramento financeiro e fiscal, incluindo **locação própria** e **intermediação (frota terceirizada)**.
+
+> **Como usar:** Execute as fases **na ordem**. Marque `[x]` cada bloco concluído. Se algo falhar, anote no [Registro de defeitos](#registro-de-defeitos) e **não pule** etapas que criam dados usados depois.
 
 ---
 
 ## Sumário
 
-1. [Diagnóstico do estado atual](#1-diagnóstico-do-estado-atual)
-2. [Catálogo de 38 tipos de campo (T01–T38)](#2-catálogo-de-38-tipos-de-campo-t01t38)
-3. [Padrões globais de UX e layout](#3-padrões-globais-de-ux-e-layout)
-4. [Matriz de dependências e impacto entre entidades](#4-matriz-de-dependências-e-impacto-entre-entidades)
-5. [Inventário completo por módulo (100 formulários)](#5-inventário-completo-por-módulo-85-formulários)
-6. [Especificações detalhadas — formulários prioritários](#6-especificações-detalhadas--formulários-prioritários)
-7. [Motor técnico recomendado](#7-motor-técnico-recomendado)
-8. [Roadmap de implementação](#8-roadmap-de-implementação)
+1. [Antes de começar](#1-antes-de-começar)
+2. [Como ler cada teste](#2-como-ler-cada-teste)
+3. [Dados fictícios mestres](#3-dados-fictícios-mestres)
+4. [Mapa das fases (ordem obrigatória)](#4-mapa-das-fases-ordem-obrigatória)
+5. [FASE 0 — Infraestrutura e login](#fase-0--infraestrutura-e-login)
+6. [FASE 1 — Configurações da plataforma](#fase-1--configurações-da-plataforma)
+7. [FASE 2 — Cadastros](#fase-2--cadastros)
+8. [FASE 3 — Frota própria](#fase-3--frota-própria)
+9. [FASE 3B — Intermediação (locação terceirizada)](#fase-3b--intermediação-locação-terceirizada)
+10. [FASE 4 — Tarifário](#fase-4--tarifário)
+11. [FASE 5 — Manutenção](#fase-5--manutenção)
+12. [FASE 6 — Comercial / CRM](#fase-6--comercial--crm)
+13. [FASE 7 — Reservas](#fase-7--reservas)
+14. [FASE 8 — Locações (contrato completo)](#fase-8--locações-contrato-completo)
+15. [FASE 9 — Financeiro](#fase-9--financeiro)
+16. [FASE 10 — Fiscal](#fase-10--fiscal)
+17. [FASE 11 — Dashboard e Relatórios](#fase-11--dashboard-e-relatórios)
+18. [FASE 12 — Integrações e API pública](#fase-12--integrações-e-api-pública)
+19. [FASE 13 — Automações](#fase-13--automações)
+20. [FASE 14 — Notificações](#fase-14--notificações)
+21. [FASE 15 — Auditoria](#fase-15--auditoria)
+22. [FASE 16 — Testes por papel (RBAC)](#fase-16--testes-por-papel-rbac)
+23. [FASE 17 — Regressão automatizada](#fase-17--regressão-automatizada)
+24. [FASE 18 — Cenários extras e bordas](#fase-18--cenários-extras-e-bordas)
+25. [Matriz global de efeitos em cascata](#matriz-global-de-efeitos-em-cascata)
+26. [Checklist por menu](#checklist-por-menu)
+27. [Apêndices](#apêndices)
 
 ---
 
-## 1. Diagnóstico do estado atual
+## 1. Antes de começar
 
-### 1.1 O que já funciona bem
+### 1.1 Ambiente
 
-- Cobertura funcional ampla: cadastro → reserva → contrato → financeiro → fiscal.
-- Schemas Pydantic com validação server-side em todos os módulos.
-- RBAC por rota; CSRF em mutações web.
-- Alguns formulários já têm seções numeradas (ex.: Nova Reserva).
-- ViaCEP parcial no cliente (autopreenchimento de endereço ao sair do CEP).
+| Item | Valor |
+|------|-------|
+| URL do painel | `http://localhost:8000` (local) ou URL da VPS |
+| Health check | `/api/v1/health` e `/api/v1/health/ready` → HTTP 200 |
+| Banco | PostgreSQL com migrations aplicadas |
+| Comando migrations | `alembic upgrade head` |
+| Seed inicial | `python -m scripts.seed` |
+| Deploy Docker | `git pull && docker compose up -d --build` |
 
-### 1.2 Lacunas identificadas (aplicar em TODOS os formulários)
+### 1.2 Usuários de teste (após seed)
 
-| Lacuna | Impacto | Solução alvo |
-|--------|---------|--------------|
-| Sem asterisco/padrão visual de obrigatoriedade consistente | Usuário não sabe o mínimo para salvar | Classe `.form-label--required` + legenda no rodapé |
-| Inputs sem máscara (CPF, CNPJ, placa, telefone, moeda) | Dados inconsistentes no banco | `data-mask` + normalização no submit |
-| Datas sem placeholder `dd/mm/aaaa` em campos text | Confusão de formato | Máscara BR ou `type="date"` com locale |
-| Selects estáticos sem busca (cliente, veículo) | Ilegível com centenas de registros | Combobox async com debounce |
-| Campos dependentes não encadeados (UF→cidade, marca→modelo) | Dados incoerentes | Cascata via API + desabilitar filho até pai |
-| PF/PJ mostra CPF e CNPJ juntos | Ruído visual | Toggle condicional por `person_type` |
-| Sem feedback inline de erro por campo | Só alerta genérico no topo | `.form-error` abaixo do input + `aria-invalid` |
-| Sem confirmação em ações destrutivas | Exclusão acidental | Modal + texto do impacto (matriz §4) |
-| Valores monetários como texto livre | `1.234,56` vs `1234.56` | Tipo T15 (moeda BRL) |
-| Formulários longos sem agrupamento visual | Fadiga cognitiva | Fieldsets, tabs ou accordion por seção |
+| Papel | E-mail | Senha | Use para testar |
+|-------|--------|-------|-----------------|
+| **Administrador** | `admin@locadora.local` | `Admin@123` | Tudo — comece aqui |
+| Vendedor | `vendedor@locadora.local` | `Vendedor@123` | Reservas, comercial, cotações |
+| Operador | `operador@locadora.local` | `Operador@123` | Check-out/in, caixa, balcão |
+| Financeiro | `financeiro@locadora.local` | `Financeiro@123` | CR/CP, fiscal, conciliação |
+| Diretoria | `diretoria@locadora.local` | `Diretoria@123` | Dashboard e relatórios (leitura) |
+| Auditor QA | `qa.auditor@locadora.local` | `QaAuditor@123` | Criar no PASSO 014 — só leitura |
 
-### 1.3 Métricas do inventário
+### 1.3 Convenções de data
 
-| Métrica | Valor |
-|---------|-------|
-| Templates `*_form.html` | 44 |
-| Formulários de página (sem sufixo `_form`) | 4 |
-| Formulários inline em listas/detalhes | 41 |
-| **Total catalogado** | **100** |
-| Módulos com formulários | 15 de 16 (notificações só ações) |
+- **D+1** = amanhã às 10:00 (horário local)
+- **D+4** = três dias após a retirada, às 10:00
+- Sempre use filial **Matriz (0001)** salvo quando indicado **Campinas (0002)**
 
----
+### 1.4 Documento complementar
 
-## 2. Catálogo de 38 tipos de campo (T01–T38)
-
-Cada campo de formulário DEVE declarar: `{ tipo, id, name, label, obrigatorio, mascara, depende_de, validacao, placeholder, dica, readonly_em_edicao }`.
-
-### 2.1 Texto e identificação
-
-| ID | Tipo | Máscara / Formato | Placeholder | Validação | Exemplo de uso |
-|----|------|-------------------|-------------|-----------|----------------|
-| **T01** | Texto curto | — | — | min/max length | Nome, código |
-| **T02** | Texto longo | — | — | max 2000 | Descrição, laudo |
-| **T03** | Textarea | — | — | max linhas | Observações |
-| **T04** | E-mail | — | `nome@empresa.com` | RFC + lowercase | email |
-| **T05** | CPF | `000.000.000-00` | `000.000.000-00` | dígito verificador | PF cliente/motorista |
-| **T06** | CNPJ | `00.000.000/0000-00` | `00.000.000/0000-00` | dígito verificador | PJ cliente/fornecedor |
-| **T07** | CPF ou CNPJ dinâmico | T05 ou T06 | — | conforme person_type | Parceiro, fornecedor |
-| **T08** | Placa Mercosul | `AAA0A00` / `AAA-0000` | `ABC1D23` | regex BR | Veículo |
-| **T09** | RENAVAM | `00000000000` (11 díg.) | — | 9–11 dígitos | Veículo |
-| **T10** | Chassi (VIN) | `AAAAAAAAAAAAAAAAA` | 17 chars | 17 alfanum. | Veículo |
-| **T11** | Telefone fixo | `(00) 0000-0000` | — | 10 dígitos | telefone |
-| **T12** | Celular | `(00) 00000-0000` | — | 11 dígitos | celular |
-| **T13** | CEP | `00000-000` | `00000-000` | 8 dígitos + ViaCEP | Endereço |
-| **T14** | UF | select 27 UFs | — | enum IBGE | uf |
-| **T15** | Moeda BRL | `R$ 0.000,00` | `R$ 0,00` | ≥ 0, 2 decimais | valores financeiros |
-| **T16** | Percentual | `0,00 %` | `0,00` | 0–100 | comissão, alíquota |
-| **T17** | Inteiro | `0` | — | min/max | KM, ano, prioridade |
-| **T18** | Ano | `0000` | `2026` | 1980–2100 | ano fabricação |
-| **T19** | Chave PIX | tipo detectado | — | CPF/CNPJ/email/phone/EVP | pix_chave |
-| **T20** | Código alfanum. | `AAAA-0000` | — | uppercase | cupom, pneu |
-
-### 2.2 Datas e horários
-
-| ID | Tipo | Máscara / Formato | Placeholder | Validação | Exemplo |
-|----|------|-------------------|-------------|-----------|---------|
-| **T21** | Data | `dd/mm/aaaa` | `dd/mm/aaaa` | data válida | vencimento |
-| **T22** | Data-hora | `dd/mm/aaaa HH:mm` | — | retirada ≤ devolução | reserva |
-| **T23** | Data-hora local HTML | `datetime-local` | — | timezone tenant | retirada_em |
-| **T24** | Hora | `HH:mm` | `08:00` | 00:00–23:59 | agendamento |
-| **T25** | Período (início/fim) | par T21/T22 | — | fim ≥ início | vigência tabela |
-| **T26** | Data relativa | presets | — | — | "Hoje", "+7 dias" (atalhos) |
-
-### 2.3 Seleção e relacionamentos
-
-| ID | Tipo | Comportamento | API / Fonte | Exemplo |
-|----|------|---------------|-------------|---------|
-| **T27** | Select estático | enum fixo | — | status, tipo |
-| **T28** | Select FK simples | lista curta (<30) | GET cache | categoria frota |
-| **T29** | Combobox async | busca + paginação | `/api/v1/cadastros/clientes?search=` | cliente |
-| **T30** | Select encadeado | desabilita até pai | `/api/v1/frota/modelos?marca_id=` | marca→modelo |
-| **T31** | UF → Município IBGE | cascata | `/api/v1/util/ibge/ufs` + `/municipios/{uf}` | endereço |
-| **T32** | Multi-select | chips + busca | — | motoristas reserva |
-| **T33** | Checkbox único | boolean | — | tributável, gera_pix |
-| **T34** | Checkbox grupo | array | — | proteções, taxas |
-| **T35** | Radio grupo | enum visual | — | person_type PF/PJ |
-| **T36** | Toggle switch | boolean estilizado | — | is_active |
-| **T37** | Autocomplete entidade | criação rápida inline | modal "Cadastrar cliente" | cliente novo na reserva |
-| **T38** | Upload arquivo | drag-drop + validação MIME | — | XML fiscal, certificado A1 |
-
-### 2.4 Tipos compostos / avançados (recomendados)
-
-| ID | Tipo | Descrição |
-|----|------|-----------|
-| **T39** | Repeater (lista dinâmica) | Itens de proposta, faixas cancelamento, alíquotas imposto |
-| **T40** | Endereço composto | CEP + logradouro + número + compl + bairro + UF + cidade (T13+T31) |
-| **T41** | Money range | faixa min/max desconto |
-| **T42** | KM + combustível par | checkout/checkin (slider 0–8) |
-| **T43** | JSON editor | condicao_json automações (modo avançado) |
-| **T44** | Color picker | brand_primary_color empresa |
-| **T45** | Password + strength | senha usuário, certificado A1 |
+O arquivo `teste.md` contém os mesmos passos com numeração **PASSO 000–216** para auditoria formal. Este manual (`INFO-FORMS.md`) é a versão **orientada ao administrador**, com ênfase em **efeitos em cascata** e no módulo **Intermediação**.
 
 ---
 
-## 3. Padrões globais de UX e layout
+## 2. Como ler cada teste
 
-### 3.1 Obrigatoriedade
+Cada função segue este padrão:
 
-```html
-<label class="form-label form-label--required" for="nome">
-  Nome / Razão Social
-</label>
+| Bloco | Significado |
+|-------|-------------|
+| **Menu / URL** | Onde clicar no painel |
+| **Permissão** | Código RBAC mínimo (seu admin tem todos) |
+| **Como testar** | Passos numerados — faça exatamente nesta ordem |
+| **Resultado esperado** | O que confirma que funcionou |
+| **⚡ Efeitos em cascata** | O que muda em **outras telas** quando você cria, altera ou exclui aqui |
+
+**Símbolos:**
+
+- ⚡ = impacto downstream (obrigatório verificar após o teste)
+- 🔒 = exclusão bloqueada por vínculo (RESTRICT)
+- 👁 = preferir **inativar** em vez de excluir
+
+---
+
+## 3. Dados fictícios mestres
+
+Use **sempre os mesmos valores** para reproduzir bugs e comparar execuções.
+
+### 3.1 Cadastros e frota própria
+
+| Entidade | Valor |
+|----------|-------|
+| Filial matriz | Código `0001` — Matriz — São Paulo/SP |
+| Filial 2 | Código `0002` — Filial Campinas — CNPJ `44.555.666/0001-77` |
+| Cliente PF | João Silva Teste · CPF `529.982.247-25` · `joao.teste@email.com` |
+| Cliente PJ | Transportes Beta LTDA · CNPJ `11.444.777/0001-61` |
+| Motorista | Carlos Condutor · CPF `390.533.447-05` · CNH cat. B · validade +730 dias |
+| Parceiro comercial | Agência Viagem Sul · CNPJ `22.333.444/0001-55` · comissão 10% |
+| Fornecedor oficina | Oficina Mecânica Norte · CNPJ `33.444.555/0001-66` |
+| Veículo próprio A | Placa `TST1A23` · Chevrolet Onix · categoria Econômico |
+| Veículo próprio B | Placa `TST2B34` (reserva/overbooking) |
+| Tabela tarifa | `Tarifa Padrão Matriz` · diária 1–3d R$ 120 |
+| Cupom | `VERAO2026` · 10% · mínimo R$ 100 |
+
+### 3.2 Intermediação (frota terceirizada)
+
+| Entidade | Valor |
+|----------|-------|
+| Locadora parceira | **Locadora Parceira Sul LTDA** · CNPJ `88.777.666/0001-55` · marcar **É locadora parceira** |
+| Contato operacional | Nome `Ana Parceira` · Tel `(11) 97777-8888` · E-mail `operacao@parceirasul.com` |
+| Contrato parceiro | Nº `CP-2026-001` · modelo **REPASSE** · repasse 85% · vigência hoje → +365 dias |
+| Faixa preço contrato | Cliente R$ 150/dia · Repasse R$ 127,50/dia · categoria Econômico |
+| Veículo terceirizado | Placa `TER3C01` · propriedade **terceirizada** · fornecedor Parceira Sul · publicar no site ✓ |
+
+---
+
+## 4. Mapa das fases (ordem obrigatória)
+
+```
+FASE 0  Infra + login
+   ↓
+FASE 1  Empresa, filiais, usuários, papéis, parâmetros
+   ↓
+FASE 2  Cadastros (clientes, motoristas, parceiros, fornecedores, vendedores, tabelas aux.)
+   ↓
+FASE 3  Frota própria (catálogo + veículos + documentação + telemetria)
+   ↓
+FASE 3B Intermediação ← NOVO: parceiro, contrato, veículo terceirizado, aprovação, repasse
+   ↓
+FASE 4  Tarifário (preço, taxas, proteções, cancelamento)
+   ↓
+FASE 5  Manutenção (OS, peças, pneus)
+   ↓
+FASE 6  Comercial (funil, proposta, campanha, cupom, fidelidade)
+   ↓
+FASE 7  Reservas (disponibilidade, cotação, reserva própria + terceirizada)
+   ↓
+FASE 8  Locações (contrato → check-out → check-in → encerramento)
+   ↓
+FASE 9  Financeiro (caixa, CR, CP, PIX, faturamento, repasse parceiro)
+   ↓
+FASE 10 Fiscal (NFS-e, NF-e, XML, impostos)
+   ↓
+FASE 11 Dashboard + 31 relatórios + PDFs
+   ↓
+FASE 12 Integrações + API pública + catálogo site
+   ↓
+FASE 13–15 Automações, notificações, auditoria
+   ↓
+FASE 16 RBAC (logar com cada papel)
+   ↓
+FASE 17–18 CI + cenários de borda
 ```
 
-- Asterisco vermelho `*` após label de campos obrigatórios.
-- Legenda fixa no rodapé do formulário: `* Campos obrigatórios`.
-- Campos condicionalmente obrigatórios: classe `form-label--required-when` + tooltip explicando a regra.
-- Server: manter validação Pydantic; client: HTML5 `required` + validação JS antes do submit.
-
-### 3.2 Máscaras e normalização
-
-| Entrada usuário | Armazenamento DB | Biblioteca sugerida |
-|-----------------|------------------|---------------------|
-| `123.456.789-00` | `12345678900` | IMask.js ou Cleave.js |
-| `R$ 1.234,56` | `Decimal("1234.56")` | IMask Number |
-| `13/07/2026` | `date(2026,7,13)` | flatpickr pt-BR |
-| `(11) 98765-4321` | `11987654321` | IMask |
-
-**Regra:** máscara na exibição; normalização no `submit` (hidden fields ou JS no handler).
-
-### 3.3 Layout por complexidade
-
-| Complexidade | Layout | Exemplos |
-|--------------|--------|----------|
-| Simples (≤8 campos) | Card único, grid 2 colunas | Marca, combustível |
-| Médio (9–20) | Fieldsets com título | Motorista, parceiro |
-| Complexo (21+) | Tabs ou accordion numerado | Reserva, veículo, contrato |
-| Wizard transacional | Stepper 1→N + resumo | Reserva → contrato |
-
-### 3.4 Fieldsets padrão (nomenclatura)
-
-1. **Identificação** — nome, documento, status  
-2. **Contato** — e-mail, telefones  
-3. **Endereço** — CEP, logradouro, UF/cidade  
-4. **Comercial** — limites, comissões, categorias  
-5. **Operacional** — FKs de negócio  
-6. **Financeiro** — valores, vencimentos  
-7. **Observações** — textarea full-width  
-
-### 3.5 Feedback e estados
-
-| Estado | Visual |
-|--------|--------|
-| Vazio | placeholder + dica `.form-help` |
-| Foco | borda `--primary` |
-| Válido | ícone ✓ discreto (opcional) |
-| Inválido | borda vermelha + `.form-error` + `aria-describedby` |
-| Desabilitado | opacity 0.6 + cursor not-allowed |
-| Carregando lookup | spinner no select + "Buscando..." |
-| Readonly (edição) | fundo cinza — CPF após criação |
-
-### 3.6 Ações do formulário
-
-- **Salvar** (primary) — valida e submete.
-- **Salvar e continuar** — permanece na edição (formulários longos).
-- **Cancelar** — link; confirma se `dirty`.
-- **Excluir** — vermelho, separado, com modal de impacto (§4).
+| Fase | Passos ref. (`teste.md`) | Foco admin |
+|------|--------------------------|------------|
+| 0 | 000–002 | Sistema no ar |
+| 1 | 010–017 | Base multitenant |
+| 2 | 020–027 | Domínios de negócio |
+| 3 | 030–042 | Frota própria |
+| **3B** | **INT-001–INT-015** | **Intermediação completa** |
+| 4 | 050–055 | Motor de preço |
+| 5 | 060–063 | Manutenção |
+| 6 | 070–074 | CRM |
+| 7 | 080–086 | Reservas |
+| 8 | 090–099 | Locações |
+| 9 | 100–109 | Financeiro |
+| 10 | 110–115 | Fiscal |
+| 11 | 120–127 | Relatórios |
+| 12 | 130–136 | Integrações |
+| 13–18 | 140–216 | Automação, RBAC, bordas |
 
 ---
 
-## 4. Matriz de dependências e impacto entre entidades
+# FASE 0 — Infraestrutura e login
 
-### 4.1 Legenda `ondelete`
+### PASSO 000 — Verificar serviços
 
-| Código | Significado | Ação na UI ao excluir/inativar |
-|--------|-------------|--------------------------------|
-| **R** | RESTRICT — bloqueia exclusão | Modal: "Existem N contratos/reservas vinculados" |
-| **C** | CASCADE — exclui filhos | Aviso: "Excluirá também X registros" |
-| **S** | SET NULL — desvincula | Aviso: "Referências ficarão vazias em Y registros" |
-| **I** | Inativação lógica (soft delete) | Preferir inativar vs excluir |
+1. Abra `/api/v1/health` → JSON `"status": "ok"`.
+2. Abra `/api/v1/health/ready` → `"database": true` (Redis opcional em dev).
 
-### 4.2 Entidades cadastrais → impacto downstream
+**Resultado esperado:** HTTP 200 nos dois.
 
-#### Cliente (`clientes`)
+**⚡ Efeitos em cascata:** Sem banco OK, **nenhuma** fase seguinte funciona (login, seed, formulários).
 
-| Vinculado em | ondelete | Impacto ao excluir/inativar/bloquear |
-|--------------|----------|--------------------------------------|
-| Reserva | R | Não pode excluir com reserva ativa |
-| Contrato | R | Idem |
-| Conta a Receber | S | Títulos ficam sem cliente |
-| Fatura | R | Bloqueia exclusão |
-| NFS-e / NFe destinatário | S | Notas mantidas, sem FK cliente |
-| Oportunidade CRM | S | Funil perde vínculo |
-| Tabela preço dedicada | S | Tarifa perde cliente |
-| Fidelidade | C | Conta pontos excluída |
-| Faturamento config | C | Config removida |
+---
 
-**Regras UI:**
-- Bloquear cliente (`blacklist=true`) → aviso em Nova Reserva/Contrato; permitir override com permissão `cadastros.cliente.bloquear`.
-- Inativar → ocultar de comboboxes; manter histórico.
+### PASSO 001 — Seed do banco
 
-#### Motorista (`motoristas`)
+1. No terminal: `python -m scripts.seed`
+2. Confirme no log: tenant, filial 0001, permissões, papéis, admin.
 
-| Vinculado em | ondelete | Impacto |
-|--------------|----------|---------|
-| ReservaMotorista | R | Não excluir se vinculado a reserva/contrato ativo |
-| Multa (condutor) | S | Multa perde motorista |
-| Consulta DETRAN | — | Apenas leitura |
+**Resultado esperado:** Exit code 0.
 
-**Regras UI:**
-- Ao selecionar motorista na reserva: validar CNH válida + categoria compatível com veículo.
-- Vínculo `funcionario` vs `terceiro`: se terceiro, exigir CPF.
+**⚡ Efeitos em cascata:** Cria catálogo global de **permissões** e sincroniza papéis (`admin-empresa`, `gerente-filial`, `vendedor`, etc.). Se você adicionou permissões novas no código, **reexecute o seed** para papéis existentes ganharem acesso (ex.: Intermediação).
 
-#### Parceiro / Vendedor / Fornecedor
+---
 
-| Entidade | Bloqueio exclusão quando |
+### PASSO 002 — Login administrador
+
+1. Acesse `/login`
+2. E-mail `admin@locadora.local` · Senha `Admin@123`
+3. Clique **Entrar**
+
+**Resultado esperado:** Redirect para `/` (Dashboard); menu lateral com **todas** as seções (Cadastros, Frota, **Intermediação**, Reservas, etc.).
+
+**⚡ Efeitos em cascata:** Sessão + cookie CSRF ativos — necessários para **todo** formulário POST.
+
+---
+
+# FASE 1 — Configurações da plataforma
+
+> **Regra:** tudo configurado aqui afeta **toda a empresa (tenant)** e, quando scoped por filial, só aquela unidade.
+
+## 1.1 Dados da Empresa
+
+**Menu:** Configurações → Dados da Empresa · `/configuracoes/empresa`  
+**Permissão:** `configuracoes.empresa.visualizar` + editar
+
+**Como testar:**
+
+1. Preencha razão social `Locadora Matriz LTDA`, fantasia `Locadora Matriz`, e-mail `contato@locadoramatriz.com.br`, telefone `(11) 3000-0000`, cor primária `#1a56db`.
+2. (Opcional) Faça upload de logo.
+3. Clique **Salvar alterações**.
+
+**Resultado esperado:** Mensagem de sucesso; dados persistem após F5.
+
+**⚡ Efeitos em cascata:**
+
+| O que você alterou | Onde verificar depois |
+|--------------------|----------------------|
+| Logo / cor primária | PDFs (contrato, DANFE, recibos) |
+| Razão social | Cabeçalho de relatórios e NFS-e |
+| Certificado A1 (se configurar) | Emissão NF-e/NFS-e reais |
+
+---
+
+## 1.2 Filiais / Unidades
+
+**Menu:** Configurações → Filiais · `/configuracoes/filiais`
+
+### Listar matriz (PASSO 011)
+
+1. Confirme filial **0001 — Matriz** como sede.
+
+### Criar Campinas (PASSO 012)
+
+1. **+ Nova filial** → Código `0002`, Nome `Filial Campinas`, CNPJ `44.555.666/0001-77`, Cidade `Campinas`, UF `SP`, telefone `(19) 3200-0000`, **desmarque** sede.
+2. **Salvar**.
+
+**Resultado esperado:** Filial 0002 na listagem.
+
+**⚡ Efeitos em cascata:**
+
+| Ação | Impacto |
+|------|---------|
+| Nova filial | Aparece em selects de Reserva, Contrato, Frota, Caixa, Tarifário, Parâmetros |
+| Inativar filial 👁 | Contratos/OS abertos 🔒 bloqueiam exclusão |
+| Filial errada na reserva | Disponibilidade e preço podem divergir |
+
+---
+
+## 1.3 Usuários e Papéis
+
+### Usuários (PASSO 013–014)
+
+1. **Configurações → Usuários** — confirme 5 usuários demo ativos.
+2. **+ Novo:** `QA Auditor` · `qa.auditor@locadora.local` · senha `QaAuditor@123` · papel **Auditor** · filial Matriz.
+
+### Papéis (PASSO 015)
+
+1. **Configurações → Papéis e Permissões**
+2. Abra **Gerente de Filial** → confirme permissões de **Intermediação** (config, contratos, aprovações, repasses).
+3. Abra **Vendedor** → confirme reservas/comercial **sem** financeiro.
+
+**⚡ Efeitos em cascata:**
+
+| Ação | Impacto |
+|------|---------|
+| Alterar permissões de um papel | **Todos** os usuários com aquele papel ganham/perdem menus na hora (próximo login ou refresh) |
+| Desativar usuário | Sessões ativas podem persistir até expirar; novos logins bloqueados |
+| Usuário sem filial | Não vê dados operacionais da filial |
+
+---
+
+## 1.4 Autenticação 2FA (PASSO 016)
+
+1. **Configurações → Autenticação 2FA** → `/configuracoes/seguranca`
+2. **Iniciar configuração** → veja QR → **cancele** sem confirmar (smoke test).
+
+**⚡ Efeitos em cascata:** Se **ativar** 2FA, login exige `/login/2fa` — teste completo no PASSO 216.
+
+---
+
+## 1.5 Parâmetros do sistema (PASSO 017)
+
+**Menu:** Configurações → Parâmetros · `/configuracoes/parametros`
+
+1. Filial: **Matriz**
+2. Ajuste: `reservas.overbooking_percentual` = `0`, `reservas.buffer_horas` = `2` (ou `120` minutos conforme UI)
+3. **Salvar parâmetros**
+
+**⚡ Efeitos em cascata:**
+
+| Parâmetro | Impacto |
+|-----------|---------|
+| Buffer reservas | Consulta de **Disponibilidade** adiciona horas entre locações |
+| Overbooking | Permite reservar além da frota física (0 = desligado) |
+| Parâmetros OS | Valor acima do limite → OS **Aguardando Aprovação** |
+| Numeração sequencial | Próximo número de reserva/contrato/OS |
+
+---
+
+# FASE 2 — Cadastros
+
+> **Ordem interna:** Tabelas auxiliares **primeiro** → depois clientes → motoristas → parceiros → fornecedores → vendedores.
+
+## 2.1 Tabelas Auxiliares (PASSO 020)
+
+**Menu:** Cadastros → Tabelas Auxiliares · `/cadastros/tabelas`
+
+1. Grupo `motivo_cancelamento` → Código `cliente_desistiu` · Descrição `Cliente desistiu` · Ordem `1`
+2. **Adicionar**
+
+**⚡ Efeitos em cascata:** Motivos aparecem em **cancelamento de reserva/contrato** e relatórios.
+
+---
+
+## 2.2 Clientes (PASSO 021–023)
+
+**Menu:** Cadastros → Clientes → **+ Novo** · `/cadastros/clientes/novo`
+
+### Cliente PF
+
+1. Tipo **PF** · Nome `João Silva Teste` · CPF `529.982.247-25` · e-mail e celular conforme §3.1
+2. Endereço: CEP `01310-100` (teste autopreenchimento ViaCEP se disponível)
+3. Limite crédito R$ 5.000 · **Salvar**
+
+### Cliente PJ (PASSO 022)
+
+1. Tipo **PJ** · `Transportes Beta LTDA` · CNPJ `11.444.777/0001-61`
+
+### PDFs (PASSO 023)
+
+Na ficha do cliente PF → emitir: **Ficha cadastral**, **Extrato**, **Declaração quitação**.
+
+**⚡ Efeitos em cascata:**
+
+| Ação | Impacto |
+|------|---------|
+| Criar cliente | Disponível em Reserva, Contrato, CR, NFS-e, CRM, API pública |
+| **Bloquear** cliente 🔒 | Nova reserva exige **Aprovar cliente bloqueado** (PASSO 202) |
+| Inativar 👁 | Some de comboboxes; histórico permanece |
+| Excluir com reserva/contrato ativo 🔒 | **Bloqueado** — use inativar |
+| Alterar limite crédito | Validação em reserva/contrato acima do limite |
+
+---
+
+## 2.3 Motoristas (PASSO 024)
+
+**Menu:** Cadastros → Motoristas → **+ Novo**
+
+1. Nome `Carlos Condutor` · CPF · CNH · categoria B · validade +730 dias
+2. **Salvar**
+
+**⚡ Efeitos em cascata:**
+
+| Ação | Impacto |
+|------|---------|
+| CNH vencida | Reserva/contrato **rejeita** vínculo |
+| Vincular na reserva | Contrato **herda** motoristas |
+| Multa | Campo condutor aponta para motorista |
+
+---
+
+## 2.4 Parceiros comerciais (PASSO 025)
+
+**Menu:** Cadastros → Parceiros → **+ Novo**
+
+1. PJ `Agência Viagem Sul` · comissão 10% · PIX
+2. **Salvar**
+
+**⚡ Efeitos em cascata:** Comissão calculada no encerramento; tabela tarifária dedicada; relatório `comissoes_pagas`.
+
+---
+
+## 2.5 Fornecedores (PASSO 026 + base intermediação)
+
+**Menu:** Cadastros → Fornecedores → **+ Novo**
+
+### Fornecedor oficina (manutenção)
+
+1. `Oficina Mecânica Norte` · CNPJ `33.444.555/0001-66` · categoria manutenção
+
+### Locadora parceira (prepare FASE 3B)
+
+1. **+ Novo** → `Locadora Parceira Sul LTDA` · CNPJ `88.777.666/0001-55`
+2. Marque **É locadora parceira (frota terceirizada)**
+3. Contato operacional: Ana · `(11) 97777-8888` · `operacao@parceirasul.com`
+4. Modelo negócio padrão **REPASSE** · margem padrão 10%
+5. **Salvar**
+
+**⚡ Efeitos em cascata:**
+
+| Tipo fornecedor | Impacto |
+|-----------------|---------|
+| Oficina | OS, Contas a Pagar manutenção |
+| **Locadora parceira** | Contratos Intermediação, veículos terceirizados, repasse financeiro, aprovações |
+| Bloquear fornecedor | CP em aberto 🔒 podem bloquear exclusão |
+
+---
+
+## 2.6 Vendedores (PASSO 027)
+
+**Menu:** Cadastros → Vendedores → **+ Novo**
+
+1. `Pedro Vendas` · filial Matriz · meta R$ 50.000
+2. **Salvar**
+
+**⚡ Efeitos em cascata:** Meta aparece em relatório `metas_vendedores`; comissão vendedor no encerramento.
+
+---
+
+# FASE 3 — Frota própria
+
+> **Ordem:** Marca → Modelo → Categoria → Combustível → Acessório → Veículos → Documentação → Telemetria
+
+## 3.1 Catálogo estrutural (PASSO 030–034)
+
+| # | Menu | Dados mínimos | Ref |
+|---|------|---------------|-----|
+| Marca | Frota → Marcas | Chevrolet · Brasil | 030 |
+| Modelo | Frota → Modelos | Onix · marca Chevrolet | 031 |
+| Categoria | Frota → Categorias | Econômico · 5 passageiros · grupo `economico` | 032 |
+| Combustível | Frota → Combustíveis | Flex · R$ 5,89/L | 033 |
+| Acessório | Frota → Acessórios | Cadeirinha · R$ 25/dia · estoque 5 | 034 |
+
+**⚡ Efeitos em cascata (catálogo):**
+
+| Excluir/inativar | Bloqueio |
+|------------------|----------|
+| Categoria 🔒 | Veículos e itens de tarifa dependem |
+| Marca 🔒 | Modelos dependem |
+| Modelo 🔒 | Veículos dependem |
+| Combustível 🔒 | Veículos dependem |
+
+**Recomendação admin:** prefira **Inativar** 👁 em vez de excluir quando já houve locação.
+
+---
+
+## 3.2 Veículos próprios (PASSO 035–036)
+
+**Menu:** Frota → Veículos → **+ Novo** · `/frota/veiculos/novo`
+
+### Veículo A — TST1A23
+
+1. Placa `TST1A23` · RENAVAM · chassi · ano 2023/2024 · cor Prata
+2. Categoria Econômico · Marca/Modelo Chevrolet Onix · Combustível Flex
+3. Propriedade **própria** · Filial Matriz · KM 15000
+4. **Salvar**
+
+### Veículo B — TST2B34
+
+Repita com placa `TST2B34` (segundo carro para overbooking/testes de baixa).
+
+**⚡ Efeitos em cascata:**
+
+| Ação | Impacto |
+|------|---------|
+| Criar veículo | Aparece em **Disponibilidade**, Reserva, OS, Telemetria |
+| Alocar em reserva | Status → **Reservado** |
+| Check-out contrato | Status → **Locado** |
+| **Bloquear** veículo | Some da disponibilidade (PASSO 203) |
+| **Baixar** veículo | Status terminal **Baixado** — nunca mais em reserva |
+| Editar categoria | Recalcula tarifa em **novas** reservas |
+
+---
+
+## 3.3 Documentação veicular (PASSO 038–039)
+
+**Menu:** Frota → Documentação → **+ Novo**
+
+1. Veículo TST1A23 · tipo CRLV · validade futura · anexo se disponível
+2. Emitir PDFs de documentação
+
+**⚡ Efeitos em cascata:** Alertas no Dashboard; automação `documento.vencendo`; veículo pode ser **bloqueado** se vencido (regra parametrizável).
+
+---
+
+## 3.4 Telemetria (PASSO 040–042)
+
+**Menu:** Frota → Telemetria → **+ Novo**
+
+1. Dispositivo GPS no TST1A23 · provedor simulador
+2. Registrar evento de posição/KM
+3. Abrir **Mapa da frota** (se disponível)
+
+**⚡ Efeitos em cascata:** KM telemetria vs KM check-out/check-in; integração **Integrações → Telemetria**.
+
+---
+
+# FASE 3B — Intermediação (locação terceirizada)
+
+> **Objetivo:** testar locação **via locadora parceira** — modelos **REPASSE** e **COMISSÃO**, aprovação do parceiro, repasse financeiro e publicação no site.
+
+## INT-001 — Configurações de intermediação
+
+**Menu:** Intermediação → Configurações · `/intermediacao/config`  
+**Permissão:** `intermediacao.config.visualizar` / editar
+
+**Como testar:**
+
+1. Modo da locadora: **Híbrida** (própria + terceiros)
+2. Margem mínima: `10` %
+3. Buffer disponibilidade: `4` horas
+4. Marque: **Exigir contrato ativo com locadora parceira**
+5. **Desmarque:** Confirmar intermediação automaticamente (para testar aprovação manual)
+6. Marque: **Publicar veículos terceirizados no site**
+7. Marque: **Priorizar frota própria na disponibilidade**
+8. **Salvar configurações**
+9. Clique **Sincronizar catálogo do site** (formulário separado abaixo)
+
+**Resultado esperado:** Flash de sucesso; contador publicados/ocultos após sync.
+
+**⚡ Efeitos em cascata:**
+
+| Configuração | O que muda |
+|--------------|------------|
+| Modo **só própria** | Veículos terceirizados ignorados na operação |
+| Modo **só intermediação** | Frota própria pode ser ocultada na disponibilidade |
+| **Híbrida** | Ambos competem; prioridade configurable |
+| Margem mínima | Reserva **rejeitada** se repasse deixar margem abaixo do mínimo |
+| Buffer horas | Consulta disponibilidade adiciona folga logística para terceiros |
+| Aprovação automática ON | Reserva terceirizada já nasce **confirmada pelo parceiro** |
+| Aprovação automática OFF | Status **pendente_aprovacao** → bloqueia confirmar reserva |
+| Publicar terceiros site | Flag `publicar_site` dos veículos terceirizados após sync |
+| Priorizar frota própria | Disponibilidade lista próprios antes de terceirizados |
+
+---
+
+## INT-002 — Contrato com locadora parceira
+
+**Menu:** Intermediação → Contratos Parceiros → **+ Novo** · `/intermediacao/contratos-fornecedor/novo`
+
+**Pré-requisito:** Fornecedor **Locadora Parceira Sul** marcado como locadora parceira (FASE 2).
+
+**Como testar:**
+
+1. Fornecedor: Locadora Parceira Sul
+2. Número `CP-2026-001` · Título `Contrato Repasse Sul 2026`
+3. Modelo negócio: **REPASSE** · Tipo cálculo: **percentual_receita** ou **tabela**
+4. Percentual repasse: `85` % (ou use tabela abaixo)
+5. Vigência: hoje → +1 ano · Prazo pagamento: 30 dias
+6. **Salvar** → status **Ativo**
+
+### Adicionar faixa de preço (na edição do contrato)
+
+1. Categoria **Econômico** · Vigência início hoje
+2. Valor cliente diária: R$ **150,00**
+3. Valor repasse diária: R$ **127,50**
+4. **Adicionar faixa**
+
+**Resultado esperado:** Contrato listado em Contratos Parceiros; faixa visível na edição.
+
+**⚡ Efeitos em cascata:**
+
+| Ação | Impacto |
+|------|---------|
+| Contrato **inativo/expirado** | Veículos terceirizados **sem** contrato válido → reserva **falha** |
+| Alterar percentual/tabela | **Novas** reservas recalculam repasse; contratos já abertos mantêm snapshot |
+| Modelo **COMISSÃO** | Gera `valor_comissao` em vez de CP repasse; margem = comissão |
+| Excluir contrato 🔒 | Veículos/reservas vinculadas bloqueiam |
+
+---
+
+## INT-003 — Veículo terceirizado
+
+**Menu:** Frota → Veículos → **+ Novo**
+
+1. Placa `TER3C01` · mesma categoria/marca/modelo do catálogo
+2. Propriedade: **terceirizada**
+3. Fornecedor: Locadora Parceira Sul
+4. Contrato fornecedor: `CP-2026-001`
+5. Marque **Publicar no site** · **Exige aprovação do fornecedor**
+6. Proprietário: `Locadora Parceira Sul`
+7. **Salvar**
+
+**Resultado esperado:** Listagem de veículos mostra badge **terceirizada**.
+
+**⚡ Efeitos em cascata:**
+
+| Ação | Impacto |
+|------|---------|
+| Veículo terceirizado sem fornecedor/contrato | Formulário/serviço **rejeita** |
+| `publicar_site` + sync | API pública `/api/v1/public/veiculos` lista veículo |
+| Alocar em reserva | Preenche campos intermediação (fornecedor, repasse, margem) |
+| Veículo terceirizado | Check-out/check-in igual frota própria + lançamento repasse no encerramento |
+
+---
+
+## INT-004 — Indisponibilidade do parceiro
+
+**Menu:** Intermediação → Indisponibilidades · `/intermediacao/indisponibilidades`
+
+**Como testar:**
+
+1. Veículo `TER3C01` · Parceiro Sul · Início agora · Fim D+2
+2. Motivo: `locado_pelo_proprietario` · Marque **Remover do site**
+3. **Registrar bloqueio**
+4. Confirme veículo **Bloqueado** na frota
+5. Clique **Encerrar** na linha da indisponibilidade
+
+**⚡ Efeitos em cascata:**
+
+| Ação | Impacto |
+|------|---------|
+| Registrar indisponibilidade | Veículo **bloqueado** · `publicar_site=false` se sync |
+| Encerrar | Veículo **disponível** · site republicado se config permitir |
+| Indisponibilidade ativa | **Disponibilidade** não oferece o veículo |
+
+---
+
+## INT-005 — Reserva terceirizada + aprovação
+
+**Menu:** Reservas → Nova Reserva · `/reservas/nova`
+
+**Pré-requisito:** Config com aprovação manual (INT-001).
+
+**Como testar:**
+
+1. Período D+1 → D+4 · Filial Matriz
+2. Consulte **Disponibilidade** — confirme `TER3C01` ou categoria com terceirizado
+3. Selecione veículo **TER3C01** · Cliente João Silva
+4. **Salvar** reserva
+5. Abra detalhe da reserva → bloco **Intermediação** com status `pendente_aprovacao`, repasse e margem
+6. Tente **Confirmar reserva** → deve **falhar** (intermediação pendente)
+7. **Intermediação → Aprovações pendentes** → **Aprovar locadora parceira**
+8. Volte à reserva → status intermediação `confirmado_fornecedor`
+9. **Confirmar reserva** → sucesso
+10. Emitir PDF **Confirmação reserva terceirizada**
+
+**⚡ Efeitos em cascata:**
+
+| Etapa | Impacto |
+|-------|---------|
+| Reserva criada | Snapshot repasse gravado (`valor_repasse_total`, `valor_margem`, JSON) |
+| Pendente | Notificação in-app/e-mail/SMS ao contato operacional (se configurado) |
+| Automação | Evento `intermediacao_pendente` / `intermediacao_aprovada` |
+| Rejeitar aprovação | Reserva **cancelada** · status `rejeitado_fornecedor` |
+| Confirmar | Veículo **Reservado** · calendário atualizado |
+
+---
+
+## INT-006 — Contrato e encerramento com repasse
+
+**Como testar:**
+
+1. Na reserva confirmada → **Gerar contrato**
+2. Abra contrato → bloco **Intermediação** (parceiro, repasse, margem)
+3. Execute **Check-out** → **Check-in** → **Encerramento** (FASE 8)
+4. **Intermediação → Repasses / Comissões** — lançamento `em_aberto` ou pago
+5. **Financeiro → Contas a Pagar** — título origem **REPASSE_LOCACAO** (se gerado)
+6. Relatórios → Gerencial: `intermediacao_margem_parceiro`, `intermediacao_repasses_pendentes`
+
+**⚡ Efeitos em cascata:**
+
+| Ação | Impacto |
+|------|---------|
+| Gerar contrato com intermediação pendente 🔒 | **Bloqueado** |
+| Encerrar contrato terceirizado | CR cliente + CP repasse parceiro (modelo REPASSE) |
+| Margem abaixo do mínimo | Erro já na **criação** da reserva (validação upstream) |
+
+---
+
+## INT-007 — Teste modelo COMISSÃO (opcional)
+
+1. Duplique contrato parceiro com modelo **COMISSÃO** · percentual comissão 15%
+2. Veículo terceirizado B ou altere contrato do TER3C01
+3. Nova reserva → confirme `valor_comissao` preenchido · `valor_repasse_total` zero
+4. Encerramento → lançamento reflete comissão
+
+---
+
+## INT-008 — API pública veículos (site)
+
+**Menu:** Integrações → API Pública · escopo `veiculos:read`
+
+1. Gere API Key com escopo veículos
+2. Teste:
+
+```bash
+curl -H "X-API-Key: SUA_CHAVE" "http://localhost:8000/api/v1/public/veiculos"
+```
+
+**⚡ Efeitos em cascata:** Lista só veículos com `publicar_site=true` e disponíveis; sync INT-001 atualiza flags.
+
+---
+
+# FASE 4 — Tarifário
+
+> **Motor de preço** — tudo aqui afeta valor de reserva, contrato e simulador.
+
+| Passo | Menu | Ação | Ref |
+|-------|------|------|-----|
+| Tabela | Tarifário → Tabelas | `Tarifa Padrão Matriz` · canal balcão · diária 1–3d R$ 120 | 050 |
+| Temporada | Tarifário → Temporadas | Multiplicador alta temporada | 051 |
+| Taxa | Tarifário → Taxas | Taxa entrega R$ 45 fixa | 052 |
+| Proteção | Tarifário → Proteções | LDW R$ 35/dia · franquia R$ 1.500 | 053 |
+| Cancelamento | Tarifário → Políticas | Faixas >72h 0% · 24–72h 20% · <24h 100% | 054 |
+| Simular | Tarifário → Simular Preço | Mesmos dados reserva → conferir total | 055 |
+
+**⚡ Efeitos em cascata:**
+
+| Alteração | Impacto |
+|-----------|---------|
+| Editar diária tabela (PASSO 211) | Simulador e **novas** reservas mudam; contratos abertos mantêm snapshot |
+| Temporada sobreposta | Sistema aplica regra de prioridade/overlap |
+| Taxa/proteção | Linhas extras na reserva/contrato |
+| Política cancelamento | Valor retenção ao cancelar/no-show |
+| Cupom (FASE 6) | Desconto sobre total calculado pelo tarifário |
+
+---
+
+# FASE 5 — Manutenção
+
+| Passo | Menu | Fluxo | Ref |
+|-------|------|-------|-----|
+| Peça | Manutenção → Peças | `FILTRO-001` estoque | 060 |
+| Preventiva | Manutenção → Preventiva | Plano por KM/dias | 061 |
+| OS corretiva | Manutenção → OS | Abrir → itens → concluir | 062 |
+| Pneu | Manutenção → Pneus | Cadastro · rodízio · descarte | 063 |
+
+**⚡ Efeitos em cascata:**
+
+| Ação | Impacto |
+|------|---------|
+| OS **aberta** | Veículo indisponível na consulta de reservas |
+| OS concluída | Veículo disponível; estoque peças baixa; CP fornecedor |
+| Valor OS > limite | Workflow aprovação (PASSO 205) |
+| Preventiva vencida | Alerta Dashboard |
+
+---
+
+# FASE 6 — Comercial / CRM
+
+| Passo | Menu | Ação | Ref |
+|-------|------|------|-----|
+| Cupom | Comercial → Cupons | `VERAO2026` 10% | 070 |
+| Funil | Comercial → Funil | Nova oportunidade | 071 |
+| Proposta | Comercial → Propostas | Itens · enviar · aceitar (PASSO 206) | 072 |
+| Campanha | Comercial → Campanhas | E-mail/SMS simulado | 073 |
+| Fidelidade | Comercial → Fidelidade | Tiers pontos | 074 |
+
+**⚡ Efeitos em cascata:**
+
+| Ação | Impacto |
+|------|---------|
+| Aceitar proposta | Gera reserva/contrato automaticamente |
+| Cupom na reserva | Desconto · uso registrado |
+| Campanha | Notificações → Histórico de envios |
+| Fidelidade no encerramento | Pontos creditados |
+
+---
+
+# FASE 7 — Reservas
+
+| Passo | Menu | Ação | Ref |
+|-------|------|------|-----|
+| Disponibilidade | Reservas → Disponibilidade | Período D+1/D+4 · ver TST1A23 | 080 |
+| Cotação | Reservas → Cotações | Criar · converter | 081 |
+| Nova reserva | Reservas → Nova | Veículo **TST1A23** · cliente João · motorista · proteções | 082 |
+| Confirmar | Detalhe reserva | Confirmar · veículo Reservado | 083 |
+| Calendário | Reservas → Calendário | Evento visível | 084 |
+| PDFs | Detalhe | Confirmação · voucher | 085 |
+| Contrato | Detalhe | **Gerar contrato** | 086 |
+
+**⚡ Efeitos em cascata:**
+
+| Ação | Impacto |
+|------|---------|
+| Confirmar | Status confirmada · webhook `reserva.confirmada` · veículo reservado |
+| Cancelar (PASSO 200) | Política retencão · veículo liberado |
+| No-show (PASSO 201) | Job ou manual · veículo liberado |
+| Cliente bloqueado (PASSO 202) | Exige aprovação antes confirmar |
+| Reserva terceirizada | Ver FASE 3B — fluxo paralelo |
+
+---
+
+# FASE 8 — Locações (contrato completo)
+
+| Passo | Menu | Ação | Ref |
+|-------|------|------|-----|
+| Contrato balcão | Locações → Contratos → Novo | Sem reserva (opcional) | 090 |
+| Check-out | Locações → Check-out | KM · combustível · fotos · concluir | 091 |
+| PDFs | Detalhe contrato | Contrato · termo · vistoria saída | 092 |
+| Renovação | Locações → Renovações | Aditivo · nova data | 093 |
+| Multa | Locações → Multas | Vincular veículo/contrato | 094 |
+| Avaria | Locações → Avarias | Severidade · fotos | 095 |
+| Check-in | Locações → Check-in | KM · combustível · extras | 096 |
+| Encerramento | Locações → Encerramentos | Contrato encerrado | 098 |
+| Cancelar rascunho | Detalhe | Se existir contrato rascunho | 099 |
+
+**⚡ Efeitos em cascata:**
+
+| Ação | Impacto |
+|------|---------|
+| Check-out | Contrato **Ativo** · veículo **Locado** · PDFs · caixa |
+| Renovação | Aditivo · nova devolução · valor adicional |
+| Check-in | Contrato **Encerrado** · veículo **Disponível** |
+| Encerramento | Gera/atualiza **Contas a Receber** · fidelidade · repasse intermediação |
+| Multa/avaria | Títulos extras · responsabilização |
+| Reabrir encerramento | Permissão especial · rever financeiro |
+
+---
+
+# FASE 9 — Financeiro
+
+| Passo | Menu | Ação | Ref |
+|-------|------|------|-----|
+| Abrir caixa | Financeiro → Caixa | Sessão filial Matriz | 100 |
+| Lançamento | Caixa detalhe | Entrada/saída | 101 |
+| Fechar caixa | Caixa | Conferência | 102 |
+| CR manual | Financeiro → Contas a Receber | Título avulso | 103 |
+| CP manual | Financeiro → Contas a Pagar | Fornecedor oficina | 104 |
+| PIX | Financeiro → PIX | Chave · cobrança | 105 |
+| Cartão | Financeiro → Cartões | Pré-autorização | 106 |
+| Banco | Financeiro → Bancos | Conta bancária | 107 |
+| Conciliação | Financeiro → Conciliação | Upload OFX | 108 |
+| Faturamento | Financeiro → Faturamento | Cliente PJ · fatura mensal | 109 |
+
+**⚡ Efeitos em cascata:**
+
+| Ação | Impacto |
+|------|---------|
+| Encerrar contrato | CR vinculada ao contrato |
+| Repasse intermediação | CP origem **REPASSE_LOCACAO** |
+| Baixar CR | Conciliação · inadimplência · bloqueio cliente |
+| Estornar (PASSO 212) | Reverte saldo |
+| Faturamento PJ | Agrupa títulos · NFS-e em lote |
+
+---
+
+# FASE 10 — Fiscal
+
+| Passo | Menu | Ação | Ref |
+|-------|------|------|-----|
+| Config impostos | Fiscal → Impostos | Regime · alíquotas | 110 |
+| NFS-e | Fiscal → NFS-e | Emitir simulada | 111 |
+| NF-e | Fiscal → NF-e | Emitir simulada | 112 |
+| XML | Fiscal → XML | Importar arquivo | 113 |
+| Cancelamento | Fiscal → Cancelamentos | Cancelar NFS-e teste | 114 |
+| Apuração | Fiscal → Impostos → Apuração | Mês corrente | 115 |
+
+**⚡ Efeitos em cascata:**
+
+| Ação | Impacto |
+|------|---------|
+| NFS-e emitida | XML armazenado · relatório fiscal |
+| Cancelamento | Status cancelado · apuração |
+| Import XML | Vínculo CP fornecedor |
+
+---
+
+# FASE 11 — Dashboard e Relatórios
+
+### Dashboard (PASSO 120)
+
+**Menu:** Dashboard `/` — confira widgets após dados das fases anteriores.
+
+### Emitir os 31 relatórios
+
+**Menu:** Relatórios → [categoria] → Emitir
+
+| Categoria | Códigos (emitir todos PDF) |
+|-----------|----------------------------|
+| **Frota** (6) | `frota_atual`, `rentabilidade_veiculo`, `ociosidade_ocupacao`, `tco_veiculo`, `idade_media_frota`, `vencimentos_documentacao` |
+| **Locação** (8) | `contratos_periodo`, `ticket_medio`, `tempo_medio_locacao`, `taxa_renovacao`, `taxa_no_show_cancelamento`, `ranking_clientes`, `avarias_responsabilizacao`, `multas_relatorio` |
+| **Intermediação** (2) | `intermediacao_margem_parceiro`, `intermediacao_repasses_pendentes` |
+| **Financeiro** (6) | `dre_simplificado`, `fluxo_caixa`, `inadimplencia_aging`, `faturamento_segmento`, `comissoes_pagas`, `conciliacao_resumo` |
+| **Fiscal** (4) | `notas_periodo`, `apuracao_impostos`, `export_contabilidade`, `divergencias_fiscais` |
+| **Gerencial** (5) | `painel_executivo`, `comparativo_filiais`, `metas_vendedores`, `sazonalidade`, `projecao_demanda` |
+
+### Agendamento (PASSO 126)
+
+**Relatórios → Agendamentos → + Novo** — DRE mensal automático.
+
+### Documentos PDF (PASSO 127)
+
+**Relatórios → Documentos PDF** — confirme ≥20 emissões · re-download.
+
+**⚡ Efeitos em cascata:** Relatórios pesados rodam via Celery; histórico em `/relatorios/historico`.
+
+---
+
+# FASE 12 — Integrações e API pública
+
+| Passo | Integração | Ação | Ref |
+|-------|------------|------|-----|
+| Pagamentos | Integrações → Pagamentos | Simulador · testar conexão | 130 |
+| DETRAN | Integrações → Trânsito | Multas · CNH · débitos | 131 |
+| Crédito | Integrações → Crédito | Score cliente João | 132 |
+| Telemetria | Integrações → Telemetria | Sync dispositivos | 133 |
+| API pública | Integrações → API Pública | Key · webhook · curl disponibilidade/reserva | 134–136 |
+
+**⚡ Efeitos em cascata:**
+
+| Integração | Impacto |
+|------------|---------|
+| API reserva website | Reserva origem `website` · webhook dispara |
+| Webhook | Log outbound · retry automações |
+| Pagamento | Baixa CR automática (quando configurado) |
+
+---
+
+# FASE 13 — Automações
+
+| Passo | Menu | Ação | Ref |
+|-------|------|------|-----|
+| Regra | Automações → Regras | Gatilho documento.vencendo | 140 |
+| Workflow | Automações → Workflows | Aprovação desconto | 141 |
+| Jobs | Automações → Agendamentos | Rodar agora (Beat) | 142 |
+| Histórico | Automações → Histórico | Ver execuções | 143 |
+
+**Jobs relevantes intermediação:**
+
+- `intermediacao.sincronizar_site` — sync catálogo terceiros
+- `intermediacao.lembrete_aprovacao` — lembrete reservas pendentes
+
+**⚡ Efeitos em cascata:** Regras disparam notificações (FASE 14) e histórico imutável.
+
+---
+
+# FASE 14 — Notificações
+
+| Passo | Menu | Ação | Ref |
+|-------|------|------|-----|
+| Inbox | Notificações → Caixa de Entrada | Marcar lidas | 150 |
+| Envios | Notificações → Histórico de Envios | Campanhas e alertas | 151 |
+
+---
+
+# FASE 15 — Auditoria
+
+**Menu:** Auditoria → Trilha · `/auditoria/trilha`
+
+1. Filtre entidade `loc_contrato` · usuário admin · hoje
+2. Confirme eventos check-out/check-in
+3. Exporte PDF se disponível
+
+**⚡ Efeitos em cascata:** Trilha **imutável** — não edita/deleta eventos.
+
+---
+
+# FASE 16 — Testes por papel (RBAC)
+
+Faça **logout** (`/logout`) antes de cada bloco.
+
+| Passo | Login | Deve conseguir | Não deve ver/fazer | Ref |
+|-------|-------|----------------|-------------------|-----|
+| Vendedor | vendedor@… | Reservas, cotações, comercial | Financeiro, config usuários | 170 |
+| Operador | operador@… | Check-out/in, caixa | Papéis, fiscal completo | 171 |
+| Financeiro | financeiro@… | CR/CP, fiscal, relatórios fin. | Config papéis | 172 |
+| Diretoria | diretoria@… | Dashboard, relatórios | Botões criar/editar | 173 |
+| Auditor QA | qa.auditor@… | Auditoria, relatórios leitura | Criar registros | 174 |
+
+**Intermediação por papel:**
+
+| Papel | Intermediação |
+|-------|---------------|
+| Admin / Gerente filial | Config, contratos, aprovar, repasses |
+| Operador | Indisponibilidades, aprovar (se permissão) |
+| Vendedor | Visualizar config/contratos · **não** editar repasse |
+| Auditor | Somente visualizar |
+
+---
+
+# FASE 17 — Regressão automatizada
+
+```bash
+python -m pytest tests/ -q
+python -m pytest tests/test_spec_compliance.py -v
+python -m pytest tests/test_intermediacao.py -v
+```
+
+**Critério:** 100% passed (224+ testes).
+
+Opcional Playwright: `cd e2e && npx playwright test`
+
+Script E2E dados reais: `python -m scripts.run_teste_md_e2e`
+
+---
+
+# FASE 18 — Cenários extras e bordas
+
+Execute após FASE 8 ou quando o dado existir (detalhes em `teste.md` PASSO 200–216):
+
+| PASSO | Cenário | O que valida |
+|-------|---------|--------------|
+| 200 | Cancelar reserva | Política · libera veículo |
+| 201 | No-show | Status · disponibilidade |
+| 202 | Cliente bloqueado + aprovação | RBAC override |
+| 203 | Bloquear/liberar veículo | Disponibilidade |
+| 204 | Baixar veículo (venda) | Status terminal |
+| 205 | OS valor alto | Workflow aprovação |
+| 206–208 | Proposta/funil | CRM integrado |
+| 209–210 | Peças/pneus | Estoque |
+| 211 | Editar tarifa | Preço downstream |
+| 212–213 | Estorno CR · cancelar NF-e | Reversões |
+| 214–216 | Webhook · logout · 2FA completo | Segurança |
+
+---
+
+# Matriz global de efeitos em cascata
+
+Use esta tabela quando **alterar ou excluir** qualquer registro — verifique a coluna direita **antes** de confirmar.
+
+| Se você… | Verifique imediatamente… |
 |----------|--------------------------|
-| Parceiro | Reservas/contratos/tabelas com parceiro_id |
-| Vendedor | Oportunidades abertas |
-| Fornecedor | OS abertas, contas a pagar em aberto |
+| Cria **cliente** | Reserva, contrato, CR, NFS-e, CRM, API |
+| **Bloqueia** cliente | Nova reserva pede aprovação |
+| Cria **veículo próprio** | Disponibilidade, reserva, OS |
+| Cria **veículo terceirizado** | Intermediação, contrato parceiro, site, aprovação |
+| **Confirma** reserva | Veículo reservado · calendário · webhook |
+| **Aprova** intermediação | Libera confirmar reserva |
+| **Rejeita** intermediação | Reserva cancelada |
+| **Gera contrato** | Check-out habilitado · PDF contrato |
+| **Check-out** | Veículo locado · caixa · vistoria |
+| **Check-in / encerra** | Veículo disponível · CR · repasse CP · fidelidade |
+| Abre **OS** | Veículo indisponível |
+| Conclui **OS** | Veículo disponível · estoque · CP |
+| Altera **tabela tarifa** | Simulador · novas reservas (não contratos com snapshot) |
+| Emite **NFS-e** | XML · apuração · relatório fiscal |
+| **Sync site** intermediação | API pública veículos |
+| **Seed** papéis | Menus Intermediação nos perfis |
+| **Encerra indisponibilidade** | Veículo terceiro disponível · site |
 
-#### Veículo (`frota_veiculos`)
-
-| Vinculado | ondelete | Impacto |
-|-----------|----------|---------|
-| Reserva (alocado) | S | Libera slot |
-| Contrato ativo | R | Não excluir |
-| Documentação | C | Remove docs |
-| Telemetria | C | Remove device/events |
-| OS | R | OS aberta bloqueia baixa |
-| Multa | R | — |
-| Manutenção pneus | S | — |
-
-**Baixa de veículo:** form dedicado; status terminal; não aparece em disponibilidade.
-
-#### Categoria / Marca / Modelo / Combustível (catálogo frota)
-
-| Entidade | ondelete | Impacto |
-|----------|----------|---------|
-| Categoria | R | Veículos e tarifas dependem |
-| Marca | R | Modelos dependem |
-| Modelo | R | Veículos dependem |
-| Combustível | R | Veículos dependem |
-| Acessório | R | Vínculo veículo-acessório |
-
-**UI:** inativar (`status=inactive`) em vez de excluir quando houver histórico.
-
-### 4.3 Cadeias de seleção obrigatórias (UX)
+### Cadeias de seleção (não pule)
 
 ```
-Marca (T30) ──► Modelo (filtrado por marca_id)
-UF (T14)    ──► Município IBGE (T31)
-CEP (T13)   ──► Endereço auto (ViaCEP) + focus número
-Categoria   ──► Veículos disponíveis (reserva/contrato)
-Cliente     ──► Limite crédito, blacklist, faturamento config
-Filial ret. ──► Filial dev. (sugerir igual; one-way destaca)
-Retirada    ──► Devolução (min +1h); dispara disponibilidade
-person_type ──► CPF XOR CNPJ visível
-tipo OS     ──► Campos corretiva vs preventiva
+Marca → Modelo → Veículo
+Categoria → Tarifa → Preço reserva
+Fornecedor parceiro → Contrato intermediação → Veículo terceirizado → Reserva → Aprovação → Contrato → Repasse
+Cliente → Reserva → Contrato → Financeiro → Fiscal
+Filial → Caixa · Disponibilidade · Parâmetros
+UF → Município (endereços)
+Retirada → Devolução (mín. +1h)
 ```
 
-### 4.4 Matriz resumida — exclusão bloqueada (RESTRICT)
+### Exclusão bloqueada (RESTRICT) — o que o sistema impede
 
-| Se tentar excluir… | Bloqueado por… |
-|--------------------|----------------|
-| Cliente | Reserva/contrato/fatura ativos |
-| Motorista | Reserva/contrato com motorista |
-| Veículo | Contrato/OS/multa ativos |
-| Categoria frota | Veículos, itens tarifário |
-| Marca/Modelo | Veículos |
-| Filial | Caixa aberto, títulos, contratos |
-| Usuário | Caixa sessão RESTRICT; reatribuir papéis |
-| Papel sistema | Usuários vinculados |
+| Tentativa | Bloqueado por |
+|-----------|---------------|
+| Excluir cliente | Reserva/contrato/fatura ativos |
+| Excluir veículo | Contrato/OS/multa ativos |
+| Excluir categoria/marca/modelo | Veículos vinculados |
+| Excluir filial | Caixa aberto, contratos |
+| Excluir contrato parceiro | Veículos/reservas terceirizadas |
+| Gerar contrato | Intermediação pendente/rejeitada |
 
 ---
 
-## 5. Inventário completo por módulo (100 formulários)
+# Checklist por menu
 
-Cada entrada: **ID** | **Rota** | **Template** | **Melhorias obrigatórias**
+Marque `[x]` quando **todos** os passos da seção estiverem OK.
 
-### 5.1 Cadastros (8)
+| # | Seção menu | Submenus | OK |
+|---|------------|----------|-----|
+| 1 | Dashboard | — | [ ] |
+| 2 | Cadastros | Clientes, Motoristas, Parceiros, Fornecedores, Vendedores, Tabelas | [ ] |
+| 3 | Frota | Veículos, Categorias, Marcas, Modelos, Combustíveis, Acessórios, Documentação, Telemetria | [ ] |
+| 4 | **Intermediação** | **Config, Contratos, Indisponibilidades, Aprovações, Repasses** | [ ] |
+| 5 | Manutenção | OS, Preventiva, Corretiva, Peças, Pneus | [ ] |
+| 6 | Reservas | Nova, Listagem, Calendário, Disponibilidade, Cotações | [ ] |
+| 7 | Locações | Contratos, Check-out, Check-in, Renovações, Encerramentos, Multas, Avarias | [ ] |
+| 8 | Comercial | Funil, Propostas, Campanhas, Cupons, Fidelidade | [ ] |
+| 9 | Tarifário | Tabelas, Temporadas, Taxas, Proteções, Cancelamento, Simular | [ ] |
+| 10 | Financeiro | Caixa, Receber, Pagar, PIX, Cartões, Bancos, Conciliação, Faturamento | [ ] |
+| 11 | Fiscal | NFS-e, NF-e, XML, Cancelamentos, Impostos | [ ] |
+| 12 | Relatórios | 6 categorias (31 relatórios) + Histórico + Agendamentos + Documentos PDF | [ ] |
+| 13 | Integrações | Pagamentos, Trânsito, Crédito, Telemetria, API Pública | [ ] |
+| 14 | Automações | Regras, Workflows, Agendamentos, Histórico | [ ] |
+| 15 | Notificações | Inbox, Envios | [ ] |
+| 16 | Configurações | Empresa, Filiais, Usuários, Papéis, 2FA, Parâmetros | [ ] |
+| 17 | Auditoria | Trilha | [ ] |
 
-| ID | Rota | Template | Melhorias |
-|----|------|----------|-----------|
-| CAD-01 | `/cadastros/clientes/novo\|editar` | `cliente_form.html` | §6.1 — PF/PJ toggle, máscaras, IBGE, combobox |
-| CAD-02 | POST bloquear | inline | Modal + motivo obrigatório |
-| CAD-03 | POST `/cadastros/tabelas` | `tabelas_list.html` | Validar slug único por grupo |
-| CAD-04 | `/cadastros/motoristas/novo\|editar` | `motorista_form.html` | §6.2 |
-| CAD-05 | `/cadastros/parceiros/novo\|editar` | `parceiro_form.html` | §6.3 |
-| CAD-06 | `/cadastros/fornecedores/novo\|editar` | `fornecedor_form.html` | CNPJ mask, categoria async |
-| CAD-07 | `/cadastros/vendedores/novo\|editar` | `vendedor_form.html` | Filial + meta com máscara moeda |
-| CAD-08 | GET `/cadastros/cep/{cep}` | API | Manter; expandir para IBGE |
-
-### 5.2 Frota (16)
-
-| ID | Rota | Template | Melhorias |
-|----|------|----------|-----------|
-| FRO-01 | `/frota/veiculos/novo\|editar` | `veiculo_form.html` | §6.4 |
-| FRO-02–06 | ações veículo | inline | Modais confirmação |
-| FRO-07 | `/frota/categorias/novo\|editar` | `categoria_form.html` | Capacidades numéricas T17 |
-| FRO-08 | `/frota/marcas/novo\|editar` | `marca_form.html` | Nome único case-insensitive |
-| FRO-09 | `/frota/combustiveis/novo\|editar` | `combustivel_form.html` | Simples |
-| FRO-10 | `/frota/modelos/novo\|editar` | `modelo_form.html` | Marca→categoria cascata |
-| FRO-11 | `/frota/acessorios/novo\|editar` | `acessorio_form.html` | valor_diaria T15, estoque T17 |
-| FRO-12 | `/frota/documentacao/novo\|editar` | `documento_form.html` | Alerta vencimento, veículo combobox |
-| FRO-13 | `/frota/telemetria/novo\|editar` | `telemetria_form.html` | Veículo combobox, provedor enum |
-| FRO-14 | POST telemetria evento | inline | lat/long T17 decimal |
-
-### 5.3 Reservas (3)
-
-| ID | Rota | Template | Melhorias |
-|----|------|----------|-----------|
-| RES-01 | `/reservas/nova` | `nova.html` | §6.5 — wizard completo |
-| RES-02 | `/reservas/cotacoes/novo` | `cotacao_form.html` | Similar RES-01 simplificado |
-| RES-03 | POST converter cotação | inline | Herdar campos + validar cliente |
-
-### 5.4 Locações (8)
-
-| ID | Rota | Template | Melhorias |
-|----|------|----------|-----------|
-| LOC-01 | `/locacoes/contratos/novo` | `contrato_form.html` | §6.6 |
-| LOC-02 | checkout | `checkout_form.html` | KM T17, combustível slider T42, fotos T38 |
-| LOC-03 | checkin | `checkin_form.html` | Avaria condicional, caução T15 |
-| LOC-04 | renovações | `renovacoes.html` | Contrato combobox + nova data T22 |
-| LOC-05 | multas | `multa_form.html` | Veículo→contrato auto por data |
-| LOC-06 | avarias | `avaria_form.html` | Severidade enum visual |
-| LOC-07 | POST responsabilidade | inline | Confirma impacto financeiro |
-
-### 5.5 Manutenção (15)
-
-| ID | Rota | Template | Melhorias |
-|----|------|----------|-----------|
-| MAN-01 | OS novo/editar/corretiva | `os_form.html` | Veículo combobox, repeater itens T39 |
-| MAN-02–06 | OS ações/itens/fotos | inline | Validação valor > limite → workflow |
-| MAN-07 | preventiva | `preventiva_form.html` | Intervalo km/dias par |
-| MAN-08 | peça | `peca_form.html` | Código único, estoque mínimo |
-| MAN-09–14 | pneu ações | inline + `pneu_form.html` | Posição enum por eixo |
-
-### 5.6 Tarifário (9)
-
-| ID | Rota | Template | Melhorias |
-|----|------|----------|-----------|
-| TAR-01 | tabelas | `tabela_form.html` | §6.7 — repeater itens por categoria |
-| TAR-02 | temporadas | `temporada_form.html` | Multiplicador T16, overlap validação |
-| TAR-03 | taxas | `taxa_form.html` | §6.8 |
-| TAR-04 | proteções | `protecao_form.html` | Franquia T15, multi categoria |
-| TAR-05 | cancelamento | `politica_form.html` | Repeater faixas T39 |
-| TAR-06 | simular | `simular.html` | Read-only resultado HTMX |
-
-### 5.7 Financeiro (14)
-
-| ID | Rota | Template | Melhorias |
-|----|------|----------|-----------|
-| FIN-01 | receber novo | `receber_form.html` | §6.9 |
-| FIN-02 | pagar novo | `pagar_form.html` | Fornecedor combobox |
-| FIN-03 | cartão | `cartao_form.html` | Parcelas T17, link título |
-| FIN-04 | banco | `banco_form.html` | Agência/conta máscara |
-| FIN-05–08 | caixa/pix | inline | Sessão única aberta por filial |
-| FIN-09–11 | conciliação/faturamento | inline | Upload OFX T38 |
-
-### 5.8 Fiscal (7)
-
-| ID | Rota | Template | Melhorias |
-|----|------|----------|-----------|
-| FIS-01 | nfse | `nfse_form.html` | Município IBGE T31, valores T15 |
-| FIS-02 | nfe | `nfe_form.html` | Destinatário auto de cliente |
-| FIS-03 | cancelamentos | `cancelamentos_form.html` | Justificativa min 15 chars |
-| FIS-04 | impostos | `impostos_form.html` | Repeater alíquotas |
-| FIS-05 | xml import | `xml_import.html` | Drag-drop T38 |
-
-### 5.9 Comercial (9)
-
-| ID | Rota | Template | Melhorias |
-|----|------|----------|-----------|
-| COM-01 | funil novo | kanban inline | Cliente combobox |
-| COM-02 | proposta | `proposta_form.html` | Repeater itens T39 |
-| COM-03 | campanha | `campanha_form.html` | Canal enum, preview mensagem |
-| COM-04 | cupom | `cupom_form.html` | Código uppercase T20 |
-| COM-05–07 | fidelidade | inline | Tier repeater |
-
-### 5.10 Identity (2)
-
-| ID | Rota | Template | Melhorias |
-|----|------|----------|-----------|
-| IDN-01 | usuários | `user_form.html` | Senha strength T45, roles checklist |
-| IDN-02 | papéis | `role_form.html` | Matriz permissões agrupada |
-
-### 5.11 Tenants (2)
-
-| ID | Rota | Template | Melhorias |
-|----|------|----------|-----------|
-| TEN-01 | empresa | `company.html` | Logo T38, cert A1 T45, color T44 |
-| TEN-02 | filiais | `filial_form.html` | CNPJ T06, UF/cidade T31 |
-
-### 5.12 Integrações (6)
-
-| ID | Rota | Template | Melhorias |
-|----|------|----------|-----------|
-| INT-01 | configs | `_config_section.html` | Secret masked, test connection btn |
-| INT-02–04 | api keys/webhooks | inline | Escopos checklist |
-| INT-05–07 | consultas | inline | Resultado em card, não form |
-
-### 5.13 Automações (2)
-
-| ID | Rota | Template | Melhorias |
-|----|------|----------|-----------|
-| AUT-01 | regras | inline | Builder condição visual + JSON T43 |
-| AUT-02 | workflows | inline | Drag etapas |
-
-### 5.14 Relatórios (2)
-
-| ID | Rota | Template | Melhorias |
-|----|------|----------|-----------|
-| REL-01 | agendamentos | `agendamento_form.html` | E-mails múltiplos T04, cron humanizado |
-| REL-02 | emitir | `emitir_form.html` | Período presets T26 |
-
-### 5.15 Parâmetros (1)
-
-| ID | Rota | Template | Melhorias |
-|----|------|----------|-----------|
-| PAR-01 | parametros | `list.html` | Agrupar por categoria; filial scope toggle |
+**Totais:** 17 seções · 86 itens de menu folha · 31 relatórios · 26+ templates PDF · módulo Intermediação completo.
 
 ---
 
-## 6. Especificações detalhadas — formulários prioritários
+# Apêndices
 
-### 6.1 CAD-01 — Cliente (Novo/Editar)
+## A — Rotas principais (admin)
 
-**Layout alvo:** Tabs → [Dados] [Endereço] [Comercial] [Observações]
+| Módulo | Rotas |
+|--------|-------|
+| Login | `/login`, `/logout`, `/configuracoes/seguranca` |
+| Cadastros | `/cadastros/clientes`, `/motoristas`, `/parceiros`, `/fornecedores`, `/vendedores`, `/tabelas` |
+| Frota | `/frota/veiculos`, `/categorias`, `/marcas`, `/modelos`, `/combustiveis`, `/acessorios`, `/documentacao`, `/telemetria` |
+| Intermediação | `/intermediacao/config`, `/contratos-fornecedor`, `/indisponibilidades`, `/aprovacoes`, `/repasses` |
+| Reservas | `/reservas/nova`, `/reservas`, `/calendario`, `/disponibilidade`, `/cotacoes` |
+| Locações | `/locacoes/contratos`, `/checkout`, `/checkin`, `/renovacoes`, `/encerramentos`, `/multas`, `/avarias` |
+| Financeiro | `/financeiro/caixa`, `/receber`, `/pagar`, `/pix`, `/cartoes`, `/bancos`, `/conciliacao`, `/faturamento` |
+| Fiscal | `/fiscal/nfse`, `/nfe`, `/xml`, `/cancelamentos`, `/impostos` |
+| Relatórios | `/relatorios/{frota,locacao,financeiro,fiscal,gerencial}`, `/historico`, `/agendamentos` |
+| Documentos | `/documentos/historico`, POST `/documentos/emitir/{template}/{id}` |
 
-| Campo | Tipo | Obrig. | Máscara | Dependência | Validação extra |
-|-------|------|--------|---------|-------------|-----------------|
-| person_type | T35 | Sim | — | — | PF ou PJ |
-| status | T27 | Sim | — | — | blocked exige motivo em ação separada |
-| nome | T01 | Sim | — | — | min 2 |
-| nome_fantasia | T01 | Não | — | visível se PJ | — |
-| cpf | T05 | Sim se PF | CPF | oculto se PJ | único tenant |
-| cnpj | T06 | Sim se PJ | CNPJ | oculto se PF | único tenant |
-| email | T04 | Não | — | — | — |
-| telefone | T11 | Não | phone | — | — |
-| celular | T12 | Não | phone | — | — |
-| cep | T13 | Não | CEP | blur→ViaCEP | — |
-| endereco | T01 | Não | — | auto ViaCEP | — |
-| numero | T01 | Não | — | focus após CEP | — |
-| complemento | T01 | Não | — | auto ViaCEP | — |
-| bairro | T01 | Não | — | auto ViaCEP | — |
-| uf | T14 | Não | — | → município IBGE | — |
-| cidade | T31 | Não | — | depende UF | IBGE nome |
-| categoria_codigo | T28 | Não | — | — | tabela auxiliar |
-| limite_credito | T15 | Não | BRL | — | ≥ 0 |
-| observacoes | T03 | Não | — | — | — |
+## B — Formulários web (inventário 100+)
 
-**Pré-preenchimento:** limite_credito `R$ 0,00`; status `Ativo`; person_type `PF`.
+Referência técnica de templates: 44 arquivos `*_form.html` + formulários inline em listas/detalhes (reserva, contrato, caixa, aprovações intermediação, etc.). Cada tela POST exige **CSRF token** e permissão RBAC.
 
-**Impacto:** ver §4.2 Cliente.
+Principais formulários admin para validar manualmente:
 
----
+- `cliente_form`, `veiculo_form` (próprio **e** terceirizado), `fornecedor_form` (locadora parceira)
+- `intermediacao/config`, `contrato_form` (contrato parceiro), `indisponibilidades_list`
+- `reservas/nova`, `reservas/detalhe` (aprovação cliente **e** parceiro)
+- `contrato_detalhe` (bloco intermediação), `checkout_form`, `checkin_form`
+- `receber_form`, `pagar_form`, `nfse_form`, `nfe_form`
 
-### 6.2 CAD-04 — Motorista
+## C — PDFs emitíveis (smoke mínimo)
 
-| Campo | Tipo | Obrig. | Máscara | Dependência |
-|-------|------|--------|---------|-------------|
-| nome | T01 | Sim | — | — |
-| vinculo | T27 | Sim | — | terceiro→CPF obrig. |
-| status | T27 | Sim | — | — |
-| cpf | T05 | Sim (create) | CPF | readonly edit |
-| email | T04 | Não | — | — |
-| celular | T12 | Não | phone | — |
-| cnh_numero | T01 | Sim | — | — |
-| cnh_categoria | T28 | Sim | — | tabela auxiliar |
-| cnh_validade | T21 | Sim | date | alerta se < 30d |
-| cnh_status | T27 | Sim | — | auto `vencida` se data passada |
-| observacoes | T03 | Não | — | — |
+Emita pelo menos 1 de cada grupo durante o teste:
 
-**Encadeamento reserva:** ao selecionar motorista, exibir badge CNH categoria + validade.
+- Cliente: ficha, extrato, quitação
+- Veículo: ficha veículo
+- Reserva: confirmação (própria e **terceirizada**)
+- Contrato: contrato, termo, vistoria saída/devolução, aditivo, recibo caução
+- Fiscal: DANFE/DANFSE simulados
+
+## D — Permissões Intermediação
+
+| Código | Função |
+|--------|--------|
+| `intermediacao.config.visualizar/editar` | Config + sync site |
+| `intermediacao.contrato.visualizar/criar/editar` | Contratos parceiros |
+| `intermediacao.indisponibilidade.visualizar/criar/editar` | Bloqueios + encerrar |
+| `intermediacao.reserva.aprovar` | Aprovações pendentes |
+| `intermediacao.repasse.visualizar` | Repasses/comissões |
 
 ---
 
-### 6.3 CAD-05 — Parceiro
+# Registro de defeitos
 
-| Campo | Tipo | Obrig. | Máscara | Dependência |
-|-------|------|--------|---------|-------------|
-| person_type | T35 | Sim | — | CPF XOR CNPJ |
-| nome | T01 | Sim | — | — |
-| tipo (parceria) | T27 | Sim | — | — |
-| comissao_percentual | T16 | Não | % | — |
-| comissao_valor_fixo | T15 | Não | BRL | — |
-| pix_chave | T19 | Não | auto | — |
+| Fase/Passo | Severidade | Descrição | Evidência (print/log) | Status |
+|------------|------------|-----------|------------------------|--------|
+| | | | | |
 
 ---
 
-### 6.4 FRO-01 — Veículo
-
-**Layout:** Tabs → [Identificação] [Classificação] [Financeiro] [Operação] [Acessórios*]
-
-| Campo | Tipo | Obrig. | Máscara |
-|-------|------|--------|---------|
-| placa | T08 | Sim | Mercosul |
-| renavam | T09 | Não | 11 dígitos |
-| chassi | T10 | Não | VIN |
-| ano_fabricacao | T18 | Sim | — |
-| ano_modelo | T18 | Sim | ≥ ano_fab |
-| cor | T01 | Não | — |
-| categoria_id | T28 | Sim | — |
-| marca_id | T28 | Sim | → filtra modelo |
-| modelo_id | T30 | Sim | depende marca |
-| combustivel_id | T28 | Sim | — |
-| filial_id | T28 | Não | — |
-| propriedade | T27 | Sim | — |
-| data_compra | T21 | Não | — |
-| valor_aquisicao | T15 | Não | BRL |
-| valor_fipe | T15 | Não | BRL |
-| valor_mercado | T15 | Não | BRL |
-| km_inicial / km_atual | T17 | Não | — |
-| nivel_combustivel | T42 | Não | slider 0–8 |
-
-**Pré-preenchimento:** propriedade `própria`; nivel_combustivel `8`; ano corrente nos anos.
-
----
-
-### 6.5 RES-01 — Nova Reserva (Wizard)
-
-**Stepper 6 passos:**
-
-1. **Período e filiais** — retirada/devolução T22; botão "Consultar disponibilidade" inline HTMX.
-2. **Disponibilidade** — tabela readonly; clique categoria pré-seleciona passo 3.
-3. **Categoria e veículo** — veículo filtrado por categoria + disponibilidade.
-4. **Cliente e motoristas** — cliente T29; motoristas T32; validar blacklist.
-5. **Opcionais** — proteções T34; taxas T34; acessórios qty.
-6. **Pagamento** — forma, cupom T20, desconto T15, recalcular preço HTMX.
-
-**Dependências críticas:**
-- `devolucao_em` > `retirada_em` (min 1h).
-- Cliente bloqueado → modal aprovação (`requer_aprovacao`).
-- Cupom validado async antes submit.
-
----
-
-### 6.6 LOC-01 — Novo Contrato
-
-Espelha RES-01 + campos:
-- `caucao` T15
-- `clausulas_combustivel` T27
-- `condicao` pagamento
-- Origem reserva (readonly se convertido)
-
----
-
-### 6.7 TAR-01 — Tabela de Tarifas
-
-| Campo | Tipo | Obrig. |
-|-------|------|--------|
-| nome | T01 | Sim |
-| vigencia_inicio/fim | T25 | Sim |
-| canal | T27 | Sim |
-| filial/parceiro/cliente | T28/T29 | Não (prioridade) |
-| prioridade | T17 | Sim (default 0) |
-| itens[] | T39 | Sim ≥1 categoria |
-
-**Repeater item:** categoria_id, valor_1_3, valor_4_7, valor_8_14, valor_15_29, valor_mensal, km_livre.
-
----
-
-### 6.8 TAR-03 — Nova Taxa
-
-| Campo | Tipo | Obrig. | Máscara |
-|-------|------|--------|---------|
-| codigo | T20 | Sim | uppercase |
-| nome | T01 | Sim | — |
-| tipo_calculo | T27 | Sim | fixo/diario/percentual |
-| valor | T15/T16 | Sim | conforme tipo |
-| aplicacao | T27 | Sim | — |
-| codigo_regra | T01 | Não | one_way, condutor_adicional |
-| tributavel | T33 | Não | default true |
-| descricao | T03 | Não | — |
-
-**Condicional:** se `tipo=percentual` → máscara T16; se `fixo/diario` → T15.
-
----
-
-### 6.9 FIN-01 — Título a Receber
-
-| Campo | Tipo | Obrig. | Máscara |
-|-------|------|--------|---------|
-| filial_id | T28 | Sim | — |
-| cliente_id | T29 | Não | combobox |
-| descricao | T01 | Sim | — |
-| valor_original | T15 | Sim | BRL |
-| vencimento | T21 | Sim | default +30d |
-| forma_prevista | T27 | Não | enum formas |
-| gera_pix | T33 | Não | se marcado → job PIX |
-| observacoes | T03 | Não | — |
-
-**Pré-preenchimento:** vencimento = hoje + 30 dias; valor `R$ 0,00`.
-
----
-
-## 7. Motor técnico recomendado
-
-### 7.1 Arquivos JS compartilhados (criar em `app/web/static/js/`)
-
-| Arquivo | Responsabilidade |
-|---------|------------------|
-| `form-core.js` | Required labels, dirty check, submit disable |
-| `form-masks.js` | T05–T20, T15–T16 via IMask |
-| `form-lookups.js` | Combobox async, debounce 300ms |
-| `form-cascade.js` | marca→modelo, UF→cidade |
-| `form-viacep.js` | CEP blur (existente, generalizar) |
-| `form-ibge.js` | `/api/v1/util/ibge/*` |
-| `form-validate.js` | CPF/CNPJ dígitos, datas, períodos |
-| `form-impact.js` | Modal exclusão com matriz §4 |
-
-### 7.2 Endpoints API a criar
-
-```
-GET  /api/v1/util/ibge/ufs
-GET  /api/v1/util/ibge/municipios/{uf}
-GET  /api/v1/cadastros/clientes?search=&page=
-GET  /api/v1/frota/modelos?marca_id=
-GET  /api/v1/frota/veiculos/disponiveis?categoria_id=&inicio=&fim=
-GET  /api/v1/cadastros/clientes/{id}/impacto-exclusao
-```
-
-### 7.3 Macros Jinja (criar `templates/macros/forms.html`)
-
-```jinja
-{% macro field_label(text, required=false) %}
-  <label class="form-label{% if required %} form-label--required{% endif %}">{{ text }}</label>
-{% endmacro %}
-
-{% macro field_error(name) %}
-  <div class="form-error" id="error-{{ name }}" role="alert"></div>
-{% endmacro %}
-```
-
-### 7.4 CSS (`app.css` additions)
-
-```css
-.form-label--required::after { content: " *"; color: var(--danger); }
-.form-error { color: var(--danger); font-size: 0.85rem; margin-top: 4px; }
-.form-input.is-invalid { border-color: var(--danger); }
-.form-fieldset { border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
-.form-fieldset legend { font-weight: 600; padding: 0 8px; }
-```
-
----
-
-## 8. Roadmap de implementação
-
-### Fase 1 — Fundação (1 sprint)
-- [ ] Macros + CSS global obrigatoriedade/erro
-- [ ] `form-masks.js` para CPF, CNPJ, telefone, CEP, moeda, placa
-- [ ] API IBGE UF/município
-- [ ] Estender ViaCEP para todos forms com endereço
-
-### Fase 2 — Cadastros + Frota (1 sprint)
-- [ ] CAD-01 a CAD-07 conforme §6
-- [ ] FRO-01 cascata marca→modelo
-- [ ] Combobox async clientes/veículos
-
-### Fase 3 — Operacional (1 sprint)
-- [ ] RES-01 wizard + validações
-- [ ] LOC-01/02/03 checkout/checkin
-- [ ] Impacto exclusão modals
-
-### Fase 4 — Comercial + Tarifário + Financeiro (1 sprint)
-- [ ] TAR-01 repeater itens
-- [ ] FIN-01/02 máscaras moeda/data
-- [ ] COM-02 proposta repeater
-
-### Fase 5 — Fiscal + Integrações + Restantes (1 sprint)
-- [ ] FIS-* IBGE município NFS-e
-- [ ] INT test connection
-- [ ] AUT builder visual
-- [ ] PAR-01 agrupamento
-
-### Fase 6 — Polimento
-- [x] Testes E2E Playwright por formulário crítico
-- [x] Documentação inline `.form-help` em 100% campos não óbvios
-- [x] Acessibilidade WCAG (aria, tabindex, labels)
-
----
-
-## Apêndice A — Checklist por formulário (aplicar em todos os 100)
-
-- [ ] Legenda `* Campos obrigatórios` presente
-- [ ] Cada campo obrigatório com `form-label--required`
-- [ ] Máscaras aplicadas conforme tipo T01–T45
-- [ ] Placeholders em datas/documentos
-- [ ] Campos condicionais implementados
-- [ ] Combobox async para FKs com >30 registros
-- [ ] Validação client antes submit
-- [ ] Erros inline por campo (não só alerta topo)
-- [ ] Seções/fieldsets para forms >12 campos
-- [ ] Modal de impacto antes excluir/inativar
-- [ ] Pré-preenchimento de defaults sensatos
-- [ ] `form-help` em campos não óbvios
-- [ ] CSRF token presente
-- [ ] Cancelar confirma se dirty
-
----
-
-## Apêndice B — Mapeamento schema ↔ template
-
-| Módulo | Schemas |
-|--------|---------|
-| cadastros | `schemas.py`, `schemas_extra.py` |
-| frota | `frota/schemas.py` |
-| reservas | `reservas/schemas.py` |
-| locacoes | `locacoes/schemas.py` |
-| manutencao | `manutencao/schemas.py` |
-| tarifario | `tarifario/schemas.py` |
-| financeiro | `financeiro/schemas.py` |
-| fiscal | `fiscal/schemas.py` |
-| comercial | `comercial/schemas.py` |
-| identity | `identity/schemas.py` |
-| tenants | `tenants/schemas.py` |
-| integracoes | `integracoes/schemas.py` |
-| automacoes | `automacoes/schemas.py` |
-| relatorios | `relatorios/schemas.py` |
-| parametros | `parametros/schemas.py` |
-
-**Regra:** todo campo no template deve existir no schema Create/Update; campos só-leitura na edição devem estar documentados.
-
----
-
-## Apêndice C — Referência rápida de máscaras BR
-
-| Campo | Máscara entrada | Exemplo |
-|-------|-----------------|---------|
-| CPF | `999.999.999-99` | 123.456.789-09 |
-| CNPJ | `99.999.999/9999-99` | 12.345.678/0001-90 |
-| CEP | `99999-999` | 01310-100 |
-| Telefone | `(99) 9999-9999` | (11) 3456-7890 |
-| Celular | `(99) 99999-9999` | (11) 98765-4321 |
-| Placa | `AAA9*99` | ABC1D23 |
-| Data | `99/99/9999` | 16/07/2026 |
-| Moeda | `R$ 999.999,99` | R$ 1.234,56 |
-| Percentual | `999,99 %` | 10,50 % |
-
----
-
-## Apêndice D — Lista canônica de arquivos de formulário (100% do codebase)
-
-### D.1 Templates dedicados `*_form.html` (44 arquivos)
-
-| # | Arquivo | ID doc |
-|---|---------|--------|
-| 1 | `cadastros/cliente_form.html` | CAD-01 |
-| 2 | `cadastros/motorista_form.html` | CAD-04 |
-| 3 | `cadastros/parceiro_form.html` | CAD-05 |
-| 4 | `cadastros/fornecedor_form.html` | CAD-06 |
-| 5 | `cadastros/vendedor_form.html` | CAD-07 |
-| 6 | `frota/veiculo_form.html` | FRO-01 |
-| 7 | `frota/categoria_form.html` | FRO-07 |
-| 8 | `frota/marca_form.html` | FRO-08 |
-| 9 | `frota/combustivel_form.html` | FRO-09 |
-| 10 | `frota/modelo_form.html` | FRO-10 |
-| 11 | `frota/acessorio_form.html` | FRO-11 |
-| 12 | `frota/documento_form.html` | FRO-12 |
-| 13 | `frota/telemetria_form.html` | FRO-13 |
-| 14 | `reservas/cotacao_form.html` | RES-02 |
-| 15 | `locacoes/contrato_form.html` | LOC-01 |
-| 16 | `locacoes/checkout_form.html` | LOC-02 |
-| 17 | `locacoes/checkin_form.html` | LOC-03 |
-| 18 | `locacoes/multa_form.html` | LOC-05 |
-| 19 | `locacoes/avaria_form.html` | LOC-06 |
-| 20 | `manutencao/os_form.html` | MAN-01 |
-| 21 | `manutencao/preventiva_form.html` | MAN-07 |
-| 22 | `manutencao/peca_form.html` | MAN-08 |
-| 23 | `manutencao/pneu_form.html` | MAN-09 |
-| 24 | `tarifario/tabela_form.html` | TAR-01 |
-| 25 | `tarifario/temporada_form.html` | TAR-02 |
-| 26 | `tarifario/taxa_form.html` | TAR-03 |
-| 27 | `tarifario/protecao_form.html` | TAR-04 |
-| 28 | `tarifario/politica_form.html` | TAR-05 |
-| 29 | `financeiro/receber_form.html` | FIN-01 |
-| 30 | `financeiro/pagar_form.html` | FIN-02 |
-| 31 | `financeiro/cartao_form.html` | FIN-03 |
-| 32 | `financeiro/banco_form.html` | FIN-04 |
-| 33 | `fiscal/nfse_form.html` | FIS-01 |
-| 34 | `fiscal/nfe_form.html` | FIS-02 |
-| 35 | `fiscal/cancelamentos_form.html` | FIS-03 |
-| 36 | `fiscal/impostos_form.html` | FIS-04 |
-| 37 | `comercial/proposta_form.html` | COM-02 |
-| 38 | `comercial/campanha_form.html` | COM-03 |
-| 39 | `comercial/cupom_form.html` | COM-04 |
-| 40 | `identity/user_form.html` | IDN-01 |
-| 41 | `identity/role_form.html` | IDN-02 |
-| 42 | `tenants/filial_form.html` | TEN-02 |
-| 43 | `relatorios/agendamento_form.html` | REL-01 |
-| 44 | `relatorios/emitir_form.html` | REL-02 |
-
-### D.2 Páginas de formulário sem sufixo `_form` (12)
-
-| # | Arquivo | ID | Melhorias-chave |
-|---|---------|-----|-----------------|
-| 45 | `reservas/nova.html` | RES-01 | Wizard 6 passos §6.5 |
-| 46 | `tenants/company.html` | TEN-01 | Certificado A1 T45, logo T38 |
-| 47 | `fiscal/xml_import.html` | FIS-05 | Drag-drop T38, validação XML |
-| 48 | `tarifario/simular.html` | TAR-06 | Período T25, resultado HTMX |
-| 49 | `locacoes/renovacoes.html` | LOC-04 | Contrato combobox + nova data |
-| 50 | `locacoes/encerramentos.html` | LOC-08 | Filtro contrato + confirmação |
-| 51 | `fiscal/impostos_apuracao.html` | FIS-06 | Período competência T21 |
-| 52 | `comercial/fidelidade.html` | COM-05 | Repeater tiers T39 |
-| 53 | `financeiro/conciliacao.html` | FIN-10 | Upload OFX T38 |
-| 54 | `reservas/disponibilidade.html` | RES-04 | Filtros período/filial T22 |
-| 55 | `integracoes/_config_section.html` | INT-01 | Secrets masked, test btn |
-| 56 | `parametros/list.html` | PAR-01 | Edição inline por grupo |
-
-### D.3 Autenticação e segurança (4)
-
-| # | Arquivo | Melhorias |
-|---|---------|-----------|
-| 57 | `identity/login.html` | E-mail T04, senha T45, link 2FA |
-| 58 | `identity/login_2fa.html` | Código 6 dígitos T17, recovery |
-| 59 | `identity/twofa_setup.html` | QR readonly, backup codes |
-| 60 | `identity/users_list.html` | Filtro busca + reset senha inline |
-
-### D.4 Formulários inline em listas e detalhes (40)
-
-Inclui filtros, baixas, aprovações e ações em: `clientes_list`, `tabelas_list`, `veiculos_list`, `documentacao_list`, `reservas/list`, `cotacoes_list`, `calendario`, `detalhe` (reserva), `contratos_list`, `contrato_detalhe`, `multas_list`, `avarias_list`, `os_list`, `pecas_list`, `pneus_list`, `receber_list`, `receber_detalhe`, `pagar_detalhe`, `caixa_list`, `caixa_detalhe`, `fatura_detalhe`, `faturamento_list`, `pix_list`, `cartoes_list`, `nfse_detalhe`, `nfe_detalhe`, `xml_list`, `funil_kanban`, `funil_detalhe`, `proposta_detalhe`, `campanha_detalhe`, `regras_list`, `workflows_list`, `agendamentos_list`, `api_publica`, `credito`, `transito`, `audit/trail`, `notificacoes/inbox`, `dashboard/home`.
-
-**Total catalogado: 100 formulários/interações de entrada de dados.**
-
----
-
-## Apêndice E — Fluxos de atribuição entre entidades
-
-### E.1 Motorista → Reserva → Contrato
-
-Cadastro motorista → seleção na reserva (N:N RESTRICT) → contrato herda motoristas → multa vincula condutor.
-
-### E.2 Cliente → Financeiro → Fiscal
-
-Cliente → contrato gera títulos → fatura mensal → NFS-e destinatário automático → bloqueio se inadimplente.
-
-### E.3 Veículo → Manutenção → Disponibilidade
-
-OS aberta indisponibiliza veículo na consulta de reservas; encerramento OS restaura disponibilidade.
-
-### E.4 Preferir inativar vs excluir
-
-| Entidade | Ação recomendada |
-|----------|------------------|
-| Cliente/motorista com histórico | Inativar |
-| Veículo vendido | Baixa (status terminal) |
-| Catálogo frota | Inativar |
-| Usuário | Desativar |
-
----
-
-*Documento gerado a partir do inventário completo do codebase (100 formulários/interações, 16 módulos). Implementação código a partir da Fase 1 do Roadmap §8.*
+**Documento:** INFO-FORMS v2.0 — Manual do Administrador  
+**Alinhado a:** `app/web/navigation.py`, `teste.md`, módulo `app/modules/intermediacao/`  
+**Última revisão:** 2026-07-17 — inclui intermediação REPASSE/COMISSÃO, aprovações, repasses financeiros e migration Supabase 0023.
