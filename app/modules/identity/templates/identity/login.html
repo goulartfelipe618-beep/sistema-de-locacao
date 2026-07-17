@@ -9,13 +9,14 @@
   <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/static/css/app.css">
   <script src="/static/js/app.js" defer></script>
+  <script src="/static/js/form-engine.js" defer></script>
 </head>
 <body>
   <div class="login-wrap">
     <div class="login-box">
       <div class="login-header">
         <span class="brand-mark">ERP</span>
-        <h1 class="login-title">Sistema de Locação</h1>
+        <h1 class="login-title" id="login-title">Sistema de Locação</h1>
         <div class="login-sub">Painel Administrativo</div>
       </div>
       <div class="login-body">
@@ -25,20 +26,24 @@
         {% if error %}
         <div class="alert alert-danger">{{ error }}</div>
         {% endif %}
-        <form method="post" action="/login" autocomplete="off">
+        <form method="post" action="/login" autocomplete="off" class="erp-form" aria-labelledby="login-title">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <div class="form-group">
-            <label class="form-label" for="email">E-mail</label>
+            <label class="form-label form-label--required" for="email">E-mail</label>
             <input class="form-input" type="email" id="email" name="email"
-                   value="{{ email }}" required autofocus>
+                   value="{{ email }}" required autofocus aria-describedby="help-email">
+            <p class="form-help" id="help-email">E-mail de acesso ao painel administrativo.</p>
           </div>
           <div class="form-group">
-            <label class="form-label" for="password">Senha</label>
-            <input class="form-input" type="password" id="password" name="password" required>
+            <label class="form-label form-label--required" for="password">Senha</label>
+            <input class="form-input" type="password" id="password" name="password" required
+                   aria-describedby="help-password">
+            <p class="form-help" id="help-password">Mínimo de 8 caracteres.</p>
           </div>
           <div class="form-actions">
             <button type="submit" class="btn btn-primary" style="width:100%">Entrar</button>
           </div>
+          <p class="form-legend-required">* Campos obrigatórios</p>
         </form>
       </div>
     </div>

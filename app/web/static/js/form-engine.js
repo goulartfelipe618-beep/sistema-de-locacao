@@ -559,6 +559,222 @@
     return calc(t) === parseInt(d.charAt(0), 10) && calc(t + 1) === parseInt(d.charAt(1), 10);
   }
 
+  /** Textos de ajuda para campos não óbvios (injetados quando ausentes no template). */
+  var FIELD_HELP = {
+    cpf: "Informe os 11 dígitos; a máscara é aplicada automaticamente.",
+    cnpj: "CNPJ da pessoa jurídica (14 dígitos).",
+    cep: "Ao sair do campo, o endereço é preenchido via ViaCEP.",
+    placa: "Formato Mercosul (ABC1D23) ou antigo (ABC-1234).",
+    renavam: "Registro nacional do veículo (até 11 dígitos).",
+    chassi: "Identificação única do veículo com 17 caracteres.",
+    codigo: "Código único; não pode repetir outro registro ativo.",
+    codigo_fipe: "Consulte a tabela FIPE para precificação e seguro.",
+    grupo_tarifario: "Agrupa categorias na tabela de preços (ex.: Econômico).",
+    limite_credito: "Valor máximo em aberto permitido para novas locações.",
+    bloqueado: "Registros bloqueados exigem permissão especial para uso.",
+    tipo_pessoa: "Pessoa física exige CPF; jurídica exige CNPJ e razão social.",
+    municipio_ibge: "Preenchido automaticamente ao selecionar o município.",
+    natureza_operacao: "Conforme legislação municipal ou estadual aplicável.",
+    aliquota: "Percentual com duas casas decimais (ex.: 5,00).",
+    retencao: "Marque quando o imposto for retido na fonte.",
+    vigencia_inicio: "Data a partir da qual a alíquota passa a valer.",
+    vigencia_fim: "Deixe vazio para vigência indeterminada.",
+    justificativa: "Exigência legal: mínimo de 15 caracteres.",
+    xml_file: "Arraste o arquivo XML ou clique para selecionar.",
+    scopes: "Permissões concedidas à chave de API pública.",
+    webhook_url: "URL HTTPS que receberá eventos assinados.",
+    api_key: "Chave secreta; deixe em branco para manter a atual.",
+    secret: "Credencial sensível; use o botão para exibir ou ocultar.",
+    base_url: "Endpoint raiz do provedor HTTP (sem barra final).",
+    timeout_ms: "Tempo máximo de espera por resposta (milissegundos).",
+    retry_max: "Tentativas em caso de falha transitória.",
+    filial_id: "Filial responsável pelo registro ou operação.",
+    cliente_id: "Busque por nome, CPF ou CNPJ.",
+    veiculo_id: "Busque por placa, modelo ou categoria.",
+    fornecedor_id: "Opcional; vincula o título ao cadastro de fornecedor.",
+    motorista_id: "Condutor principal vinculado à reserva ou contrato.",
+    categoria_id: "Grupo tarifário do veículo (ex.: Compacto, SUV).",
+    marca_id: "Selecione a marca para filtrar os modelos disponíveis.",
+    modelo_id: "Modelos dependem da marca selecionada.",
+    combustivel_id: "Tipo de combustível cadastrado na frota.",
+    tabela_id: "Tabela de preços vigente para o período.",
+    vendedor_id: "Comissionado responsável pela venda ou proposta.",
+    parceiro_id: "Canal ou parceiro comercial de origem.",
+    data_retirada: "Data e hora previstas para retirada do veículo.",
+    data_devolucao: "Deve ser posterior à data de retirada.",
+    data_inicio: "Início da vigência ou período contratual.",
+    data_fim: "Término da vigência; deixe vazio se indeterminado.",
+    vencimento: "Data limite para pagamento ou recebimento.",
+    valor_original: "Valor nominal antes de juros, multa ou desconto.",
+    valor_minimo: "Pedido mínimo para aplicar cupom ou campanha.",
+    limite_uso_total: "Quantidade máxima de utilizações do cupom.",
+    limite_uso_cliente: "Limite de usos por cliente (CPF/CNPJ).",
+    primeira_locacao_apenas: "Restringe o benefício à primeira locação do cliente.",
+    tipo_calculo: "Fixo (R$) ou percentual (%) sobre a base.",
+    aplicacao: "Momento em que a taxa entra no cálculo da locação.",
+    regra_codigo: "Identificador interno para automações e integrações.",
+    tributavel: "Indica se compõe base de cálculo de impostos.",
+    km_entrada: "Quilometragem do odômetro na entrada da oficina.",
+    km_saida: "Quilometragem registrada na liberação do veículo.",
+    km_livre: "Quando marcado, não há cobrança por km excedente.",
+    franquia_km: "Km incluídos na diária antes de cobrança extra.",
+    nivel_combustivel_atual: "Escala de 0 (vazio) a 8 (tanque cheio).",
+    combustivel_entrada: "Nível do tanque na retirada (0–8).",
+    combustivel_saida: "Nível do tanque na devolução (0–8).",
+    forcar_disponibilidade: "Use apenas com permissão especial em conflito.",
+    ait: "Número do auto de infração de trânsito.",
+    codigo_infracao: "Código CTB ou equivalente do órgão autuador.",
+    taxa_admin: "Taxa administrativa cobrada além do valor da multa.",
+    pontuacao: "Pontos na CNH do condutor, se aplicável.",
+    garantia_dias: "Prazo de garantia do serviço em dias corridos.",
+    garantia_km: "Quilometragem coberta pela garantia da OS.",
+    responsavel_custo: "Quem arca com o custo: locadora, cliente ou seguro.",
+    is_headquarters: "Apenas uma filial pode ser marcada como matriz.",
+    code: "Identificador curto da filial; não alterável após criação.",
+    role_ids: "Papéis definem as permissões efetivas do usuário.",
+    password: "Mínimo de 8 caracteres; use letras, números e símbolos.",
+    twofa_enabled: "Autenticação em dois fatores via aplicativo TOTP.",
+    periodo_inicio: "Início do intervalo considerado no relatório.",
+    periodo_fim: "Fim do intervalo; deve ser igual ou posterior ao início.",
+    relatorio_codigo: "Modelo de relatório a ser emitido ou agendado.",
+    recorrencia: "Frequência de envio automático por e-mail.",
+    email_destinatarios: "Separe vários e-mails por vírgula.",
+    saldo_atual: "Saldo inicial da conta para conciliação.",
+    integracao_tipo: "Provedor de extrato ou conciliação bancária.",
+    item_categoria_id: "Categoria tarifária desta faixa de preço.",
+    item_valor_mensal: "Valor diário equivalente para locações longas.",
+    condicao: "Expressão ou campo que dispara a regra de automação.",
+    acao: "Operação executada quando a condição for verdadeira.",
+    ordem: "Ordem de exibição em listas e relatórios (menor primeiro).",
+    imagem_url: "URL pública da imagem ilustrativa (HTTPS).",
+    logo_url: "URL do logotipo da marca ou empresa.",
+    capacidade_passageiros: "Número máximo de passageiros da categoria.",
+    transmissao_tipica: "Tipo de câmbio usual (Manual, Automática…).",
+    consumo_medio_km_l: "Consumo médio informado pelo fabricante.",
+    capacidade_tanque: "Litros do tanque cheio.",
+    validade_documento: "Data de vencimento para alertas automáticos.",
+    telemetria_imei: "Identificador do rastreador ou telemetria.",
+    proposta_validade: "Prazo de validade comercial da proposta.",
+    desconto_maximo: "Percentual máximo de desconto permitido ao vendedor.",
+    comissao_percentual: "Percentual de comissão sobre o valor fechado.",
+    valor_caucao: "Valor de caução ou pré-autorização no cartão.",
+    forma_prevista: "Forma de pagamento esperada para o título.",
+    beneficiario_nome: "Use quando não houver fornecedor cadastrado.",
+    storage_key: "Chave ou URL do arquivo no storage (R2/S3).",
+    fase: "Classificação da foto (antes, durante, depois).",
+    motivo: "Obrigatório para cancelamentos e alterações críticas.",
+    override_valor: "Substitui o valor padrão do parâmetro neste escopo.",
+    unidade: "Unidade de medida exibida junto ao valor (ex.: %, km).",
+    email: "E-mail de acesso ao painel administrativo.",
+  };
+
+  var SKIP_HELP_NAMES = /^(nome|descricao|descrição|observacoes|observações|status|submit|csrf_token|_method)$/i;
+
+  function fieldHelpKey(el) {
+    var data = el.getAttribute("data-help");
+    if (data) return data;
+    var name = (el.name || el.id || "").replace(/\[\]$/, "").split(".")[0].toLowerCase();
+    return name;
+  }
+
+  function syncAriaDescribedBy(input) {
+    var ids = [];
+    var group = input.closest(".form-group") || input.parentElement;
+    if (group) {
+      var help = group.querySelector(".form-help");
+      if (help) {
+        if (!help.id) help.id = "help-" + (input.id || input.name || "field");
+        ids.push(help.id);
+      }
+    }
+    var errId = "err-" + (input.name || input.id || "field");
+    if (document.getElementById(errId)) ids.push(errId);
+    if (ids.length) input.setAttribute("aria-describedby", ids.join(" "));
+    else input.removeAttribute("aria-describedby");
+  }
+
+  function injectFieldHelp(form) {
+    form.querySelectorAll("input, select, textarea").forEach(function (el) {
+      if (el.type === "hidden" || el.type === "submit" || el.type === "button") return;
+      var group = el.closest(".form-group");
+      if (!group || group.querySelector(".form-help")) return;
+      var key = fieldHelpKey(el);
+      if (!key || SKIP_HELP_NAMES.test(key)) return;
+      var text = FIELD_HELP[key];
+      if (!text) return;
+      var help = document.createElement("p");
+      help.className = "form-help";
+      help.id = "help-" + (el.id || el.name || key);
+      help.textContent = text;
+      group.appendChild(help);
+    });
+  }
+
+  function ensureFormLegend(form) {
+    if (form.querySelector(".form-legend-required")) return;
+    var legend = document.createElement("p");
+    legend.className = "form-legend-required";
+    legend.textContent = "* Campos obrigatórios";
+    var actions = form.querySelector(".form-actions");
+    if (actions) form.insertBefore(legend, actions);
+    else form.appendChild(legend);
+  }
+
+  function setupA11y(form) {
+    var idx = 0;
+    form.querySelectorAll("input, select, textarea").forEach(function (el) {
+      if (el.type === "hidden" || el.type === "submit" || el.type === "button") return;
+      if (!el.id) {
+        var base = (el.name || el.type || "field").replace(/[^a-z0-9_-]/gi, "-").replace(/-+/g, "-");
+        el.id = "fld-" + base + (idx ? "-" + idx : "");
+      }
+      idx += 1;
+      var group = el.closest(".form-group") || el.parentElement;
+      if (group) {
+        var labels = group.querySelectorAll("label.form-label, label:not([for])");
+        labels.forEach(function (label) {
+          if (!label.htmlFor && !label.querySelector("input, select, textarea")) {
+            label.htmlFor = el.id;
+          }
+        });
+      }
+      syncAriaDescribedBy(el);
+    });
+
+    form.querySelectorAll("fieldset").forEach(function (fs, i) {
+      var lg = fs.querySelector("legend");
+      if (lg && !lg.id) lg.id = "fs-legend-" + i;
+      if (lg && lg.id) fs.setAttribute("aria-labelledby", lg.id);
+    });
+
+    form.querySelectorAll(".form-repeater-remove, .form-repeater-add, .form-repeater-row button[type=button]").forEach(function (btn) {
+      if (btn.getAttribute("aria-label")) return;
+      if (btn.classList.contains("form-repeater-add")) btn.setAttribute("aria-label", "Adicionar linha");
+      else if (btn.classList.contains("form-repeater-remove") || btn.textContent.trim() === "×") btn.setAttribute("aria-label", "Remover linha");
+    });
+
+    form.querySelectorAll("[data-combobox]").forEach(function (el) {
+      el.setAttribute("role", "combobox");
+      el.setAttribute("aria-autocomplete", "list");
+      if (!el.hasAttribute("aria-expanded")) el.setAttribute("aria-expanded", "false");
+    });
+  }
+
+  function setupDirtyCancel(form) {
+    var dirty = false;
+    form.addEventListener("input", function () { dirty = true; });
+    form.addEventListener("change", function () { dirty = true; });
+    form.addEventListener("submit", function () { dirty = false; });
+    form.querySelectorAll(".form-actions a.btn[href], .form-actions a[href].btn").forEach(function (link) {
+      link.addEventListener("click", function (ev) {
+        if (!dirty) return;
+        if (!window.confirm("Existem alterações não salvas. Deseja sair mesmo assim?")) {
+          ev.preventDefault();
+        }
+      });
+    });
+  }
+
   function showFieldError(input, msg) {
     input.classList.add("is-invalid");
     input.setAttribute("aria-invalid", "true");
@@ -569,9 +785,11 @@
       existing.id = errId;
       existing.className = "form-error";
       existing.setAttribute("role", "alert");
-      input.parentElement.appendChild(existing);
+      var group = input.closest(".form-group") || input.parentElement;
+      (group || input.parentElement).appendChild(existing);
     }
     existing.textContent = msg;
+    syncAriaDescribedBy(input);
   }
 
   function clearFieldError(input) {
@@ -580,6 +798,7 @@
     var errId = "err-" + (input.name || input.id || "field");
     var el = document.getElementById(errId);
     if (el) el.remove();
+    syncAriaDescribedBy(input);
   }
 
   function validateForm(form) {
@@ -615,8 +834,8 @@
     }
 
     if (!ok) {
-      var first = form.querySelector(".is-invalid");
-      if (first) first.focus();
+      var firstInvalid = form.querySelector(".is-invalid");
+      if (firstInvalid && typeof firstInvalid.focus === "function") firstInvalid.focus();
     }
     return ok;
   }
@@ -839,6 +1058,11 @@
       }
       normalizeOnSubmit(form);
     });
+
+    injectFieldHelp(form);
+    setupA11y(form);
+    ensureFormLegend(form);
+    setupDirtyCancel(form);
 
     form.querySelectorAll("input, textarea, select").forEach(function (el) {
       el.addEventListener("input", function () { clearFieldError(el); });

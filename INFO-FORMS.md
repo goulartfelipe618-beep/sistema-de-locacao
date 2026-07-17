@@ -701,9 +701,9 @@ GET  /api/v1/cadastros/clientes/{id}/impacto-exclusao
 - [ ] PAR-01 agrupamento
 
 ### Fase 6 — Polimento
-- [ ] Testes E2E Playwright por formulário crítico
-- [ ] Documentação inline `.form-help` em 100% campos não óbvios
-- [ ] Acessibilidade WCAG (aria, tabindex, labels)
+- [x] Testes E2E Playwright por formulário crítico
+- [x] Documentação inline `.form-help` em 100% campos não óbvios
+- [x] Acessibilidade WCAG (aria, tabindex, labels)
 
 ---
 
