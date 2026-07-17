@@ -1,18 +1,33 @@
 {% extends "base.html" %}
+{% from "macros/forms.html" import field_label, form_legend %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
-<div class="card" style="margin-bottom:16px">
+<div class="card erp-form-card">
   <a class="btn btn-sm" href="/fiscal/impostos">&larr; Configurações</a>
   <h2 class="card-title">Apuração de Impostos</h2>
-  <form method="get" action="/fiscal/impostos/apuracao/periodo" style="display:flex;gap:8px;flex-wrap:wrap">
-    <div class="form-group"><label class="form-label">Início *</label><input class="form-input" type="date" name="periodo_inicio" value="{{ periodo_inicio or '' }}" required></div>
-    <div class="form-group"><label class="form-label">Fim *</label><input class="form-input" type="date" name="periodo_fim" value="{{ periodo_fim or '' }}" required></div>
-    <div class="form-group" style="align-self:flex-end"><button class="btn btn-primary" type="submit">Apurar</button></div>
+
+  <form method="get" action="/fiscal/impostos/apuracao/periodo" class="erp-form">
+    <fieldset class="form-fieldset">
+      <legend>Período de competência</legend>
+      <div class="form-grid">
+        <div class="form-group">
+          {{ field_label('Início', true, 'periodo_inicio') }}
+          <input class="form-input" type="date" id="periodo_inicio" name="periodo_inicio" value="{{ periodo_inicio or '' }}" required>
+        </div>
+        <div class="form-group">
+          {{ field_label('Fim', true, 'periodo_fim') }}
+          <input class="form-input" type="date" id="periodo_fim" name="periodo_fim" value="{{ periodo_fim or '' }}" required>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">Apurar</button>
+      </div>
+    </fieldset>
   </form>
 </div>
 
 {% if linhas %}
-<div class="card">
+<div class="card erp-form-card" style="margin-top:16px">
   <h2 class="card-title">Resultado — {{ periodo_inicio }} a {{ periodo_fim }}</h2>
   <table class="table">
     <thead><tr><th>Imposto</th><th>Documentos</th><th>Base de cálculo</th><th>Valor apurado</th></tr></thead>

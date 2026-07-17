@@ -1,19 +1,45 @@
 {% extends "base.html" %}
+{% from "macros/forms.html" import field_label, form_legend, workflow_etapa_row %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
-<div class="card">
+<div class="card erp-form-card">
   <h2 class="card-title">{{ title }}</h2>
-  <p class="text-muted">Processos com etapas de aprovação e SLA.</p>
+  <p class="form-help">Processos com etapas de aprovação, SLA e timeout configurável.</p>
 
   {% if current_user.is_superuser or 'automacoes.workflows.criar' in current_user.permissions %}
-  <form method="post" action="/automacoes/workflows/novo" class="form-grid" style="margin-bottom:16px">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <div class="form-group"><label>Código</label><input class="form-input" name="codigo" placeholder="os_valor_alto" required></div>
-    <div class="form-group"><label>Nome</label><input class="form-input" name="nome" required></div>
-    <div class="form-group"><label>Etapa</label><input class="form-input" name="etapa_nome" value="Aprovação gerente"></div>
-    <div class="form-group"><label>Papel aprovador</label><input class="form-input" name="aprovador_papel_slug" value="gerente-filial"></div>
-    <div class="form-group" style="align-self:end"><button class="btn btn-primary" type="submit">Criar workflow</button></div>
-  </form>
+  <fieldset class="form-fieldset" style="margin-bottom:16px">
+    <legend>Novo workflow</legend>
+    <form method="post" action="/automacoes/workflows/novo" class="erp-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="form-grid">
+        <div class="form-group">
+          {{ field_label('Código', true, 'codigo') }}
+          <input class="form-input" id="codigo" name="codigo" placeholder="os_valor_alto" required>
+        </div>
+        <div class="form-group">
+          {{ field_label('Nome', true, 'nome') }}
+          <input class="form-input" id="nome" name="nome" required>
+        </div>
+      </div>
+
+      <div class="form-repeater form-repeater--workflow" data-repeater-min="1" data-repeater-validate data-repeater-key="etapa_nome"
+           data-repeater-error="Informe ao menos uma etapa.">
+        <div class="form-repeater-head">
+          <span>#</span><span>Etapa</span><span>Papel aprovador</span><span>SLA (h)</span><span></span>
+        </div>
+        <div class="form-repeater-rows">
+          {{ workflow_etapa_row() }}
+        </div>
+        <template class="form-repeater-template">
+          {{ workflow_etapa_row() }}
+        </template>
+        <div class="form-repeater-actions">
+          <button type="button" class="btn btn-sm form-repeater-add">+ Adicionar etapa</button>
+          <button class="btn btn-primary btn-sm" type="submit">Criar workflow</button>
+        </div>
+      </div>
+    </form>
+  </fieldset>
   {% endif %}
 
   <h4>Definições</h4>
@@ -32,8 +58,8 @@
     <td>{{ i.etapa_vence_em|datetime if i.etapa_vence_em else '-' }}</td>
     <td>
       {% if i.status.value in ['pendente','em_andamento'] %}
-      <form method="post" action="/automacoes/workflows/instancias/{{ i.id }}/aprovar" style="display:inline"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-sm btn-primary" type="submit">Aprovar</button></form>
-      <form method="post" action="/automacoes/workflows/instancias/{{ i.id }}/rejeitar" style="display:inline"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-sm" type="submit">Rejeitar</button></form>
+      <form method="post" action="/automacoes/workflows/instancias/{{ i.id }}/aprovar" class="erp-form" style="display:inline"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-sm btn-primary" type="submit">Aprovar</button></form>
+      <form method="post" action="/automacoes/workflows/instancias/{{ i.id }}/rejeitar" class="erp-form" style="display:inline"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-sm" type="submit">Rejeitar</button></form>
       {% endif %}
     </td>
   </tr>

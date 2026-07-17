@@ -4,11 +4,22 @@
 (function () {
   "use strict";
 
-  function syncKmLivre(row) {
+    function syncKmLivre(row) {
     var hidden = row.querySelector(".km-livre-val");
     var cb = row.querySelector(".km-livre-cb");
     if (!hidden || !cb || cb.dataset.kmSync) return;
     cb.dataset.kmSync = "1";
+    hidden.value = cb.checked ? "1" : "0";
+    cb.addEventListener("change", function () {
+      hidden.value = cb.checked ? "1" : "0";
+    });
+  }
+
+  function syncRetencao(row) {
+    var hidden = row.querySelector(".retencao-val");
+    var cb = row.querySelector(".retencao-cb");
+    if (!hidden || !cb || cb.dataset.retSync) return;
+    cb.dataset.retSync = "1";
     hidden.value = cb.checked ? "1" : "0";
     cb.addEventListener("change", function () {
       hidden.value = cb.checked ? "1" : "0";
@@ -42,6 +53,7 @@
 
     function bindRow(row) {
       syncKmLivre(row);
+      syncRetencao(row);
       var rm = row.querySelector(".form-repeater-remove");
       if (rm) {
         rm.addEventListener("click", function () {

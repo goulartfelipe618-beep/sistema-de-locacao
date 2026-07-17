@@ -79,8 +79,21 @@ async def clientes_json(
     for c in result.items:
         doc = c.cpf or c.cnpj or ""
         label = c.nome if not doc else f"{c.nome} ({doc})"
-        items.append({"id": str(c.id), "label": label, "nome": c.nome})
+        items.append({"id": str(c.id), "label": label, "nome": c.nome, "doc": doc})
     return JSONResponse(content={"items": items, "total": result.total, "page": page})
+
+
+@router.get("/cadastros/clientes/{cliente_id}/resumo")
+async def cliente_resumo_json(
+    cliente_id: uuid.UUID,
+    session: SessionDep,
+    _user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("cadastros.cliente.visualizar"))
+    ],
+) -> JSONResponse:
+    cliente = await ClienteService(session).get(cliente_id)
+    doc = cliente.cpf or cliente.cnpj or ""
+    return JSONResponse(content={"id": str(cliente.id), "nome": cliente.nome, "doc": doc})
 
 
 @router.get("/cadastros/clientes/{cliente_id}/impacto")

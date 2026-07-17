@@ -77,7 +77,43 @@ def _date(raw: str | None) -> date | None:
 
 
 def _bool(raw: str | None) -> bool:
-    return (raw or "").strip().lower() in ("on", "true", "1", "sim")
+    return raw in ("on", "1", "true", "True", "yes")
+
+
+def _parse_aliquotas(
+    config_id: uuid.UUID,
+    tipos: list[str] | None,
+    aliquotas: list[str] | None,
+    descricoes: list[str] | None,
+    codigos: list[str] | None,
+    vigencias: list[str] | None,
+    retencoes: list[str] | None,
+) -> list[AliquotaCreate]:
+    tipos = tipos or []
+    aliquotas = aliquotas or []
+    descricoes = descricoes or []
+    codigos = codigos or []
+    vigencias = vigencias or []
+    retencoes = retencoes or []
+    items: list[AliquotaCreate] = []
+    for idx, tipo in enumerate(tipos):
+        if not tipo or not tipo.strip():
+            continue
+        inicio = _date(vigencias[idx] if idx < len(vigencias) else "")
+        if not inicio:
+            raise ValueError("Vigência inicial é obrigatória em cada alíquota.")
+        items.append(
+            AliquotaCreate(
+                config_id=config_id,
+                tipo=ImpostoTipo(tipo.strip()),
+                aliquota_percentual=_dec(aliquotas[idx] if idx < len(aliquotas) else "0"),
+                descricao=(descricoes[idx] if idx < len(descricoes) else "") or None,
+                servico_produto_codigo=(codigos[idx] if idx < len(codigos) else "") or None,
+                retencao=_bool(retencoes[idx] if idx < len(retencoes) else ""),
+                vigencia_inicio=inicio,
+            )
+        )
+    return items
 
 
 def _msg(exc: AppError | ValueError) -> str:
@@ -768,6 +804,49 @@ async def imposto_aliquota_criar(
                 "title": f"Config Fiscal ({config.regime.value})",
                 "error": _msg(exc),
                 "imposto_tipos": [t.value for t in ImpostoTipo],
+                **lookups,
+            },
+            status_code=400,
+        )
+    return RedirectResponse(f"/fiscal/impostos/{config_id}", status_code=303)
+
+
+@router.post("/fiscal/impostos/{config_id}/aliquotas/lote", response_class=HTMLResponse)
+async def imposto_aliquotas_lote(
+    request: Request,
+    session: SessionDep,
+    config_id: uuid.UUID,
+    current_user: Annotated[AuthenticatedUser, Depends(require_web_permission("fiscal.impostos.criar"))],
+    aliq_tipo: Annotated[list[str] | None, Form()] = None,
+    aliq_percentual: Annotated[list[str] | None, Form()] = None,
+    aliq_descricao: Annotated[list[str] | None, Form()] = None,
+    aliq_codigo: Annotated[list[str] | None, Form()] = None,
+    aliq_vigencia_inicio: Annotated[list[str] | None, Form()] = None,
+    aliq_retencao: Annotated[list[str] | None, Form()] = None,
+):
+    try:
+        entries = _parse_aliquotas(
+            config_id, aliq_tipo, aliq_percentual, aliq_descricao, aliq_codigo, aliq_vigencia_inicio, aliq_retencao
+        )
+        if not entries:
+            raise ValueError("Adicione ao menos uma alíquota.")
+        svc = ImpostoService(session)
+        for entry in entries:
+            await svc.create_aliquota(current_user.tenant_id, entry)
+    except (AppError, ValueError) as exc:
+        await session.rollback()
+        svc = ImpostoService(session)
+        config = await svc.get_config(config_id)
+        aliquotas = await svc.list_aliquotas(config_id)
+        lookups = await _lookups(session)
+        return render(
+            request,
+            "fiscal/impostos_form.html",
+            {
+                "config": config,
+                "aliquotas": aliquotas,
+                "title": f"Config Fiscal ({config.regime.value})",
+                "error": _msg(exc),
                 **lookups,
             },
             status_code=400,

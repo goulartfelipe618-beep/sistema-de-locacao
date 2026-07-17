@@ -1,18 +1,22 @@
 {% extends "base.html" %}
+{% from "macros/forms.html" import field_label %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
 {% include "integracoes/_config_section.html" %}
-<div class="card" style="margin-top:16px">
-  <h4>Consultar score / restrição</h4>
-  <form method="post" action="/integracoes/credito/consultar" class="form-grid">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <div class="form-group"><label>Cliente</label>
-      <select class="form-input" name="cliente_id" required>
-        {% for c in clientes %}<option value="{{ c.id }}">{{ c.nome }}</option>{% endfor %}
-      </select>
-    </div>
-    <div class="form-group" style="align-self:end"><button class="btn btn-primary" type="submit">Consultar crédito</button></div>
-  </form>
-  <p class="text-muted" style="margin-top:8px">Restrição detectada pode aplicar blacklist automático no cliente.</p>
+<div class="card erp-form-card" style="margin-top:16px">
+  <fieldset class="form-fieldset">
+    <legend>Consulta de crédito</legend>
+    <form method="post" action="/integracoes/credito/consultar" class="erp-form form-grid">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="form-group">
+        {{ field_label('Cliente', true, 'cliente_id') }}
+        <select class="form-input" id="cliente_id" name="cliente_id" required data-combobox="cliente">
+          {% for c in clientes %}<option value="{{ c.id }}">{{ c.nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group" style="align-self:end"><button class="btn btn-primary" type="submit">Consultar crédito</button></div>
+    </form>
+    <p class="form-help">Restrição detectada pode aplicar blacklist automático no cliente.</p>
+  </fieldset>
 </div>
 {% endblock %}

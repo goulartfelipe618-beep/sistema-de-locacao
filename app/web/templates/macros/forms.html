@@ -85,3 +85,34 @@
   <button type="button" class="btn btn-sm form-repeater-remove" title="Remover linha">×</button>
 </div>
 {% endmacro %}
+
+{% macro aliquota_item_row(imposto_tipos) %}
+<div class="form-repeater-row">
+  <div class="form-group" style="margin:0">
+    <label class="form-label form-label--required">Tipo</label>
+    <select class="form-input" name="aliq_tipo" required>
+      {% for t in imposto_tipos %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="form-group" style="margin:0"><label class="form-label">Descrição</label><input class="form-input" name="aliq_descricao" placeholder="Opcional"></div>
+  <div class="form-group" style="margin:0"><label class="form-label form-label--required">Alíquota %</label><input class="form-input" name="aliq_percentual" data-mask="percent" placeholder="0,00 %" required></div>
+  <div class="form-group" style="margin:0"><label class="form-label">Cód. serviço/produto</label><input class="form-input" name="aliq_codigo"></div>
+  <div class="form-group" style="margin:0"><label class="form-label form-label--required">Vigência início</label><input class="form-input" type="date" name="aliq_vigencia_inicio" required></div>
+  <div class="form-group" style="margin:0">
+    <label class="form-label">Ret.</label>
+    <input type="hidden" class="retencao-val" name="aliq_retencao" value="0">
+    <label style="display:flex;align-items:center;gap:4px;font-size:12px;margin-top:6px"><input type="checkbox" class="retencao-cb"> Sim</label>
+  </div>
+  <button type="button" class="btn btn-sm form-repeater-remove" title="Remover">×</button>
+</div>
+{% endmacro %}
+
+{% macro workflow_etapa_row() %}
+<div class="form-repeater-row">
+  <div class="form-group" style="margin:0"><label class="form-label">Ordem</label><input class="form-input" type="number" min="1" value="1" disabled style="opacity:.7"></div>
+  <div class="form-group" style="margin:0"><label class="form-label form-label--required">Nome da etapa</label><input class="form-input" name="etapa_nome" required placeholder="Aprovação gerente"></div>
+  <div class="form-group" style="margin:0"><label class="form-label">Papel aprovador</label><input class="form-input" name="etapa_aprovador_papel_slug" value="gerente-filial" placeholder="gerente-filial"></div>
+  <div class="form-group" style="margin:0"><label class="form-label">SLA (h)</label><input class="form-input" name="etapa_sla_horas" type="number" min="1" value="24"></div>
+  <button type="button" class="btn btn-sm form-repeater-remove" title="Remover etapa">×</button>
+</div>
+{% endmacro %}

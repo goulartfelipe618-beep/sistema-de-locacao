@@ -306,6 +306,114 @@
     else if (isSelect) cidadeEl.disabled = true;
   }
 
+  async function setupIbgeMunicipioFiscal(form) {
+    var wrap = form.querySelector("[data-ibge-municipio]");
+    if (!wrap) return;
+    var ufEl = wrap.querySelector("[name=municipio_uf]");
+    var cidadeEl = wrap.querySelector("[name=municipio_nome]");
+    var ibgeEl = wrap.querySelector("[name=municipio_ibge]");
+    if (!ufEl || !cidadeEl) return;
+
+    if (ufEl.tagName !== "SELECT") {
+      var ufSelect = document.createElement("select");
+      ufSelect.className = ufEl.className;
+      ufSelect.id = ufEl.id;
+      ufSelect.name = ufEl.name;
+      ufSelect.required = ufEl.required;
+      ufSelect.innerHTML = '<option value="">Selecione a UF</option>';
+      ufEl.replaceWith(ufSelect);
+      ufEl = ufSelect;
+    }
+
+    try {
+      var ufs = await fetchJson("/cadastros/ibge/ufs");
+      ufs.forEach(function (u) {
+        var opt = document.createElement("option");
+        opt.value = u.sigla;
+        opt.textContent = u.sigla + " — " + u.nome;
+        ufEl.appendChild(opt);
+      });
+    } catch (_) {
+      UFS_FALLBACK.forEach(function (sigla) {
+        var opt = document.createElement("option");
+        opt.value = sigla;
+        opt.textContent = sigla;
+        ufEl.appendChild(opt);
+      });
+    }
+
+    var currentCity = cidadeEl.value;
+    var isSelect = cidadeEl.tagName === "SELECT";
+
+    async function loadCities() {
+      var uf = ufEl.value;
+      if (!uf) {
+        if (isSelect) cidadeEl.innerHTML = '<option value="">Selecione a UF primeiro</option>';
+        if (ibgeEl) ibgeEl.value = "";
+        cidadeEl.disabled = true;
+        return;
+      }
+      cidadeEl.disabled = true;
+      if (!isSelect) {
+        var sel = document.createElement("select");
+        sel.className = cidadeEl.className;
+        sel.id = cidadeEl.id;
+        sel.name = cidadeEl.name;
+        sel.required = cidadeEl.required;
+        cidadeEl.replaceWith(sel);
+        cidadeEl = sel;
+        isSelect = true;
+      }
+      cidadeEl.innerHTML = '<option value="">Carregando...</option>';
+      try {
+        var cities = await fetchJson("/cadastros/ibge/municipios/" + encodeURIComponent(uf));
+        cidadeEl.innerHTML = '<option value="">Selecione o município</option>';
+        cities.forEach(function (c) {
+          var opt = document.createElement("option");
+          opt.value = c.nome;
+          opt.textContent = c.nome;
+          opt.dataset.ibgeId = String(c.id);
+          if (c.nome === currentCity) opt.selected = true;
+          cidadeEl.appendChild(opt);
+        });
+        cidadeEl.disabled = false;
+        if (ibgeEl && cidadeEl.value) {
+          var selOpt = cidadeEl.options[cidadeEl.selectedIndex];
+          ibgeEl.value = selOpt && selOpt.dataset.ibgeId ? selOpt.dataset.ibgeId : "";
+        }
+      } catch (_) {
+        cidadeEl.innerHTML = '<option value="">Erro ao carregar municípios</option>';
+      }
+    }
+
+    function syncIbge() {
+      if (!ibgeEl) return;
+      var opt = cidadeEl.options[cidadeEl.selectedIndex];
+      ibgeEl.value = opt && opt.dataset.ibgeId ? opt.dataset.ibgeId : "";
+    }
+
+    ufEl.addEventListener("change", loadCities);
+    cidadeEl.addEventListener("change", syncIbge);
+    if (ufEl.value) loadCities();
+    else if (isSelect) cidadeEl.disabled = true;
+  }
+
+  function setupDestinatarioCliente(form) {
+    var cliente = form.querySelector('[name=cliente_id]');
+    var nome = form.querySelector('[name=destinatario_nome]');
+    if (!cliente || !nome) return;
+    async function sync() {
+      if (!cliente.value) return;
+      try {
+        var data = await fetchJson("/cadastros/clientes/" + encodeURIComponent(cliente.value) + "/resumo");
+        if (nome) nome.value = data.nome || "";
+        var doc = form.querySelector('[name=destinatario_doc]');
+        if (doc) doc.value = data.doc || "";
+      } catch (_) { /* ignore */ }
+    }
+    cliente.addEventListener("change", sync);
+  }
+
   function setupMarcaModelo(form) {
     var marca = form.querySelector("#marca_id, [name=marca_id]");
     var modelo = form.querySelector("#modelo_id, [name=modelo_id]");
@@ -482,6 +590,15 @@
       if (el.offsetParent === null) return;
       if (!el.value || !String(el.value).trim()) {
         showFieldError(el, "Campo obrigatório.");
+        ok = false;
+      }
+    });
+
+    form.querySelectorAll("[data-minlength]").forEach(function (el) {
+      if (el.offsetParent === null) return;
+      var min = parseInt(el.getAttribute("data-minlength") || "0", 10);
+      if (min > 0 && String(el.value || "").trim().length < min) {
+        showFieldError(el, "Informe ao menos " + min + " caracteres.");
         ok = false;
       }
     });
@@ -702,6 +819,8 @@
     setupVinculoMotorista(form);
     setupViaCep(form);
     setupIbgeCascade(form);
+    setupIbgeMunicipioFiscal(form);
+    setupDestinatarioCliente(form);
     setupMarcaModelo(form);
     setupFuelSlider(form);
     setupTaxaCalculo(form);

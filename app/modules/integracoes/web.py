@@ -6,7 +6,7 @@ import uuid
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -58,6 +58,12 @@ _EDIT_PERMS: dict[str, str] = {
     "telemetria": "integracoes.telemetria.editar",
 }
 
+API_PUBLIC_SCOPES: list[tuple[str, str]] = [
+    ("disponibilidade:read", "Consultar disponibilidade"),
+    ("reservas:write", "Criar reservas"),
+    ("contratos:read", "Consultar contratos"),
+]
+
 
 def _can_manage_config(user: AuthenticatedUser, tipo: str, *, edit: bool = False) -> bool:
     perm_map = _EDIT_PERMS if edit else _CREATE_PERMS
@@ -87,6 +93,8 @@ async def _render_hub(
         "filiais": await _filiais(session),
         "tenant_slug": settings.default_tenant_slug,
         "provedores": PROVEDORES_POR_TIPO.get(tipo.value, ("simulador",)),
+        "test_flash": request.query_params.get("test"),
+        "test_config": request.query_params.get("config"),
     }
     webhooks = None
     if tipo == IntegracaoTipo.PAGAMENTOS:
@@ -182,6 +190,7 @@ async def api_publica_hub(
             "keys": keys.items,
             "webhooks": webhooks.items,
             "outbound_eventos": OUTBOUND_EVENTOS,
+            "api_scopes": API_PUBLIC_SCOPES,
             "docs_url": "/docs",
             "openapi_url": "/openapi.json",
         },
@@ -222,6 +231,7 @@ async def config_novo(
 
 @router.post("/integracoes/configs/{config_id}/testar")
 async def config_testar(
+    request: Request,
     config_id: uuid.UUID,
     session: SessionDep,
     current_user: Annotated[AuthenticatedUser, Depends(require_web_user)],
@@ -229,8 +239,24 @@ async def config_testar(
 ):
     if not _can_manage_config(current_user, tipo, edit=True):
         raise AppError("Sem permissão para testar integrações.", code="forbidden")
-    await ProvedorConfigService(session).testar(config_id)
-    return RedirectResponse(f"/integracoes/{tipo}", status_code=303)
+    svc = ProvedorConfigService(session)
+    ok = await svc.testar(config_id)
+    config = await svc.get(config_id)
+    accept = request.headers.get("accept", "")
+    if "application/json" in accept:
+        return JSONResponse(
+            content={
+                "ok": ok,
+                "status": config.status.value,
+                "message": "Conexão verificada com sucesso." if ok else (config.ultimo_erro or "Falha no teste de conexão."),
+            }
+        )
+    slug = tipo if tipo != "transito" else "transito"
+    status = "ok" if ok else "fail"
+    return RedirectResponse(
+        f"/integracoes/{slug}?test={status}&config={config.nome}",
+        status_code=303,
+    )
 
 
 @router.post("/integracoes/transito/multas")
@@ -312,9 +338,14 @@ async def api_key_novo(
         AuthenticatedUser, Depends(require_web_permission("integracoes.api_publica.criar"))
     ],
     nome: Annotated[str, Form()],
-    scopes: Annotated[str, Form()] = "disponibilidade:read,reservas:write,contratos:read",
+    scopes: Annotated[list[str] | None, Form()] = None,
+    scopes_csv: Annotated[str, Form()] = "",
 ) -> Any:
-    scope_list = [s.strip() for s in scopes.split(",") if s.strip()]
+    scope_list = [s.strip() for s in (scopes or []) if s and s.strip()]
+    if not scope_list and scopes_csv.strip():
+        scope_list = [s.strip() for s in scopes_csv.split(",") if s.strip()]
+    if not scope_list:
+        scope_list = ["disponibilidade:read", "reservas:write", "contratos:read"]
     item, raw = await ApiKeyService(session).create(
         current_user.tenant_id,
         ApiKeyCreate(nome=nome, scopes=scope_list),

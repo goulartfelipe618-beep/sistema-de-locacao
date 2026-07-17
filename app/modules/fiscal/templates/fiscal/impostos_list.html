@@ -1,8 +1,10 @@
 {% extends "base.html" %}
+{% from "macros/forms.html" import field_label, form_legend %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
 {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
-<div class="card" style="margin-bottom:16px">
+
+<div class="card erp-form-card" style="margin-bottom:16px">
   <div class="toolbar">
     <h2 class="card-title" style="margin:0">Configurações Tributárias</h2>
     <a class="btn" href="/fiscal/impostos/apuracao/periodo">Apuração de Impostos</a>
@@ -28,27 +30,43 @@
 </div>
 
 {% if current_user.is_superuser or 'fiscal.impostos.criar' in current_user.permissions %}
-<div class="card">
+<div class="card erp-form-card">
   <h2 class="card-title">Nova Configuração</h2>
-  <form method="post" action="/fiscal/impostos/novo">
+  <form method="post" action="/fiscal/impostos/novo" class="erp-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <div class="form-grid">
-      <div class="form-group"><label class="form-label">Filial (vazio = padrão do tenant)</label>
-        <select class="form-input" name="filial_id">
-          <option value="">Padrão do tenant</option>
-          {% for f in filiais %}<option value="{{ f.id }}">{{ f.name }}</option>{% endfor %}
-        </select>
+    <fieldset class="form-fieldset">
+      <legend>Dados da configuração</legend>
+      <div class="form-grid">
+        <div class="form-group">
+          {{ field_label('Filial', false, 'filial_id') }}
+          <select class="form-input" id="filial_id" name="filial_id">
+            <option value="">Padrão do tenant</option>
+            {% for f in filiais %}<option value="{{ f.id }}">{{ f.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('Regime', true, 'regime') }}
+          <select class="form-input" id="regime" name="regime" required>
+            {% for r in regimes %}<option value="{{ r }}">{{ r }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('Vigência início', true, 'vigencia_inicio') }}
+          <input class="form-input" type="date" id="vigencia_inicio" name="vigencia_inicio" required>
+        </div>
+        <div class="form-group">
+          {{ field_label('Vigência fim', false, 'vigencia_fim') }}
+          <input class="form-input" type="date" id="vigencia_fim" name="vigencia_fim">
+        </div>
+        <div class="form-group form-check-row">
+          <label><input type="checkbox" name="nfse_automatica" value="on"> Emitir NFS-e automaticamente (encerramento/faturamento)</label>
+        </div>
       </div>
-      <div class="form-group"><label class="form-label">Regime *</label>
-        <select class="form-input" name="regime" required>
-          {% for r in regimes %}<option value="{{ r }}">{{ r }}</option>{% endfor %}
-        </select>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">Salvar</button>
       </div>
-      <div class="form-group"><label class="form-label">Vigência início *</label><input class="form-input" type="date" name="vigencia_inicio" required></div>
-      <div class="form-group"><label class="form-label">Vigência fim</label><input class="form-input" type="date" name="vigencia_fim"></div>
-      <div class="form-group"><label class="form-label"><input type="checkbox" name="nfse_automatica" value="on"> Emitir NFS-e automaticamente (encerramento/faturamento)</label></div>
-    </div>
-    <div class="form-actions" style="margin-top:12px"><button class="btn btn-primary" type="submit">Salvar</button></div>
+      {{ form_legend() }}
+    </fieldset>
   </form>
 </div>
 {% endif %}

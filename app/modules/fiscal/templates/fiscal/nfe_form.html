@@ -1,51 +1,108 @@
 {% extends "base.html" %}
+{% from "macros/forms.html" import field_label, form_legend %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
-{% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
-<div class="card">
+<div class="card erp-form-card" style="max-width:1050px">
   <h2 class="card-title">{{ title }}</h2>
-  <form method="post" action="/fiscal/nfe/novo">
+  {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+
+  <form method="post" action="/fiscal/nfe/novo" class="erp-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <div class="form-grid">
-      <div class="form-group"><label class="form-label">Filial *</label>
-        <select class="form-input" name="filial_id" required>
-          <option value="">Selecionar</option>
-          {% for f in filiais %}<option value="{{ f.id }}">{{ f.name }}</option>{% endfor %}
-        </select>
-      </div>
-      <div class="form-group"><label class="form-label">Operação</label>
-        <select class="form-input" name="operacao">
-          {% for o in operacoes %}<option value="{{ o }}">{{ o }}</option>{% endfor %}
-        </select>
-      </div>
-      <div class="form-group"><label class="form-label">Destinatário (nome) *</label><input class="form-input" name="destinatario_nome" required></div>
-      <div class="form-group"><label class="form-label">Destinatário (CPF/CNPJ)</label><input class="form-input" name="destinatario_doc"></div>
-      <div class="form-group"><label class="form-label">Veículo (venda de frota)</label>
-        <select class="form-input" name="veiculo_id">
-          <option value="">(não aplicável)</option>
-          {% for v in veiculos %}<option value="{{ v.id }}">{{ v.placa }}</option>{% endfor %}
-        </select>
-      </div>
-      <div class="form-group"><label class="form-label">Natureza da operação</label><input class="form-input" name="natureza_operacao"></div>
-      <div class="form-group"><label class="form-label">CFOP padrão</label><input class="form-input" name="cfop_padrao"></div>
-    </div>
 
-    <h3 style="margin-top:20px">Item</h3>
-    <div class="form-grid">
-      <div class="form-group"><label class="form-label">Descrição *</label><input class="form-input" name="item_descricao" required></div>
-      <div class="form-group"><label class="form-label">Quantidade</label><input class="form-input" name="item_quantidade" value="1"></div>
-      <div class="form-group"><label class="form-label">Valor unitário *</label><input class="form-input" name="item_valor_unitario" required></div>
-      <div class="form-group"><label class="form-label">NCM</label><input class="form-input" name="item_ncm"></div>
-      <div class="form-group"><label class="form-label">CFOP</label><input class="form-input" name="item_cfop"></div>
-      <div class="form-group"><label class="form-label">ICMS (%)</label><input class="form-input" name="item_icms_aliquota" value="0"></div>
-      <div class="form-group"><label class="form-label">IPI (%)</label><input class="form-input" name="item_ipi_aliquota" value="0"></div>
-    </div>
+    <fieldset class="form-fieldset">
+      <legend>1. Cabeçalho</legend>
+      <div class="form-grid">
+        <div class="form-group">
+          {{ field_label('Filial', true, 'filial_id') }}
+          <select class="form-input" id="filial_id" name="filial_id" required>
+            <option value="">Selecionar</option>
+            {% for f in filiais %}<option value="{{ f.id }}">{{ f.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('Operação', false, 'operacao') }}
+          <select class="form-input" id="operacao" name="operacao">
+            {% for o in operacoes %}<option value="{{ o }}">{{ o }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('Cliente (auto destinatário)', false, 'cliente_id') }}
+          <select class="form-input" id="cliente_id" name="cliente_id" data-combobox="cliente">
+            <option value="">Buscar cliente...</option>
+            {% for c in clientes %}<option value="{{ c.id }}">{{ c.nome }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('Destinatário (nome)', true, 'destinatario_nome') }}
+          <input class="form-input" id="destinatario_nome" name="destinatario_nome" required>
+        </div>
+        <div class="form-group">
+          {{ field_label('Destinatário (CPF/CNPJ)', false, 'destinatario_doc') }}
+          <input class="form-input" id="destinatario_doc" name="destinatario_doc" data-mask="cpf" placeholder="CPF ou CNPJ">
+        </div>
+        <div class="form-group">
+          {{ field_label('Veículo (venda de frota)', false, 'veiculo_id') }}
+          <select class="form-input" id="veiculo_id" name="veiculo_id" data-combobox="veiculo">
+            <option value="">(não aplicável)</option>
+            {% for v in veiculos %}<option value="{{ v.id }}">{{ v.placa }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('Natureza da operação', false, 'natureza_operacao') }}
+          <input class="form-input" id="natureza_operacao" name="natureza_operacao" placeholder="Venda de mercadoria">
+        </div>
+        <div class="form-group">
+          {{ field_label('CFOP padrão', false, 'cfop_padrao') }}
+          <input class="form-input" id="cfop_padrao" name="cfop_padrao" placeholder="5102">
+        </div>
+      </div>
+    </fieldset>
 
-    <div class="form-group" style="margin-top:12px"><label class="form-label"><input type="checkbox" name="emitir" value="on" checked> Autorizar na SEFAZ imediatamente</label></div>
-    <div class="form-actions" style="margin-top:12px">
-      <button class="btn btn-primary" type="submit">Salvar</button>
-      <a class="btn" href="/fiscal/nfe">Cancelar</a>
-    </div>
+    <fieldset class="form-fieldset">
+      <legend>2. Item da nota</legend>
+      <div class="form-grid">
+        <div class="form-group" style="grid-column:1/-1">
+          {{ field_label('Descrição', true, 'item_descricao') }}
+          <input class="form-input" id="item_descricao" name="item_descricao" required>
+        </div>
+        <div class="form-group">
+          {{ field_label('Quantidade', false, 'item_quantidade') }}
+          <input class="form-input" id="item_quantidade" name="item_quantidade" type="number" min="1" value="1">
+        </div>
+        <div class="form-group">
+          {{ field_label('Valor unitário (R$)', true, 'item_valor_unitario') }}
+          <input class="form-input" id="item_valor_unitario" name="item_valor_unitario" data-money="1" required>
+        </div>
+        <div class="form-group">
+          {{ field_label('NCM', false, 'item_ncm') }}
+          <input class="form-input" id="item_ncm" name="item_ncm" placeholder="87032310">
+        </div>
+        <div class="form-group">
+          {{ field_label('CFOP item', false, 'item_cfop') }}
+          <input class="form-input" id="item_cfop" name="item_cfop">
+        </div>
+        <div class="form-group">
+          {{ field_label('ICMS (%)', false, 'item_icms_aliquota') }}
+          <input class="form-input" id="item_icms_aliquota" name="item_icms_aliquota" data-mask="percent" value="0">
+        </div>
+        <div class="form-group">
+          {{ field_label('IPI (%)', false, 'item_ipi_aliquota') }}
+          <input class="form-input" id="item_ipi_aliquota" name="item_ipi_aliquota" data-mask="percent" value="0">
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="form-fieldset">
+      <legend>3. Autorização</legend>
+      <div class="form-group">
+        <label><input type="checkbox" name="emitir" value="on" checked> Autorizar na SEFAZ imediatamente</label>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">Salvar NF-e</button>
+        <a class="btn" href="/fiscal/nfe">Cancelar</a>
+      </div>
+      {{ form_legend() }}
+    </fieldset>
   </form>
 </div>
 {% endblock %}

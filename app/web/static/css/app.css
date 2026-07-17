@@ -387,6 +387,48 @@ a:hover { text-decoration: underline; }
   .form-repeater--proposta .form-repeater-row { grid-template-columns: 1fr; }
 }
 
+/* Upload XML drag-drop */
+.upload-zone {
+  border: 2px dashed var(--border); border-radius: 8px; padding: 16px; margin-top: 8px;
+  background: #fafbfc; cursor: pointer; transition: border-color .15s, background .15s;
+}
+.upload-zone:focus { outline: 2px solid var(--primary); outline-offset: 2px; }
+.upload-zone--hover, .upload-zone--filled { border-color: var(--primary); background: #f0f6ff; }
+.upload-zone input[type=file] { display: none; }
+.upload-hint { font-size: 12px; color: var(--text-muted); margin: 8px 0 0; }
+
+/* Automação builder */
+.automation-builder { border: 1px solid var(--border); border-radius: 6px; padding: 12px; background: #fafbfc; }
+.automation-builder .form-grid { margin-bottom: 8px; }
+
+/* Integrações */
+.secret-field-wrap { display: flex; gap: 8px; align-items: center; }
+.secret-field-wrap .form-input { flex: 1; }
+.integration-test-result {
+  font-size: 12px; margin-top: 6px; padding: 6px 8px; border-radius: 4px;
+}
+.integration-test-result.is-ok { background: #e6f4ea; color: #1e7e34; }
+.integration-test-result.is-fail { background: var(--danger-bg); color: var(--danger); }
+.form-check-row { display: flex; flex-wrap: wrap; gap: 10px 16px; }
+.form-check-row label { font-size: 12.5px; display: flex; align-items: center; gap: 6px; }
+
+.form-repeater--workflow .form-repeater-head,
+.form-repeater--workflow .form-repeater-row {
+  grid-template-columns: 50px 1.5fr 1.2fr 80px 36px;
+}
+.form-repeater--aliquota .form-repeater-head,
+.form-repeater--aliquota .form-repeater-row {
+  grid-template-columns: 1fr 1.2fr 100px 1fr 110px 70px 36px;
+}
+
+.param-category-panel {
+  border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; margin-bottom: 16px;
+  background: #fff;
+}
+.param-category-panel legend {
+  font-size: 13px; font-weight: 600; padding: 0 6px;
+}
+
 .multi-list {
   border: 1px solid var(--border); border-radius: var(--radius); padding: 8px;
   max-height: 160px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;

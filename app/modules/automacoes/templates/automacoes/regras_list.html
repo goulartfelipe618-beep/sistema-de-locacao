@@ -1,31 +1,83 @@
 {% extends "base.html" %}
+{% from "macros/forms.html" import field_label, form_legend, workflow_etapa_row %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
-<div class="card">
+<div class="card erp-form-card">
   <h2 class="card-title">{{ title }}</h2>
-  <p class="text-muted">Motor condição → ação configurável (JSON logic simples).</p>
+  <p class="form-help">Motor condição → ação configurável. Use o builder visual ou edite o JSON avançado.</p>
 
   {% if current_user.is_superuser or 'automacoes.regras.criar' in current_user.permissions %}
-  <div class="card" style="margin:16px 0;padding:12px">
-    <h4>Nova regra</h4>
-    <form method="post" action="/automacoes/regras/novo">
+  <fieldset class="form-fieldset" style="margin:16px 0">
+    <legend>Nova regra</legend>
+    <form method="post" action="/automacoes/regras/novo" class="erp-form">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <div class="form-grid">
-        <div class="form-group"><label>Nome</label><input class="form-input" name="nome" required></div>
-        <div class="form-group"><label>Gatilho</label>
-          <select class="form-input" name="evento_gatilho">{% for e in eventos %}<option value="{{ e.value }}">{{ e.value }}</option>{% endfor %}</select>
+        <div class="form-group">
+          {{ field_label('Nome', true, 'nome') }}
+          <input class="form-input" id="nome" name="nome" required>
         </div>
-        <div class="form-group"><label>Ação</label>
-          <select class="form-input" name="acao_tipo">{% for a in acoes %}<option value="{{ a.value }}">{{ a.value }}</option>{% endfor %}</select>
+        <div class="form-group">
+          {{ field_label('Gatilho', true, 'evento_gatilho') }}
+          <select class="form-input" id="evento_gatilho" name="evento_gatilho">
+            {% for e in eventos %}<option value="{{ e.value }}">{{ e.value }}</option>{% endfor %}
+          </select>
         </div>
-        <div class="form-group"><label>Prioridade</label><input class="form-input" name="prioridade" type="number" value="100"></div>
+        <div class="form-group">
+          {{ field_label('Ação', true, 'acao_tipo') }}
+          <select class="form-input" id="acao_tipo" name="acao_tipo">
+            {% for a in acoes %}<option value="{{ a.value }}">{{ a.value }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('Prioridade', false, 'prioridade') }}
+          <input class="form-input" id="prioridade" name="prioridade" type="number" value="100">
+        </div>
       </div>
-      <div class="form-group"><label>Condição JSON</label><textarea class="form-input" name="condicao_json" rows="2">{"op":"always"}</textarea></div>
-      <p class="form-help">Exemplos: título vencido ≥30 dias <code>{"op":"gte","field":"dias_vencido","value":30}</code> · doc. a vencer ≤7 dias <code>{"op":"lte","field":"dias_para_vencer","value":7}</code></p>
-      <div class="form-group"><label>Parâmetros ação JSON</label><textarea class="form-input" name="acao_params_json" rows="2">{"mensagem":"Alerta automático"}</textarea></div>
-      <button class="btn btn-primary btn-sm" type="submit">Salvar</button>
+
+      <div class="form-group automation-builder" data-builder-target="condicao_json">
+        <label class="form-label">Condição (builder visual)</label>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Operador</label>
+            <select class="form-input automation-op">
+              <option value="always">Sempre executar</option>
+              <option value="gte">Maior ou igual (≥)</option>
+              <option value="lte">Menor ou igual (≤)</option>
+              <option value="eq">Igual a</option>
+              <option value="neq">Diferente de</option>
+              <option value="contains">Contém texto</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Campo</label>
+            <select class="form-input automation-field">
+              <option value="dias_vencido">Dias vencido (título)</option>
+              <option value="dias_para_vencer">Dias para vencer (documento)</option>
+              <option value="valor">Valor numérico</option>
+              <option value="status">Status (texto)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Valor</label>
+            <input class="form-input automation-value" type="text" placeholder="Ex.: 30">
+          </div>
+        </div>
+        <textarea class="form-input" name="condicao_json" rows="2" hidden>{"op":"always"}</textarea>
+        <details style="margin-top:8px">
+          <summary class="form-help">JSON avançado</summary>
+          <textarea class="form-input automation-json-advanced" rows="3">{"op":"always"}</textarea>
+        </details>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Mensagem da ação</label>
+        <input class="form-input automation-msg" value="Alerta automático" placeholder="Texto da notificação">
+        <textarea class="form-input" name="acao_params_json" rows="2" hidden>{"mensagem":"Alerta automático"}</textarea>
+      </div>
+
+      <button class="btn btn-primary btn-sm" type="submit">Salvar regra</button>
     </form>
-  </div>
+  </fieldset>
   {% endif %}
 
   {% if regras %}
@@ -39,17 +91,17 @@
       <td>{{ r.ultima_execucao_em|datetime if r.ultima_execucao_em else '-' }}</td>
       <td>
         {% if current_user.is_superuser or 'automacoes.regras.executar' in current_user.permissions %}
-        <form method="post" action="/automacoes/regras/{{ r.id }}/executar" style="display:inline">
+        <form method="post" action="/automacoes/regras/{{ r.id }}/executar" class="erp-form" style="display:inline">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <button class="btn btn-sm" type="submit">Executar</button>
         </form>
         {% endif %}
         {% if current_user.is_superuser or 'automacoes.regras.editar' in current_user.permissions %}
-        <form method="post" action="/automacoes/regras/{{ r.id }}/toggle" style="display:inline">
+        <form method="post" action="/automacoes/regras/{{ r.id }}/toggle" class="erp-form" style="display:inline">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <button class="btn btn-sm" type="submit">{{ 'Desativar' if r.ativo else 'Ativar' }}</button>
         </form>
-        <form method="post" action="/automacoes/regras/{{ r.id }}/excluir" style="display:inline" class="erp-form"
+        <form method="post" action="/automacoes/regras/{{ r.id }}/excluir" class="erp-form" style="display:inline"
               data-confirm="Excluir esta regra de automação?"
               data-confirm-title="Excluir regra">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">

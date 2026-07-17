@@ -1,36 +1,80 @@
 {% extends "base.html" %}
+{% from "macros/forms.html" import field_label, form_legend %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
-{% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
-<div class="card">
+<div class="card erp-form-card" style="max-width:960px">
   <h2 class="card-title">{{ title }}</h2>
-  <form method="post" action="/fiscal/nfse/novo">
+  {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+
+  <form method="post" action="/fiscal/nfse/novo" class="erp-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <div class="form-grid">
-      <div class="form-group"><label class="form-label">Filial *</label>
-        <select class="form-input" name="filial_id" required>
-          <option value="">Selecionar</option>
-          {% for f in filiais %}<option value="{{ f.id }}">{{ f.name }}</option>{% endfor %}
-        </select>
+
+    <fieldset class="form-fieldset">
+      <legend>1. Dados do serviço</legend>
+      <div class="form-grid">
+        <div class="form-group">
+          {{ field_label('Filial', true, 'filial_id') }}
+          <select class="form-input" id="filial_id" name="filial_id" required>
+            <option value="">Selecionar</option>
+            {% for f in filiais %}<option value="{{ f.id }}">{{ f.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('Tomador (cliente)', false, 'cliente_id') }}
+          <select class="form-input" id="cliente_id" name="cliente_id" data-combobox="cliente">
+            <option value="">(sem cliente)</option>
+            {% for c in clientes %}<option value="{{ c.id }}">{{ c.nome }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('Valor do serviço (R$)', true, 'valor_servico') }}
+          <input class="form-input" id="valor_servico" name="valor_servico" data-money="1" required placeholder="R$ 0,00">
+        </div>
+        <div class="form-group">
+          {{ field_label('Alíquota ISS (%)', false, 'aliquota_iss') }}
+          <input class="form-input" id="aliquota_iss" name="aliquota_iss" data-mask="percent" placeholder="Automático se vazio">
+        </div>
+        <div class="form-group form-check-row">
+          <label><input type="checkbox" id="retencao_iss" name="retencao_iss" value="on"> ISS retido pelo tomador</label>
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          {{ field_label('Discriminação', false, 'discriminacao') }}
+          <textarea class="form-input" id="discriminacao" name="discriminacao" rows="2" placeholder="Descrição detalhada do serviço prestado"></textarea>
+        </div>
       </div>
-      <div class="form-group"><label class="form-label">Tomador (cliente)</label>
-        <select class="form-input" name="cliente_id">
-          <option value="">(sem cliente)</option>
-          {% for c in clientes %}<option value="{{ c.id }}">{{ c.nome }}</option>{% endfor %}
-        </select>
+    </fieldset>
+
+    <fieldset class="form-fieldset">
+      <legend>2. Município de prestação (IBGE)</legend>
+      <div class="form-grid" data-ibge-municipio>
+        <div class="form-group">
+          {{ field_label('UF', true, 'municipio_uf') }}
+          <select class="form-input" id="municipio_uf" name="municipio_uf" required>
+            <option value="">Selecione a UF</option>
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('Município', true, 'municipio_nome') }}
+          <select class="form-input" id="municipio_nome" name="municipio_nome" required disabled>
+            <option value="">Selecione a UF primeiro</option>
+          </select>
+        </div>
+        <input type="hidden" id="municipio_ibge" name="municipio_ibge">
       </div>
-      <div class="form-group"><label class="form-label">Valor do serviço *</label><input class="form-input" name="valor_servico" required></div>
-      <div class="form-group"><label class="form-label">Município (nome)</label><input class="form-input" name="municipio_nome"></div>
-      <div class="form-group"><label class="form-label">Município IBGE</label><input class="form-input" name="municipio_ibge"></div>
-      <div class="form-group"><label class="form-label">Alíquota ISS (%) — vazio calcula automático</label><input class="form-input" name="aliquota_iss"></div>
-      <div class="form-group"><label class="form-label"><input type="checkbox" name="retencao_iss" value="on"> ISS retido pelo tomador</label></div>
-      <div class="form-group"><label class="form-label">Discriminação</label><input class="form-input" name="discriminacao"></div>
-      <div class="form-group"><label class="form-label"><input type="checkbox" name="emitir" value="on" checked> Emitir imediatamente</label></div>
-    </div>
-    <div class="form-actions" style="margin-top:12px">
-      <button class="btn btn-primary" type="submit">Salvar</button>
-      <a class="btn" href="/fiscal/nfse">Cancelar</a>
-    </div>
+      <p class="form-help">O código IBGE é preenchido automaticamente ao selecionar o município.</p>
+    </fieldset>
+
+    <fieldset class="form-fieldset">
+      <legend>3. Emissão</legend>
+      <div class="form-group">
+        <label><input type="checkbox" name="emitir" value="on" checked> Emitir imediatamente após salvar</label>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">Salvar NFS-e</button>
+        <a class="btn" href="/fiscal/nfse">Cancelar</a>
+      </div>
+      {{ form_legend() }}
+    </fieldset>
   </form>
 </div>
 {% endblock %}

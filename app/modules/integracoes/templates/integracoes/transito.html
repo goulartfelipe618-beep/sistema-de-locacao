@@ -1,38 +1,49 @@
 {% extends "base.html" %}
+{% from "macros/forms.html" import field_label %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
 {% include "integracoes/_config_section.html" %}
-<div class="card" style="margin-top:16px">
-  <h4>Consultar multas (importar para Locações)</h4>
-  <form method="post" action="/integracoes/transito/multas" class="form-grid">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <div class="form-group"><label>Veículo</label>
-      <select class="form-input" name="veiculo_id" required>
-        {% for v in veiculos %}<option value="{{ v.id }}">{{ v.placa }}</option>{% endfor %}
-      </select>
-    </div>
-    <div class="form-group" style="align-self:end"><button class="btn btn-primary" type="submit">Consultar multas</button></div>
-  </form>
-  <h4 style="margin-top:16px">Consultar CNH</h4>
-  <form method="post" action="/integracoes/transito/cnh" class="form-grid">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <div class="form-group"><label>Motorista</label>
-      <select class="form-input" name="motorista_id" required>
-        {% for m in motoristas %}<option value="{{ m.id }}">{{ m.nome }}</option>{% endfor %}
-      </select>
-    </div>
-    <div class="form-group" style="align-self:end"><button class="btn btn-primary" type="submit">Consultar CNH</button></div>
-  </form>
-  <h4 style="margin-top:16px">Consultar débitos veiculares (IPVA / licenciamento)</h4>
-  <form method="post" action="/integracoes/transito/debitos" class="form-grid">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <div class="form-group"><label>Veículo</label>
-      <select class="form-input" name="veiculo_id" required>
-        {% for v in veiculos %}<option value="{{ v.id }}">{{ v.placa }}</option>{% endfor %}
-      </select>
-    </div>
-    <div class="form-group" style="align-self:end"><button class="btn btn-primary" type="submit">Consultar débitos</button></div>
-  </form>
+<div class="card erp-form-card" style="margin-top:16px">
+  <h4>Consultas de trânsito</h4>
+  <fieldset class="form-fieldset">
+    <legend>Multas (importar para Locações)</legend>
+    <form method="post" action="/integracoes/transito/multas" class="erp-form form-grid">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="form-group">
+        {{ field_label('Veículo', true, 'veiculo_id') }}
+        <select class="form-input" id="veiculo_id" name="veiculo_id" required data-combobox="veiculo">
+          {% for v in veiculos %}<option value="{{ v.id }}">{{ v.placa }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group" style="align-self:end"><button class="btn btn-primary" type="submit">Consultar multas</button></div>
+    </form>
+  </fieldset>
+  <fieldset class="form-fieldset">
+    <legend>CNH do motorista</legend>
+    <form method="post" action="/integracoes/transito/cnh" class="erp-form form-grid">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="form-group">
+        {{ field_label('Motorista', true, 'motorista_id') }}
+        <select class="form-input" name="motorista_id" required>
+          {% for m in motoristas %}<option value="{{ m.id }}">{{ m.nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group" style="align-self:end"><button class="btn btn-primary" type="submit">Consultar CNH</button></div>
+    </form>
+  </fieldset>
+  <fieldset class="form-fieldset">
+    <legend>Débitos veiculares</legend>
+    <form method="post" action="/integracoes/transito/debitos" class="erp-form form-grid">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="form-group">
+        {{ field_label('Veículo', true, 'veiculo_id') }}
+        <select class="form-input" name="veiculo_id" required data-combobox="veiculo">
+          {% for v in veiculos %}<option value="{{ v.id }}">{{ v.placa }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group" style="align-self:end"><button class="btn btn-primary" type="submit">Consultar débitos</button></div>
+    </form>
+  </fieldset>
   {% if consultas %}
   <h4 style="margin-top:16px">Histórico</h4>
   <table class="table"><thead><tr><th>Tipo</th><th>Status</th><th>Data</th></tr></thead>

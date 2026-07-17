@@ -1,24 +1,26 @@
 {% extends "base.html" %}
+{% from "macros/forms.html" import field_label, form_legend, aliquota_item_row %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
 {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
-<div class="card" style="margin-bottom:16px">
+
+<div class="card erp-form-card" style="margin-bottom:16px">
   <a class="btn btn-sm" href="/fiscal/impostos">&larr; Configurações</a>
   <h2 class="card-title">Configuração Tributária</h2>
-  <div class="detail-grid">
-    <div><span class="detail-label">Filial</span><span>{{ filial_nomes.get(config.filial_id|string, 'Padrão do tenant') if config.filial_id else 'Padrão do tenant' }}</span></div>
-    <div><span class="detail-label">Regime</span><span>{{ config.regime.value }}</span></div>
-    <div><span class="detail-label">Vigência</span><span>{{ config.vigencia_inicio|date }} — {{ config.vigencia_fim|date if config.vigencia_fim else 'atual' }}</span></div>
-    <div><span class="detail-label">NFS-e automática</span><span>{{ 'sim' if config.nfse_automatica else 'não' }}</span></div>
-    <div><span class="detail-label">Ativo</span><span>{{ 'sim' if config.ativo else 'não' }}</span></div>
+  <div class="form-summary-panel">
+    <div><strong>Filial</strong>{{ filial_nomes.get(config.filial_id|string, 'Padrão do tenant') if config.filial_id else 'Padrão do tenant' }}</div>
+    <div><strong>Regime</strong>{{ config.regime.value }}</div>
+    <div><strong>Vigência</strong>{{ config.vigencia_inicio|date }} — {{ config.vigencia_fim|date if config.vigencia_fim else 'atual' }}</div>
+    <div><strong>NFS-e automática</strong>{{ 'sim' if config.nfse_automatica else 'não' }}</div>
+    <div><strong>Ativo</strong>{{ 'sim' if config.ativo else 'não' }}</div>
   </div>
 </div>
 
-<div class="card">
-  <h2 class="card-title">Alíquotas</h2>
+<div class="card erp-form-card">
+  <h2 class="card-title">Alíquotas cadastradas</h2>
   {% if aliquotas %}
   <table class="table">
-    <thead><tr><th>Tipo</th><th>Descrição</th><th>Cód. serviço/produto</th><th>Alíquota %</th><th>Retenção</th><th>Vigência</th><th></th></tr></thead>
+    <thead><tr><th>Tipo</th><th>Descrição</th><th>Cód.</th><th>Alíquota %</th><th>Retenção</th><th>Vigência</th><th></th></tr></thead>
     <tbody>
     {% for a in aliquotas %}
     <tr>
@@ -30,7 +32,9 @@
       <td>{{ a.vigencia_inicio|date }} — {{ a.vigencia_fim|date if a.vigencia_fim else 'atual' }}</td>
       <td>
         {% if current_user.is_superuser or 'fiscal.impostos.editar' in current_user.permissions %}
-        <form method="post" action="/fiscal/impostos/aliquotas/{{ a.id }}/excluir" onsubmit="return confirm('Remover alíquota?')" style="display:inline">
+        <form method="post" action="/fiscal/impostos/aliquotas/{{ a.id }}/excluir" class="erp-form"
+              data-confirm="Remover esta alíquota?"
+              data-confirm-title="Excluir alíquota">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <input type="hidden" name="config_id" value="{{ config.id }}">
           <button class="btn btn-sm btn-danger" type="submit">Excluir</button>
@@ -44,18 +48,28 @@
   {% else %}<div class="empty-state">Nenhuma alíquota cadastrada.</div>{% endif %}
 
   {% if current_user.is_superuser or 'fiscal.impostos.criar' in current_user.permissions %}
-  <form method="post" action="/fiscal/impostos/{{ config.id }}/aliquotas/novo" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <select class="form-input" name="tipo" required>
-      {% for t in imposto_tipos %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
-    </select>
-    <input class="form-input" name="aliquota_percentual" placeholder="Alíquota %" required>
-    <input class="form-input" name="descricao" placeholder="Descrição">
-    <input class="form-input" name="servico_produto_codigo" placeholder="Cód. serviço/produto">
-    <input class="form-input" type="date" name="vigencia_inicio" required>
-    <label style="align-self:center"><input type="checkbox" name="retencao" value="on"> Retenção</label>
-    <button class="btn btn-primary" type="submit">Adicionar</button>
-  </form>
+  <fieldset class="form-fieldset" style="margin-top:20px">
+    <legend>Adicionar alíquotas</legend>
+    <form method="post" action="/fiscal/impostos/{{ config.id }}/aliquotas/lote" class="erp-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="form-repeater form-repeater--aliquota" data-repeater-min="1" data-repeater-validate data-repeater-key="aliq_tipo"
+           data-repeater-error="Informe ao menos uma alíquota.">
+        <div class="form-repeater-head">
+          <span>Tipo</span><span>Descrição</span><span>Alíquota</span><span>Código</span><span>Vigência</span><span>Ret.</span><span></span>
+        </div>
+        <div class="form-repeater-rows">
+          {{ aliquota_item_row(imposto_tipos) }}
+        </div>
+        <template class="form-repeater-template">
+          {{ aliquota_item_row(imposto_tipos) }}
+        </template>
+        <div class="form-repeater-actions">
+          <button type="button" class="btn btn-sm form-repeater-add">+ Adicionar alíquota</button>
+          <button class="btn btn-sm btn-primary" type="submit">Salvar alíquotas</button>
+        </div>
+      </div>
+    </form>
+  </fieldset>
   {% endif %}
 </div>
 {% endblock %}

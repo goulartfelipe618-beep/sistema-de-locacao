@@ -152,20 +152,39 @@ async def workflow_novo(
     ],
     codigo: Annotated[str, Form()],
     nome: Annotated[str, Form()],
-    etapa_nome: Annotated[str, Form()] = "Aprovação",
-    aprovador_papel_slug: Annotated[str, Form()] = "gerente-filial",
+    etapa_nome: Annotated[list[str] | None, Form()] = None,
+    etapa_aprovador_papel_slug: Annotated[list[str] | None, Form()] = None,
+    etapa_sla_horas: Annotated[list[str] | None, Form()] = None,
 ):
+    etapa_nome = etapa_nome or ["Aprovação"]
+    etapa_aprovador_papel_slug = etapa_aprovador_papel_slug or []
+    etapa_sla_horas = etapa_sla_horas or []
+    etapas: list[WorkflowEtapaInput] = []
+    for idx, en in enumerate(etapa_nome):
+        if not en or not en.strip():
+            continue
+        sla_raw = etapa_sla_horas[idx] if idx < len(etapa_sla_horas) else "24"
+        try:
+            sla = int(sla_raw) if str(sla_raw).strip() else 24
+        except ValueError:
+            sla = 24
+        slug = etapa_aprovador_papel_slug[idx] if idx < len(etapa_aprovador_papel_slug) else "gerente-filial"
+        etapas.append(
+            WorkflowEtapaInput(
+                ordem=len(etapas) + 1,
+                nome=en.strip(),
+                aprovador_papel_slug=slug or None,
+                sla_horas=max(sla, 1),
+            )
+        )
+    if not etapas:
+        etapas.append(
+            WorkflowEtapaInput(ordem=1, nome="Aprovação", aprovador_papel_slug="gerente-filial", sla_horas=24)
+        )
     data = WorkflowCreate(
         codigo=codigo,
         nome=nome,
-        etapas=[
-            WorkflowEtapaInput(
-                ordem=1,
-                nome=etapa_nome,
-                aprovador_papel_slug=aprovador_papel_slug or None,
-                sla_horas=24,
-            )
-        ],
+        etapas=etapas,
     )
     await WorkflowService(session).create(current_user.tenant_id, data)
     return RedirectResponse("/automacoes/workflows", status_code=303)
