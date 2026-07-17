@@ -1,4 +1,4 @@
-"""Porta (interface) para envio de SMS/WhatsApp."""
+"""Porta (interface) para envio de SMS."""
 
 from __future__ import annotations
 

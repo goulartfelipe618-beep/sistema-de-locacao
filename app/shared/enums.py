@@ -564,7 +564,6 @@ class CrmOrigemLead(str, enum.Enum):
     TELEFONE = "telefone"
     INDICACAO = "indicacao"
     PARCEIRO = "parceiro"
-    REDES_SOCIAIS = "redes_sociais"
     OUTRO = "outro"
 
 
@@ -601,7 +600,6 @@ class CrmCampanhaCanal(str, enum.Enum):
 
     EMAIL = "email"
     SMS = "sms"
-    WHATSAPP = "whatsapp"
     SITE = "site"
 
 
@@ -960,7 +958,6 @@ class NotificacaoCanal(str, enum.Enum):
     IN_APP = "in_app"
     EMAIL = "email"
     SMS = "sms"
-    WHATSAPP = "whatsapp"
 
 
 class NotificacaoEnvioStatus(str, enum.Enum):

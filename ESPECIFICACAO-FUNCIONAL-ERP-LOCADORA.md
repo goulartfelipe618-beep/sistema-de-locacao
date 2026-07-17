@@ -32,7 +32,7 @@ Estas regras são transversais e não serão repetidas em cada módulo, mas se a
 6. **Status/workflow**: todo processo com ciclo de vida (reserva, contrato, OS, proposta, NF) tem máquina de estados explícita, transições validadas no Service Layer, e histórico de mudança de status gravado.
 7. **Permissões**: cada menu/submenu = 1 ou mais `permission keys` (ex.: `frota.veiculos.view`, `frota.veiculos.edit`, `financeiro.contas_pagar.aprovar`). RBAC por papel (módulo 14 — Papéis e Permissões), granularidade CRUD + ações especiais (aprovar, cancelar, estornar, emitir).
 8. **Busca e filtros**: toda listagem tem busca textual server-side (HTMX), filtros persistentes por sessão, paginação, export (CSV/PDF/XLSX quando fizer sentido).
-9. **Notificações**: eventos de negócio (reserva confirmada, contrato vencendo, manutenção agendada, boleto vencido) disparam notificações (in-app + e-mail + opcional WhatsApp via integração) geridas pelo módulo de Automações.
+9. **Notificações**: eventos de negócio (reserva confirmada, contrato vencendo, manutenção agendada, boleto vencido) disparam notificações (in-app + e-mail + SMS opcional) geridas pelo módulo de Automações.
 10. **Soft-delete com dependência**: exclusão só permitida se não houver vínculo ativo; caso contrário, sistema oferece "inativar" em vez de excluir.
 ---
 
@@ -67,7 +67,7 @@ Estas regras são transversais e não serão repetidas em cada módulo, mas se a
 - Tipo: PF ou PJ
 - PF: nome completo, CPF, RG, data nascimento, estado civil, profissão
 - PJ: razão social, nome fantasia, CNPJ, IE, representante legal
-- Contato: e-mails (múltiplos), telefones (múltiplos, com WhatsApp flag)
+- Contato: e-mails (múltiplos), telefones (múltiplos)
 - Endereços (múltiplos: residencial/cobrança/entrega), CEP com autopreenchimento (integração ViaCEP)
 - Dados de CNH (se PF também for motorista) — ou vínculo com registro em Motoristas
 - Classificação: categoria de cliente (Varejo, Corporativo, Frota, Turismo), tabela de tarifa padrão, limite de crédito
@@ -506,7 +506,7 @@ Estas regras são transversais e não serão repetidas em cada módulo, mas se a
 2. Vistoria de saída: checklist do estado do veículo (carroceria — diagrama clicável marcando avarias existentes), nível de combustível, km atual, itens/acessórios presentes, fotos (mínimo N fotos obrigatórias: frente/trás/laterais/interior/painel km).
 3. Conferência de pagamento/caução (pré-autorização de cartão ou depósito — integra Financeiro/Pagamentos).
 4. Assinatura do cliente (contrato + termo de vistoria) — tablet/touch ou link remoto.
-5. Emissão do contrato em PDF e envio automático por e-mail/WhatsApp.
+5. Emissão do contrato em PDF e envio automático por e-mail.
 
 **Regras de negócio:**
 - Não permite concluir check-out se: documentação do veículo vencida, motorista sem CNH válida, pagamento/caução não confirmados (salvo override com permissão).
@@ -600,7 +600,7 @@ Estas regras são transversais e não serão repetidas em cada módulo, mas se a
 
 **Estágios (configuráveis):** Lead/Novo Contato → Qualificação → Cotação Enviada → Negociação → Fechado/Ganho (vira Contrato) → Perdido (com motivo).
 
-**Campos:** origem do lead (Site, Telefone, Indicação, Parceiro, Redes Sociais), vendedor responsável, valor estimado, data prevista de fechamento, histórico de interações (notas/ligações/e-mails registrados).
+**Campos:** origem do lead (Site, Telefone, Indicação, Parceiro), vendedor responsável, valor estimado, data prevista de fechamento, histórico de interações (notas/ligações/e-mails registrados).
 
 **Regras de negócio:**
 - Cotações não convertidas (5.5) entram automaticamente no funil como oportunidade.
@@ -629,7 +629,7 @@ Estas regras são transversais e não serão repetidas em cada módulo, mas se a
 
 **Objetivo:** gestão de campanhas promocionais/marketing (períodos de desconto, campanhas sazonais, e-mail marketing para base de clientes).
 
-**Campos:** nome, período de vigência, público-alvo (segmentação: todos, categoria de cliente, clientes inativos há X dias), regra de desconto aplicada (vínculo com Tarifário ou Cupons), canal (E-mail, SMS, WhatsApp, Site), métricas (enviados, abertos, convertidos).
+**Campos:** nome, período de vigência, público-alvo (segmentação: todos, categoria de cliente, clientes inativos há X dias), regra de desconto aplicada (vínculo com Tarifário ou Cupons), canal (E-mail, SMS, Site), métricas (enviados, abertos, convertidos).
 
 **Regras de negócio:**
 - Disparo de campanha via Celery (fila de envio), respeitando opt-out/LGPD.

@@ -73,14 +73,6 @@
         <input class="form-input" id="celular" name="celular"
                value="{{ cliente.celular if cliente else '' }}">
       </div>
-      <div class="form-group">
-        <label class="form-label" for="whatsapp">WhatsApp</label>
-        <label class="form-help" style="display:flex;gap:8px;align-items:center;margin-top:8px">
-          <input type="checkbox" id="whatsapp" name="whatsapp" value="1"
-                 {% if cliente and cliente.whatsapp %}checked{% endif %}>
-          Celular é WhatsApp
-        </label>
-      </div>
 
       <div class="form-group">
         <label class="form-label" for="cep">CEP</label>

@@ -119,7 +119,6 @@ class Cliente(TenantBaseModel):
     email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     telefone: Mapped[str | None] = mapped_column(String(20), nullable=True)
     celular: Mapped[str | None] = mapped_column(String(20), nullable=True)
-    whatsapp: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     # Endereço principal
     cep: Mapped[str | None] = mapped_column(String(8), nullable=True)

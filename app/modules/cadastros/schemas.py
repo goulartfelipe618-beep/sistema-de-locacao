@@ -68,7 +68,6 @@ class ClienteBase(BaseModel):
     email: str | None = Field(default=None, max_length=255)
     telefone: str | None = Field(default=None, max_length=20)
     celular: str | None = Field(default=None, max_length=20)
-    whatsapp: bool = False
     cep: str | None = Field(default=None, max_length=9)
     endereco: str | None = Field(default=None, max_length=255)
     numero: str | None = Field(default=None, max_length=20)
@@ -148,7 +147,6 @@ class ClienteUpdate(BaseModel):
     email: str | None = Field(default=None, max_length=255)
     telefone: str | None = Field(default=None, max_length=20)
     celular: str | None = Field(default=None, max_length=20)
-    whatsapp: bool | None = None
     cep: str | None = Field(default=None, max_length=9)
     endereco: str | None = Field(default=None, max_length=255)
     numero: str | None = Field(default=None, max_length=20)

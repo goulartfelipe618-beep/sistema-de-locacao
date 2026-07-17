@@ -48,7 +48,7 @@ class Notificacao(TenantBaseModel):
 
 
 class NotificacaoEnvio(TenantBaseModel):
-    """Log de envio por canal externo (e-mail, SMS, WhatsApp)."""
+    """Log de envio por canal externo (e-mail, SMS)."""
 
     __tablename__ = "notificacao_envios"
     __table_args__ = (Index("ix_notificacao_envios_tenant", "tenant_id"),)

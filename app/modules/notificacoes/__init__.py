@@ -1,1 +1,1 @@
-"""Módulo de Notificações (in-app, e-mail, SMS/WhatsApp)."""
+"""Módulo de Notificações (in-app, e-mail, SMS)."""

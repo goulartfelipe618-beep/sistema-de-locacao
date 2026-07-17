@@ -148,7 +148,7 @@ class NotificationService:
         external_channels: list[tuple[NotificacaoCanal, str]] = []
         if NotificacaoCanal.EMAIL in canais and email_dest:
             external_channels.append((NotificacaoCanal.EMAIL, email_dest))
-        sms_canais = {NotificacaoCanal.SMS, NotificacaoCanal.WHATSAPP}
+        sms_canais = {NotificacaoCanal.SMS}
         for canal in canais:
             if canal in sms_canais and telefone_dest:
                 external_channels.append((canal, telefone_dest))
@@ -189,7 +189,7 @@ class NotificationService:
                     subject=envio.assunto or "Notificação ERP Locadora",
                     body=envio.corpo,
                 )
-            elif envio.canal in {NotificacaoCanal.SMS, NotificacaoCanal.WHATSAPP}:
+            elif envio.canal == NotificacaoCanal.SMS:
                 get_sms_provider().send(to=envio.destino, body=envio.corpo)
             envio.status = NotificacaoEnvioStatus.ENVIADO
             envio.enviado_em = _now()
