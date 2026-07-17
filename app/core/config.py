@@ -57,6 +57,14 @@ class Settings(BaseSettings):
     db_max_overflow: int = 20
     db_echo: bool = False
 
+    # ----------------------------------------------------------- Supabase (opcional)
+    supabase_project_ref: str = ""
+    supabase_url: str = ""
+    supabase_anon_key: str = ""
+    supabase_service_role_key: str = ""
+    # Connection string Postgres (Settings → Database → URI). Quando definida, substitui POSTGRES_*.
+    supabase_db_url: str = ""
+
     # ---------------------------------------------------------------- Redis
     redis_host: str = "localhost"
     redis_port: int = 6379
@@ -155,6 +163,13 @@ class Settings(BaseSettings):
     @property
     def database_url_async(self) -> str:
         """URL de conexão assíncrona (asyncpg) usada pela aplicação web/API."""
+        if self.supabase_db_url:
+            url = self.supabase_db_url
+            if url.startswith("postgresql://"):
+                return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+            if url.startswith("postgresql+psycopg://"):
+                return url.replace("postgresql+psycopg://", "postgresql+asyncpg://", 1)
+            return url
         return str(
             PostgresDsn.build(
                 scheme="postgresql+asyncpg",
@@ -170,6 +185,13 @@ class Settings(BaseSettings):
     @property
     def database_url_sync(self) -> str:
         """URL de conexão síncrona (psycopg) usada por Alembic e utilitários."""
+        if self.supabase_db_url:
+            url = self.supabase_db_url
+            if url.startswith("postgresql+asyncpg://"):
+                return url.replace("postgresql+asyncpg://", "postgresql+psycopg://", 1)
+            if url.startswith("postgresql://"):
+                return url.replace("postgresql://", "postgresql+psycopg://", 1)
+            return url
         return str(
             PostgresDsn.build(
                 scheme="postgresql+psycopg",

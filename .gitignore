@@ -40,6 +40,10 @@ e2e/test-results/
 e2e/playwright-report/
 e2e/blob-report/
 
+# Supabase (SQL exportado localmente)
+supabase/migrations/_full_upgrade.sql
+supabase/.temp/
+
 # Dados locais (volumes Docker gerenciam persistência na VPS)
 pgdata/
 data/
