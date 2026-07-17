@@ -85,6 +85,7 @@ def render(
     permissões.
     """
     from app.core.csrf import ensure_csrf_token
+    from app.core.ui_theme import read_ui_theme
     from app.web.navigation import build_menu
 
     ctx: dict[str, Any] = dict(context or {})
@@ -94,6 +95,7 @@ def render(
     ctx.setdefault("menu", build_menu(current_user))
     ctx.setdefault("csrf_token", ensure_csrf_token(request))
     ctx.setdefault("tenant_branding", request.session.get("tenant_branding"))
+    ctx.setdefault("ui_theme", read_ui_theme(request))
     flash = request.session.pop("_flash", None)
     ctx.setdefault("flash", flash)
     return templates.TemplateResponse(request, template_name, ctx, status_code=status_code)

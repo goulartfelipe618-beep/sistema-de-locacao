@@ -1,15 +1,16 @@
 <!DOCTYPE html>
-<html lang="pt-BR" data-app-name="{{ app_name }}">
+<html lang="pt-BR" data-app-name="{{ app_name }}" data-theme="{{ ui_theme|default('hybrid') }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
   <meta name="csrf-token" content="{{ csrf_token }}">
   <title>{% block title %}{{ title|default('Painel') }}{% endblock %} · {{ app_name }}</title>
+  {% include "partials/theme_boot.html" %}
   <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/static/css/app.css">
   {% if tenant_branding and tenant_branding.brand_primary_color %}
-  <style>:root { --primary: {{ tenant_branding.brand_primary_color }}; --sidebar-bg: {{ tenant_branding.brand_primary_color }}; }</style>
+  <style>:root { --primary: {{ tenant_branding.brand_primary_color }}; --primary-hover: {{ tenant_branding.brand_primary_color }}; }</style>
   {% endif %}
   <script src="/static/js/theme.js"></script>
   <script src="/static/js/htmx.min.js" defer></script>

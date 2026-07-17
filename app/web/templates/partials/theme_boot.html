@@ -1,0 +1,22 @@
+<script>
+(function () {
+  var VALID = { light: 1, dark: 1, hybrid: 1 };
+  var KEY = "erp-ui-theme";
+  function fromCookie() {
+    var m = document.cookie.match(new RegExp("(?:^|; )" + KEY + "=([^;]*)"));
+    return m ? decodeURIComponent(m[1]) : null;
+  }
+  var theme = null;
+  try {
+    var root = document.documentElement;
+    theme = root.getAttribute("data-theme");
+    if (!theme || !VALID[theme]) theme = fromCookie();
+    if (!theme || !VALID[theme]) theme = localStorage.getItem(KEY);
+    if (!theme || !VALID[theme]) theme = "hybrid";
+    root.setAttribute("data-theme", theme);
+    localStorage.setItem(KEY, theme);
+  } catch (e) {
+    document.documentElement.setAttribute("data-theme", "hybrid");
+  }
+})();
+</script>

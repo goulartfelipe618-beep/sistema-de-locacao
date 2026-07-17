@@ -17,6 +17,7 @@ from app.core.deps import require_web_user, require_web_permission
 from app.core.exceptions import AppError, AuthenticationError
 from app.core.pagination import PageParams
 from app.core.templating import render
+from app.core.ui_theme import persist_ui_theme
 from app.modules.identity.repository import RoleRepository, UserRepository
 from app.modules.identity.schemas import RoleCreate, RoleUpdate, UserCreate, UserUpdate
 from app.modules.identity.service import (
@@ -635,6 +636,19 @@ async def role_delete(
 
 
 # ==============================================================  Perfil (usuário logado)
+@router.post("/configuracoes/tema")
+async def ui_theme_save(
+    request: Request,
+    current_user: Annotated[AuthenticatedUser, Depends(require_web_user)],
+    theme: Annotated[str, Form()],
+) -> Response:
+    """Persiste preferência de tema (cookie + sessão) para próximos acessos."""
+    _ = current_user
+    response = Response(status_code=204)
+    persist_ui_theme(response, request, theme)
+    return response
+
+
 @router.post("/configuracoes/perfil")
 async def profile_update(
     session: SessionDep,
