@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Form, Request
@@ -11,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import UnitOfWork, get_db_session
-from app.core.deps import require_web_permission
+from app.core.deps import require_web_user, require_web_permission
 from app.core.exceptions import AppError, AuthenticationError
 from app.core.pagination import PageParams
 from app.core.templating import render
@@ -23,6 +24,8 @@ from app.modules.identity.service import (
     RoleService,
     UserService,
 )
+from app.modules.identity.twofa_service import TwoFactorService
+from app.modules.identity.totp import decrypt_recovery_codes
 from app.modules.tenants.branding import branding_session_payload
 from app.modules.tenants.repository import TenantRepository
 from app.modules.tenants.service import FilialService
@@ -61,7 +64,7 @@ async def login_submit(
         )
 
     try:
-        user = await AuthService().authenticate(
+        user = await AuthService().verify_credentials(
             tenant_id=tenant.id,
             email=email,
             password=password,
@@ -76,6 +79,21 @@ async def login_submit(
             status_code=401,
         )
 
+    if user.totp_enabled and user.totp_secret_encrypted:
+        request.session.clear()
+        request.session["pending_2fa_user_id"] = str(user.id)
+        request.session["pending_2fa_tenant_id"] = str(user.tenant_id)
+        request.session["pending_2fa_exp"] = (
+            datetime.now(tz=UTC) + timedelta(minutes=5)
+        ).isoformat()
+        return render(request, "identity/login_2fa.html", {"error": None})
+
+    await AuthService().finalize_login(
+        user,
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    )
+
     # Resolve a filial padrão do usuário (primeira vinculada, se houver).
     async with UnitOfWork(tenant_id=tenant.id) as uow:
         filial_ids = await UserRepository(uow.session).get_filial_ids(user.id)
@@ -86,6 +104,79 @@ async def login_submit(
     request.session["filial_id"] = str(filial_ids[0]) if filial_ids else None
     request.session["is_superuser"] = user.is_superuser
     request.session["tenant_branding"] = branding_session_payload(tenant)
+    return RedirectResponse(url="/", status_code=303)
+
+
+@router.get("/login/2fa", response_class=HTMLResponse)
+async def login_2fa_form(request: Request) -> HTMLResponse:
+    """Exibe formulário do segundo fator."""
+    if not request.session.get("pending_2fa_user_id"):
+        return RedirectResponse(url="/login", status_code=303)
+    return render(request, "identity/login_2fa.html", {"error": None})
+
+
+@router.post("/login/2fa", response_class=HTMLResponse)
+async def login_2fa_submit(
+    request: Request,
+    code: Annotated[str, Form()],
+) -> HTMLResponse:
+    """Valida TOTP/recuperação e conclui sessão."""
+    user_id_raw = request.session.get("pending_2fa_user_id")
+    tenant_id_raw = request.session.get("pending_2fa_tenant_id")
+    exp_raw = request.session.get("pending_2fa_exp")
+    if not user_id_raw or not tenant_id_raw:
+        return RedirectResponse(url="/login", status_code=303)
+    if exp_raw:
+        try:
+            if datetime.fromisoformat(exp_raw) < datetime.now(tz=UTC):
+                request.session.clear()
+                return render(
+                    request,
+                    "identity/login.html",
+                    {"error": "Sessão 2FA expirada. Faça login novamente.", "email": ""},
+                    status_code=401,
+                )
+        except ValueError:
+            pass
+
+    user_id = uuid.UUID(str(user_id_raw))
+    tenant_id = uuid.UUID(str(tenant_id_raw))
+    auth = AuthService()
+    try:
+        async with UnitOfWork(tenant_id=tenant_id) as uow:
+            user = await TwoFactorService(uow.session).verify_login(
+                user_id,
+                tenant_id,
+                code,
+                ip_address=request.client.host if request.client else None,
+                user_agent=request.headers.get("user-agent"),
+            )
+    except (AuthenticationError, AppError) as exc:
+        message = exc.message if isinstance(exc, AppError) else str(exc)
+        return render(
+            request,
+            "identity/login_2fa.html",
+            {"error": message},
+            status_code=401,
+        )
+
+    await auth.finalize_login(
+        user,
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    )
+
+    async with UnitOfWork(tenant_id=tenant_id) as uow:
+        tenant = await TenantRepository(uow.session).get(tenant_id)
+        filial_ids = await UserRepository(uow.session).get_filial_ids(user.id)
+
+    request.session.clear()
+    request.session["user_id"] = str(user.id)
+    request.session["tenant_id"] = str(user.tenant_id)
+    request.session["filial_id"] = str(filial_ids[0]) if filial_ids else None
+    request.session["is_superuser"] = user.is_superuser
+    if tenant:
+        request.session["tenant_branding"] = branding_session_payload(tenant)
     return RedirectResponse(url="/", status_code=303)
 
 
@@ -531,3 +622,315 @@ async def role_delete(
     except (AppError, ValueError):
         await session.rollback()
     return RedirectResponse(url="/configuracoes/papeis", status_code=303)
+
+
+# ==============================================================  2FA (§14.3)
+@router.get("/configuracoes/seguranca", response_class=HTMLResponse)
+async def seguranca_2fa(
+    request: Request,
+    session: SessionDep,
+    current_user: Annotated[AuthenticatedUser, Depends(require_web_user)],
+) -> HTMLResponse:
+    """Configuração de autenticação em dois fatores do usuário logado."""
+    user = await UserService(session).get_user(current_user.id)
+    remaining = len(decrypt_recovery_codes(user.recovery_codes_encrypted))
+    return render(
+        request,
+        "identity/twofa_setup.html",
+        {
+            "title": "Autenticação em Dois Fatores",
+            "user": user,
+            "recovery_remaining": remaining,
+            "setup": None,
+            "recovery_codes": None,
+            "error": None,
+            "success": None,
+        },
+    )
+
+
+@router.post("/configuracoes/seguranca/iniciar", response_class=HTMLResponse)
+async def seguranca_2fa_iniciar(
+    request: Request,
+    session: SessionDep,
+    current_user: Annotated[AuthenticatedUser, Depends(require_web_user)],
+) -> HTMLResponse:
+    """Gera QR Code para aplicativo autenticador."""
+    user = await UserService(session).get_user(current_user.id)
+    setup = await TwoFactorService(session).begin_setup(current_user.id)
+    return render(
+        request,
+        "identity/twofa_setup.html",
+        {
+            "title": "Autenticação em Dois Fatores",
+            "user": user,
+            "recovery_remaining": 0,
+            "setup": setup,
+            "recovery_codes": None,
+            "error": None,
+            "success": None,
+        },
+    )
+
+
+@router.post("/configuracoes/seguranca/confirmar", response_class=HTMLResponse)
+async def seguranca_2fa_confirmar(
+    request: Request,
+    session: SessionDep,
+    current_user: Annotated[AuthenticatedUser, Depends(require_web_user)],
+    code: Annotated[str, Form()],
+) -> HTMLResponse:
+    """Confirma ativação do 2FA."""
+    user = await UserService(session).get_user(current_user.id)
+    try:
+        recovery = await TwoFactorService(session).confirm_setup(current_user.id, code)
+    except (AppError, ValueError) as exc:
+        setup = await TwoFactorService(session).begin_setup(current_user.id)
+        message = exc.message if isinstance(exc, AppError) else str(exc)
+        return render(
+            request,
+            "identity/twofa_setup.html",
+            {
+                "title": "Autenticação em Dois Fatores",
+                "user": user,
+                "recovery_remaining": 0,
+                "setup": setup,
+                "recovery_codes": None,
+                "error": message,
+                "success": None,
+            },
+            status_code=400,
+        )
+    user = await UserService(session).get_user(current_user.id)
+    return render(
+        request,
+        "identity/twofa_setup.html",
+        {
+            "title": "Autenticação em Dois Fatores",
+            "user": user,
+            "recovery_remaining": len(recovery),
+            "setup": None,
+            "recovery_codes": recovery,
+            "error": None,
+            "success": "2FA ativado com sucesso. Guarde os códigos de recuperação.",
+        },
+    )
+
+
+@router.post("/configuracoes/seguranca/desativar", response_class=HTMLResponse)
+async def seguranca_2fa_desativar(
+    request: Request,
+    session: SessionDep,
+    current_user: Annotated[AuthenticatedUser, Depends(require_web_user)],
+    password: Annotated[str, Form()],
+    code: Annotated[str, Form()],
+) -> HTMLResponse:
+    """Desativa 2FA."""
+    user = await UserService(session).get_user(current_user.id)
+    try:
+        await TwoFactorService(session).disable(
+            current_user.id, password=password, code=code
+        )
+    except (AppError, ValueError, AuthenticationError) as exc:
+        remaining = len(decrypt_recovery_codes(user.recovery_codes_encrypted))
+        message = exc.message if isinstance(exc, AppError) else str(exc)
+        return render(
+            request,
+            "identity/twofa_setup.html",
+            {
+                "title": "Autenticação em Dois Fatores",
+                "user": user,
+                "recovery_remaining": remaining,
+                "setup": None,
+                "recovery_codes": None,
+                "error": message,
+                "success": None,
+            },
+            status_code=400,
+        )
+    user = await UserService(session).get_user(current_user.id)
+    return render(
+        request,
+        "identity/twofa_setup.html",
+        {
+            "title": "Autenticação em Dois Fatores",
+            "user": user,
+            "recovery_remaining": 0,
+            "setup": None,
+            "recovery_codes": None,
+            "error": None,
+            "success": "2FA desativado.",
+        },
+    )
+
+
+@router.post("/configuracoes/usuarios/{user_id}/reset-2fa")
+async def user_reset_2fa(
+    user_id: uuid.UUID,
+    session: SessionDep,
+    _user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("identidade.usuario.editar"))
+    ],
+) -> RedirectResponse:
+    """Remove 2FA de um usuário (administrador)."""
+    try:
+        await TwoFactorService(session).admin_reset(user_id)
+    except (AppError, ValueError):
+        await session.rollback()
+    return RedirectResponse(url=f"/configuracoes/usuarios/{user_id}/editar", status_code=303)
+
+
+# ==============================================================  2FA (§14.3)
+@router.get("/configuracoes/seguranca", response_class=HTMLResponse)
+async def seguranca_2fa(
+    request: Request,
+    session: SessionDep,
+    current_user: Annotated[AuthenticatedUser, Depends(require_web_user)],
+) -> HTMLResponse:
+    """Configuração de autenticação em dois fatores do usuário logado."""
+    user = await UserService(session).get_user(current_user.id)
+    remaining = len(decrypt_recovery_codes(user.recovery_codes_encrypted))
+    return render(
+        request,
+        "identity/twofa_setup.html",
+        {
+            "title": "Autenticação em Dois Fatores",
+            "user": user,
+            "recovery_remaining": remaining,
+            "setup": None,
+            "recovery_codes": None,
+            "error": None,
+            "success": None,
+        },
+    )
+
+
+@router.post("/configuracoes/seguranca/iniciar", response_class=HTMLResponse)
+async def seguranca_2fa_iniciar(
+    request: Request,
+    session: SessionDep,
+    current_user: Annotated[AuthenticatedUser, Depends(require_web_user)],
+) -> HTMLResponse:
+    """Gera QR Code para aplicativo autenticador."""
+    user = await UserService(session).get_user(current_user.id)
+    setup = await TwoFactorService(session).begin_setup(current_user.id)
+    return render(
+        request,
+        "identity/twofa_setup.html",
+        {
+            "title": "Autenticação em Dois Fatores",
+            "user": user,
+            "recovery_remaining": 0,
+            "setup": setup,
+            "recovery_codes": None,
+            "error": None,
+            "success": None,
+        },
+    )
+
+
+@router.post("/configuracoes/seguranca/confirmar", response_class=HTMLResponse)
+async def seguranca_2fa_confirmar(
+    request: Request,
+    session: SessionDep,
+    current_user: Annotated[AuthenticatedUser, Depends(require_web_user)],
+    code: Annotated[str, Form()],
+) -> HTMLResponse:
+    """Confirma ativação do 2FA."""
+    user = await UserService(session).get_user(current_user.id)
+    try:
+        recovery = await TwoFactorService(session).confirm_setup(current_user.id, code)
+    except (AppError, ValueError) as exc:
+        setup = await TwoFactorService(session).begin_setup(current_user.id)
+        message = exc.message if isinstance(exc, AppError) else str(exc)
+        return render(
+            request,
+            "identity/twofa_setup.html",
+            {
+                "title": "Autenticação em Dois Fatores",
+                "user": user,
+                "recovery_remaining": 0,
+                "setup": setup,
+                "recovery_codes": None,
+                "error": message,
+                "success": None,
+            },
+            status_code=400,
+        )
+    user = await UserService(session).get_user(current_user.id)
+    return render(
+        request,
+        "identity/twofa_setup.html",
+        {
+            "title": "Autenticação em Dois Fatores",
+            "user": user,
+            "recovery_remaining": len(recovery),
+            "setup": None,
+            "recovery_codes": recovery,
+            "error": None,
+            "success": "2FA ativado com sucesso. Guarde os códigos de recuperação.",
+        },
+    )
+
+
+@router.post("/configuracoes/seguranca/desativar", response_class=HTMLResponse)
+async def seguranca_2fa_desativar(
+    request: Request,
+    session: SessionDep,
+    current_user: Annotated[AuthenticatedUser, Depends(require_web_user)],
+    password: Annotated[str, Form()],
+    code: Annotated[str, Form()],
+) -> HTMLResponse:
+    """Desativa 2FA."""
+    user = await UserService(session).get_user(current_user.id)
+    try:
+        await TwoFactorService(session).disable(
+            current_user.id, password=password, code=code
+        )
+    except (AppError, ValueError, AuthenticationError) as exc:
+        remaining = len(decrypt_recovery_codes(user.recovery_codes_encrypted))
+        message = exc.message if isinstance(exc, AppError) else str(exc)
+        return render(
+            request,
+            "identity/twofa_setup.html",
+            {
+                "title": "Autenticação em Dois Fatores",
+                "user": user,
+                "recovery_remaining": remaining,
+                "setup": None,
+                "recovery_codes": None,
+                "error": message,
+                "success": None,
+            },
+            status_code=400,
+        )
+    user = await UserService(session).get_user(current_user.id)
+    return render(
+        request,
+        "identity/twofa_setup.html",
+        {
+            "title": "Autenticação em Dois Fatores",
+            "user": user,
+            "recovery_remaining": 0,
+            "setup": None,
+            "recovery_codes": None,
+            "error": None,
+            "success": "2FA desativado.",
+        },
+    )
+
+
+@router.post("/configuracoes/usuarios/{user_id}/reset-2fa")
+async def user_reset_2fa(
+    user_id: uuid.UUID,
+    session: SessionDep,
+    _user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("identidade.usuario.editar"))
+    ],
+) -> RedirectResponse:
+    """Remove 2FA de um usuário (administrador)."""
+    try:
+        await TwoFactorService(session).admin_reset(user_id)
+    except (AppError, ValueError):
+        await session.rollback()
+    return RedirectResponse(url=f"/configuracoes/usuarios/{user_id}/editar", status_code=303)

@@ -58,6 +58,25 @@ class AuthenticatedUser:
 class AuthService:
     """Autenticação de usuários com política de bloqueio por tentativas."""
 
+    async def verify_credentials(
+        self,
+        *,
+        tenant_id: uuid.UUID,
+        email: str,
+        password: str,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
+    ) -> User:
+        """Valida e-mail/senha (primeiro fator). Não conclui login se 2FA estiver ativo."""
+        return await self._authenticate_password(
+            tenant_id=tenant_id,
+            email=email,
+            password=password,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            finalize_login=False,
+        )
+
     async def authenticate(
         self,
         *,
@@ -67,14 +86,60 @@ class AuthService:
         ip_address: str | None = None,
         user_agent: str | None = None,
     ) -> User:
-        """Valida credenciais e aplica a política de segurança de login.
+        """Valida credenciais e conclui login quando 2FA não está ativo."""
+        user = await self._authenticate_password(
+            tenant_id=tenant_id,
+            email=email,
+            password=password,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            finalize_login=True,
+        )
+        if user.totp_enabled and user.totp_secret_encrypted:
+            raise AuthenticationError(
+                "Autenticação em dois fatores necessária.",
+                code="2fa_required",
+            )
+        return user
 
-        Usa uma unidade de trabalho própria para garantir a persistência dos
-        contadores de tentativa/bloqueio mesmo quando o login falha.
+    async def finalize_login(
+        self,
+        user: User,
+        *,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
+    ) -> User:
+        """Registra login bem-sucedido após segundo fator (ou login sem 2FA)."""
+        now = datetime.now(tz=UTC)
+        async with UnitOfWork(tenant_id=user.tenant_id) as uow:
+            db_user = await UserRepository(uow.session).get(user.id)
+            if db_user is None or not db_user.is_active:
+                raise AuthenticationError("Conta inativa.", code="account_inactive")
+            db_user.last_login_at = now
+            await uow.commit()
 
-        Raises:
-            AuthenticationError: credenciais inválidas, conta inativa ou bloqueada.
-        """
+        await audit_service.record(
+            AuditAction.LOGIN,
+            entity="user",
+            entity_id=user.id,
+            description=f"Login bem-sucedido: {user.email}",
+            ip_address=ip_address,
+            user_agent=user_agent,
+            tenant_id=user.tenant_id,
+            user_id=user.id,
+        )
+        return user
+
+    async def _authenticate_password(
+        self,
+        *,
+        tenant_id: uuid.UUID,
+        email: str,
+        password: str,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
+        finalize_login: bool,
+    ) -> User:
         email_norm = email.strip().lower()
         now = datetime.now(tz=UTC)
 
@@ -115,21 +180,24 @@ class AuthService:
                 )
                 raise AuthenticationError("Credenciais inválidas.", code="invalid_credentials")
 
-            # Sucesso: zera contadores e registra o acesso.
+            # Sucesso na senha: zera contadores (login completo só após 2FA se ativo).
             user.failed_login_attempts = 0
             user.locked_until = None
-            user.last_login_at = now
+            if finalize_login and not (user.totp_enabled and user.totp_secret_encrypted):
+                user.last_login_at = now
+            await uow.commit()
 
-        await audit_service.record(
-            AuditAction.LOGIN,
-            entity="user",
-            entity_id=user.id,
-            description=f"Login bem-sucedido: {email_norm}",
-            ip_address=ip_address,
-            user_agent=user_agent,
-            tenant_id=tenant_id,
-            user_id=user.id,
-        )
+        if finalize_login and not (user.totp_enabled and user.totp_secret_encrypted):
+            await audit_service.record(
+                AuditAction.LOGIN,
+                entity="user",
+                entity_id=user.id,
+                description=f"Login bem-sucedido: {email_norm}",
+                ip_address=ip_address,
+                user_agent=user_agent,
+                tenant_id=tenant_id,
+                user_id=user.id,
+            )
         return user
 
     async def _audit_failure(

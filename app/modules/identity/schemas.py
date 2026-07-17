@@ -17,6 +17,52 @@ class LoginRequest(BaseModel):
     password: str = Field(min_length=1, max_length=128)
 
 
+class Login2FARequest(BaseModel):
+    """Segundo fator após senha válida (API)."""
+
+    pending_token: str
+    code: str = Field(min_length=6, max_length=12)
+
+
+class AuthLoginResponse(BaseModel):
+    """Resposta de login: tokens ou desafio 2FA."""
+
+    requires_2fa: bool = False
+    pending_token: str | None = None
+    access_token: str | None = None
+    refresh_token: str | None = None
+    token_type: str = "bearer"
+    expires_in: int | None = None
+
+
+class TwoFactorDisableRequest(BaseModel):
+    """Desativação de 2FA."""
+
+    password: str = Field(min_length=1, max_length=128)
+    code: str = Field(min_length=6, max_length=12)
+
+
+class TwoFactorConfirmRequest(BaseModel):
+    """Confirmação de setup 2FA."""
+
+    code: str = Field(min_length=6, max_length=6)
+
+
+class TwoFactorSetupResponse(BaseModel):
+    """QR Code e URI para configurar autenticador."""
+
+    provisioning_uri: str
+    qr_data_uri: str
+
+
+class TwoFactorStatusResponse(BaseModel):
+    """Status do 2FA do usuário atual."""
+
+    enabled: bool
+    enabled_at: datetime | None = None
+    recovery_codes_remaining: int = 0
+
+
 class TokenPair(BaseModel):
     """Par de tokens emitido pela API REST."""
 
@@ -114,6 +160,7 @@ class UserRead(BaseModel):
     is_active: bool
     is_superuser: bool
     last_login_at: datetime | None
+    totp_enabled: bool = False
     created_at: datetime
 
 
@@ -128,3 +175,4 @@ class CurrentUserRead(BaseModel):
     is_superuser: bool
     roles: list[str]
     permissions: list[str]
+    totp_enabled: bool = False

@@ -9,27 +9,40 @@ from __future__ import annotations
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, Request, status
+from fastapi import APIRouter, Depends, Query, Request, Response, status
 
 from app.core.config import settings
 from app.core.database import UnitOfWork
 from app.core.deps import ApiSessionDep, get_current_api_user, require_api_permission
 from app.core.exceptions import AuthenticationError, TenantResolutionError
 from app.core.pagination import PagedResponse, PageMeta, PageParams
-from app.core.security import create_access_token, create_refresh_token, decode_token
+from app.core.security import (
+    create_2fa_pending_token,
+    create_access_token,
+    create_refresh_token,
+    decode_token,
+)
 from app.modules.identity.schemas import (
+    AuthLoginResponse,
     CurrentUserRead,
+    Login2FARequest,
     LoginRequest,
     RefreshRequest,
     RoleCreate,
     RoleRead,
     RoleUpdate,
     TokenPair,
+    TwoFactorConfirmRequest,
+    TwoFactorDisableRequest,
+    TwoFactorSetupResponse,
+    TwoFactorStatusResponse,
     UserCreate,
     UserRead,
     UserUpdate,
 )
 from app.modules.identity.service import AuthenticatedUser, AuthService, RoleService, UserService
+from app.modules.identity.twofa_service import TwoFactorService
+from app.modules.identity.totp import decrypt_recovery_codes
 from app.modules.tenants.repository import TenantRepository
 
 router = APIRouter()
@@ -88,18 +101,112 @@ def _issue_token_pair(user_id: uuid.UUID, tenant_id: uuid.UUID, *, is_superuser:
 
 
 # ------------------------------------------------------------- Autenticação
-@router.post("/auth/login", response_model=TokenPair, tags=["Autenticação"])
-async def login(payload: LoginRequest, request: Request) -> TokenPair:
-    """Autentica e emite o par de tokens (access + refresh)."""
+@router.post("/auth/login", response_model=AuthLoginResponse, tags=["Autenticação"])
+async def login(payload: LoginRequest, request: Request) -> AuthLoginResponse:
+    """Autentica (1º fator). Se 2FA ativo, retorna ``pending_token`` em vez de JWT."""
     tenant_id = await _resolve_tenant_id(request)
-    user = await AuthService().authenticate(
+    auth = AuthService()
+    user = await auth.verify_credentials(
         tenant_id=tenant_id,
         email=payload.email,
         password=payload.password,
         ip_address=_client_ip(request),
         user_agent=request.headers.get("user-agent"),
     )
+    if user.totp_enabled and user.totp_secret_encrypted:
+        return AuthLoginResponse(
+            requires_2fa=True,
+            pending_token=create_2fa_pending_token(user.id, user.tenant_id),
+        )
+    await auth.finalize_login(
+        user,
+        ip_address=_client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+    )
+    pair = _issue_token_pair(user.id, user.tenant_id, is_superuser=user.is_superuser)
+    return AuthLoginResponse(
+        requires_2fa=False,
+        access_token=pair.access_token,
+        refresh_token=pair.refresh_token,
+        expires_in=pair.expires_in,
+    )
+
+
+@router.post("/auth/login/2fa", response_model=TokenPair, tags=["Autenticação"])
+async def login_2fa(payload: Login2FARequest, request: Request) -> TokenPair:
+    """Conclui login com código TOTP ou recuperação."""
+    claims = decode_token(payload.pending_token, expected_type="2fa_pending")
+    user_id = uuid.UUID(str(claims["sub"]))
+    tenant_id = uuid.UUID(str(claims["tenant_id"]))
+    auth = AuthService()
+    async with UnitOfWork(tenant_id=tenant_id) as uow:
+        user = await TwoFactorService(uow.session).verify_login(
+            user_id,
+            tenant_id,
+            payload.code,
+            ip_address=_client_ip(request),
+            user_agent=request.headers.get("user-agent"),
+        )
+    await auth.finalize_login(
+        user,
+        ip_address=_client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+    )
     return _issue_token_pair(user.id, user.tenant_id, is_superuser=user.is_superuser)
+
+
+@router.get("/auth/2fa/status", response_model=TwoFactorStatusResponse, tags=["Autenticação"])
+async def twofa_status(
+    session: ApiSessionDep,
+    current_user: Annotated[AuthenticatedUser, Depends(get_current_api_user)],
+) -> TwoFactorStatusResponse:
+    """Status do 2FA do usuário autenticado."""
+    user = await UserService(session).get_user(current_user.id)
+    remaining = len(decrypt_recovery_codes(user.recovery_codes_encrypted))
+    return TwoFactorStatusResponse(
+        enabled=user.totp_enabled,
+        enabled_at=user.totp_enabled_at,
+        recovery_codes_remaining=remaining,
+    )
+
+
+@router.post("/auth/2fa/setup", response_model=TwoFactorSetupResponse, tags=["Autenticação"])
+async def twofa_setup(
+    session: ApiSessionDep,
+    current_user: Annotated[AuthenticatedUser, Depends(get_current_api_user)],
+) -> TwoFactorSetupResponse:
+    """Inicia configuração 2FA (QR Code)."""
+    data = await TwoFactorService(session).begin_setup(current_user.id)
+    return TwoFactorSetupResponse(
+        provisioning_uri=data.provisioning_uri,
+        qr_data_uri=data.qr_data_uri,
+    )
+
+
+@router.post("/auth/2fa/confirm", tags=["Autenticação"])
+async def twofa_confirm(
+    payload: TwoFactorConfirmRequest,
+    session: ApiSessionDep,
+    current_user: Annotated[AuthenticatedUser, Depends(get_current_api_user)],
+) -> dict[str, list[str]]:
+    """Confirma 2FA e retorna códigos de recuperação (única vez)."""
+    codes = await TwoFactorService(session).confirm_setup(current_user.id, payload.code)
+    return {"recovery_codes": codes}
+
+
+@router.post("/auth/2fa/disable", status_code=status.HTTP_204_NO_CONTENT, tags=["Autenticação"])
+async def twofa_disable(
+    payload: TwoFactorDisableRequest,
+    session: ApiSessionDep,
+    current_user: Annotated[AuthenticatedUser, Depends(get_current_api_user)],
+) -> Response:
+    """Desativa 2FA do usuário autenticado."""
+    await TwoFactorService(session).disable(
+        current_user.id,
+        password=payload.password,
+        code=payload.code,
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post("/auth/refresh", response_model=TokenPair, tags=["Autenticação"])
@@ -130,9 +237,11 @@ async def refresh_token(payload: RefreshRequest) -> TokenPair:
 
 @router.get("/auth/me", response_model=CurrentUserRead, tags=["Autenticação"])
 async def read_me(
+    session: ApiSessionDep,
     current_user: Annotated[AuthenticatedUser, Depends(get_current_api_user)],
 ) -> CurrentUserRead:
     """Retorna o usuário autenticado com papéis e permissões resolvidos."""
+    user = await UserService(session).get_user(current_user.id)
     return CurrentUserRead(
         id=current_user.id,
         tenant_id=current_user.tenant_id,
@@ -142,6 +251,7 @@ async def read_me(
         is_superuser=current_user.is_superuser,
         roles=current_user.roles,
         permissions=sorted(current_user.permissions),
+        totp_enabled=user.totp_enabled,
     )
 
 

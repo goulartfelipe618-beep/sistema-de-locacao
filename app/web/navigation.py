@@ -605,6 +605,12 @@ NAVIGATION: tuple[MenuSection, ...] = (
                 implemented=True,
             ),
             MenuItem(
+                "Autenticação 2FA",
+                url="/configuracoes/seguranca",
+                permission=None,
+                implemented=True,
+            ),
+            MenuItem(
                 "Parâmetros",
                 url="/configuracoes/parametros",
                 permission="configuracoes.parametro.visualizar",

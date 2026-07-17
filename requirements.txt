@@ -35,6 +35,8 @@ celery==5.4.0
 # --- Segurança / Autenticação ---
 bcrypt==4.2.1
 pyjwt==2.10.1
+pyotp==2.9.0
+qrcode[pil]==8.0
 
 # --- Armazenamento de arquivos (Cloudflare R2 - S3 compatível) ---
 boto3==1.35.90

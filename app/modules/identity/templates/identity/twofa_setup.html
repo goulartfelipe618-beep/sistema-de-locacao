@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width: 720px;">
+  <h2 class="card-title">{{ title }}</h2>
+  {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+  {% if success %}<div class="alert alert-success">{{ success }}</div>{% endif %}
+
+  <p class="form-help">
+    Proteja sua conta com um aplicativo autenticador (Google Authenticator, Authy, etc.).
+    O 2FA é <strong>opcional</strong> mas recomendado para administradores.
+  </p>
+
+  {% if user.totp_enabled %}
+  <div class="alert alert-info">
+    2FA <strong>ativo</strong> desde {{ user.totp_enabled_at|datetime if user.totp_enabled_at else '—' }}.
+    Códigos de recuperação restantes: {{ recovery_remaining }}.
+  </div>
+
+  <h3 style="margin-top:24px">Desativar 2FA</h3>
+  <form method="post" action="/configuracoes/seguranca/desativar" class="form-grid">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="form-group">
+      <label class="form-label" for="password">Senha atual</label>
+      <input class="form-input" type="password" id="password" name="password" required>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="code_off">Código TOTP ou recuperação</label>
+      <input class="form-input" id="code_off" name="code" required maxlength="12">
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-danger">Desativar 2FA</button>
+    </div>
+  </form>
+
+  {% else %}
+  <div class="alert alert-warning">2FA <strong>inativo</strong> para {{ user.email }}.</div>
+
+  {% if not setup %}
+  <form method="post" action="/configuracoes/seguranca/iniciar">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button type="submit" class="btn btn-primary">Iniciar configuração</button>
+  </form>
+  {% else %}
+  <h3 style="margin-top:16px">1. Escaneie o QR Code</h3>
+  <p style="text-align:center;margin:16px 0">
+    <img src="{{ setup.qr_data_uri }}" alt="QR Code 2FA" style="max-width:220px;border:1px solid var(--border);padding:8px">
+  </p>
+  <p class="form-help" style="word-break:break-all">URI manual: {{ setup.provisioning_uri }}</p>
+
+  <h3 style="margin-top:24px">2. Confirme com um código</h3>
+  <form method="post" action="/configuracoes/seguranca/confirmar" class="form-grid">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="form-group">
+      <label class="form-label" for="code">Código de 6 dígitos</label>
+      <input class="form-input" id="code" name="code" maxlength="6" inputmode="numeric" required>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Ativar 2FA</button>
+    </div>
+  </form>
+  {% endif %}
+  {% endif %}
+
+  {% if recovery_codes %}
+  <hr style="margin:24px 0;border:0;border-top:1px solid var(--border)">
+  <h3>Códigos de recuperação (guarde em local seguro)</h3>
+  <p class="form-help">Cada código só pode ser usado uma vez. Esta é a única exibição.</p>
+  <ul style="columns:2;font-family:monospace">
+    {% for c in recovery_codes %}
+    <li>{{ c }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</div>
+{% endblock %}

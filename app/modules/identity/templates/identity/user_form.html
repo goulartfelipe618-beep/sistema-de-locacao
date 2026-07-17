@@ -14,6 +14,22 @@
   </div>
   {% endif %}
 
+  {% if user %}
+  <div class="alert {% if user.totp_enabled %}alert-info{% else %}alert-warning{% endif %}">
+    2FA: {% if user.totp_enabled %}<strong>Ativo</strong>{% else %}<strong>Inativo</strong>{% endif %}
+    {% if current_user.id == user.id %}
+    — <a href="/configuracoes/seguranca">Configurar</a>
+    {% elif current_user.is_superuser or 'identidade.usuario.editar' in current_user.permissions %}
+    {% if user.totp_enabled %}
+    <form method="post" action="/configuracoes/usuarios/{{ user.id }}/reset-2fa" style="display:inline;margin-left:8px">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit" class="btn btn-sm btn-danger">Resetar 2FA</button>
+    </form>
+    {% endif %}
+    {% endif %}
+  </div>
+  {% endif %}
+
   <form method="post" action="{{ action }}" autocomplete="off">
     <div class="form-grid">
       <div class="form-group">

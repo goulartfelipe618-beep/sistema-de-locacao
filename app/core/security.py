@@ -17,7 +17,7 @@ from app.core.config import settings
 from app.core.exceptions import AuthenticationError
 
 _JWT_ALGORITHM = "HS256"
-TokenType = Literal["access", "refresh"]
+TokenType = Literal["access", "refresh", "2fa_pending"]
 
 
 # ----------------------------------------------------------------- Senhas
@@ -76,6 +76,16 @@ def create_refresh_token(subject: str, extra_claims: dict[str, Any] | None = Non
         "refresh",
         timedelta(days=settings.refresh_token_expire_days),
         extra_claims,
+    )
+
+
+def create_2fa_pending_token(user_id: uuid.UUID, tenant_id: uuid.UUID) -> str:
+    """Token efêmero (5 min) emitido após senha válida quando 2FA está ativo."""
+    return _create_token(
+        str(user_id),
+        "2fa_pending",
+        timedelta(minutes=5),
+        {"tenant_id": str(tenant_id)},
     )
 
 
