@@ -18,7 +18,7 @@ from app.core.exceptions import AppError
 from app.core.pagination import PageParams
 from app.core.templating import render
 from app.modules.cadastros.service import ClienteService
-from app.modules.cadastros.service_extra import MotoristaService, ParceiroService
+from app.modules.cadastros.service_extra import FornecedorService, MotoristaService, ParceiroService
 from app.modules.frota.service import AcessoriosService, CategoriasService, VeiculoService
 from app.modules.identity.service import AuthenticatedUser
 from app.modules.reservas.models import ResReservaItem, ResReservaMotorista
@@ -140,6 +140,7 @@ async def _reservas_lookups(session: AsyncSession, tenant_id: uuid.UUID) -> dict
     protecoes = await ProtecaoService(session).list_items(PageParams(page=1, size=200))
     politicas = await PoliticaCancelamentoService(session).list_items(PageParams(page=1, size=100))
     acessorios = await AcessoriosService(session).list_items(PageParams(page=1, size=200))
+    fornecedores = await FornecedorService(session).list_items(PageParams(page=1, size=300))
     return {
         "categorias": categorias.items,
         "filiais": filiais.items,
@@ -157,6 +158,7 @@ async def _reservas_lookups(session: AsyncSession, tenant_id: uuid.UUID) -> dict
         "motorista_nomes": {str(m.id): m.nome for m in motoristas.items},
         "veiculo_placas": {str(v.id): v.placa for v in veiculos.items},
         "parceiro_nomes": {str(p.id): p.nome for p in parceiros.items},
+        "fornecedor_nomes": {str(f.id): f.nome for f in fornecedores.items},
     }
 
 

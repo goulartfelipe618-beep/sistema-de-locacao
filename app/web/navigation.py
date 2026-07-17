@@ -183,6 +183,42 @@ NAVIGATION: tuple[MenuSection, ...] = (
         ),
     ),
     MenuSection(
+        label="Intermediação",
+        icon="handshake",
+        items=(
+            MenuItem(
+                "Configurações",
+                url="/intermediacao/config",
+                permission="intermediacao.config.visualizar",
+                implemented=True,
+            ),
+            MenuItem(
+                "Contratos Parceiros",
+                url="/intermediacao/contratos-fornecedor",
+                permission="intermediacao.contrato.visualizar",
+                implemented=True,
+            ),
+            MenuItem(
+                "Indisponibilidades",
+                url="/intermediacao/indisponibilidades",
+                permission="intermediacao.indisponibilidade.visualizar",
+                implemented=True,
+            ),
+            MenuItem(
+                "Aprovações pendentes",
+                url="/intermediacao/aprovacoes",
+                permission="intermediacao.reserva.aprovar",
+                implemented=True,
+            ),
+            MenuItem(
+                "Repasses / Comissões",
+                url="/intermediacao/repasses",
+                permission="intermediacao.repasse.visualizar",
+                implemented=True,
+            ),
+        ),
+    ),
+    MenuSection(
         label="Reservas",
         icon="calendar",
         items=(

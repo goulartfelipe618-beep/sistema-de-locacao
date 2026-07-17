@@ -18,6 +18,7 @@ from app.modules.fiscal.web import router as fiscal_router
 from app.modules.automacoes.web import router as automacoes_router
 from app.modules.notificacoes.web import router as notificacoes_router
 from app.modules.integracoes.web import router as integracoes_router
+from app.modules.intermediacao.web import router as intermediacao_router
 from app.modules.relatorios.web import router as relatorios_router
 from app.modules.frota.web import router as frota_router
 from app.modules.identity.web import router as identity_router
@@ -36,6 +37,7 @@ web_router.include_router(tenants_router)
 web_router.include_router(parametros_router)
 web_router.include_router(cadastros_router)
 web_router.include_router(frota_router)
+web_router.include_router(intermediacao_router)
 web_router.include_router(manutencao_router)
 web_router.include_router(tarifario_router)
 web_router.include_router(reservas_router)

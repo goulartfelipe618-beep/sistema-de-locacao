@@ -34,6 +34,7 @@ celery_app = Celery(
         "app.modules.frota.tasks",
         "app.modules.manutencao.tasks",
         "app.modules.reservas.tasks",
+        "app.modules.intermediacao.tasks",
     ],
 )
 

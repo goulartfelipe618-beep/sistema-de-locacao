@@ -810,6 +810,75 @@ async def _projecao_demanda(session: AsyncSession, params: dict) -> ReportData:
     return ReportData("Projeção de demanda", ["mes_projecao", "demanda_estimada", "receita_estimada"], rows)
 
 
+async def _intermediacao_margem_parceiro(session: AsyncSession, params: dict) -> ReportData:
+    from app.modules.cadastros.models_extra import Fornecedor
+    from app.modules.intermediacao.models import LocRepasseLancamento
+
+    ini, fim, _ = _parse_params(params)
+    stmt = (
+        select(
+            Fornecedor.nome,
+            LocRepasseLancamento.modelo_negocio,
+            func.count(LocRepasseLancamento.id),
+            func.coalesce(func.sum(LocRepasseLancamento.valor_cliente), 0),
+            func.coalesce(func.sum(LocRepasseLancamento.valor_repasse), 0),
+            func.coalesce(func.sum(LocRepasseLancamento.valor_margem), 0),
+            func.coalesce(func.sum(LocRepasseLancamento.valor_comissao), 0),
+        )
+        .join(Fornecedor, Fornecedor.id == LocRepasseLancamento.fornecedor_id)
+        .where(
+            LocRepasseLancamento.deleted_at.is_(None),
+            LocRepasseLancamento.created_at >= _dt_start(ini),
+            LocRepasseLancamento.created_at <= _dt_end(fim),
+        )
+        .group_by(Fornecedor.nome, LocRepasseLancamento.modelo_negocio)
+        .order_by(func.sum(LocRepasseLancamento.valor_margem).desc())
+    )
+    rows = [
+        [nome, modelo.value, int(qtd), _dec(rec), _dec(rep), _dec(mar), _dec(com)]
+        for nome, modelo, qtd, rec, rep, mar, com in (await session.execute(stmt)).all()
+    ]
+    return ReportData(
+        "Margem por locadora parceira",
+        ["fornecedor", "modelo", "contratos", "receita", "repasse", "margem", "comissao"],
+        rows,
+    )
+
+
+async def _intermediacao_repasses_pendentes(session: AsyncSession, params: dict) -> ReportData:
+    from app.modules.cadastros.models_extra import Fornecedor
+    from app.modules.intermediacao.models import LocRepasseLancamento
+
+    _, _, _ = _parse_params(params)
+    stmt = (
+        select(
+            Fornecedor.nome,
+            LocRepasseLancamento.contrato_id,
+            LocRepasseLancamento.modelo_negocio,
+            LocRepasseLancamento.valor_repasse,
+            LocRepasseLancamento.valor_comissao,
+            LocRepasseLancamento.vencimento,
+            LocRepasseLancamento.status,
+        )
+        .join(Fornecedor, Fornecedor.id == LocRepasseLancamento.fornecedor_id)
+        .where(
+            LocRepasseLancamento.deleted_at.is_(None),
+            LocRepasseLancamento.status == TituloStatus.EM_ABERTO,
+        )
+        .order_by(LocRepasseLancamento.vencimento.asc())
+        .limit(500)
+    )
+    rows = [
+        [nome, str(cid), modelo.value, _dec(rep), _dec(com), str(venc), status.value]
+        for nome, cid, modelo, rep, com, venc, status in (await session.execute(stmt)).all()
+    ]
+    return ReportData(
+        "Repasses e comissões pendentes",
+        ["fornecedor", "contrato", "modelo", "valor_repasse", "valor_comissao", "vencimento", "status"],
+        rows,
+    )
+
+
 _GENERATORS = {
     "frota_atual": _frota_atual,
     "rentabilidade_veiculo": _rentabilidade_veiculo,
@@ -840,4 +909,6 @@ _GENERATORS = {
     "metas_vendedores": _metas_vendedores,
     "sazonalidade": _sazonalidade,
     "projecao_demanda": _projecao_demanda,
+    "intermediacao_margem_parceiro": _intermediacao_margem_parceiro,
+    "intermediacao_repasses_pendentes": _intermediacao_repasses_pendentes,
 }

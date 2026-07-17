@@ -12,6 +12,7 @@ from app.modules.cadastros import models as cadastros_models  # noqa: F401
 from app.modules.comercial import models as comercial_models  # noqa: F401
 from app.modules.financeiro import models as financeiro_models  # noqa: F401
 from app.modules.fiscal import models as fiscal_models  # noqa: F401
+from app.modules.intermediacao import models as intermediacao_models  # noqa: F401
 from app.modules.documentos import models as documentos_models  # noqa: F401
 from app.modules.parametros import models as parametros_models  # noqa: F401
 from app.modules.automacoes import models as automacoes_models  # noqa: F401
@@ -38,6 +39,7 @@ __all__ = [
     "comercial_models",
     "financeiro_models",
     "fiscal_models",
+    "intermediacao_models",
     "integracoes_models",
     "automacoes_models",
     "notificacoes_models",

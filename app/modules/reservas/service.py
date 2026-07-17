@@ -39,6 +39,7 @@ from app.shared.enums import (
     AuditAction,
     ClienteStatus,
     CotacaoStatus,
+    IntermediacaoStatus,
     ReservaAlocacao,
     ReservaItemTipo,
     ReservaOrigem,
@@ -296,6 +297,17 @@ class DisponibilidadeService:
         if fim <= inicio:
             raise ValidationError("Período inválido: fim deve ser posterior ao início.")
 
+        from app.modules.intermediacao.service import IntermediacaoService
+        from app.modules.tenants.models import Filial
+
+        filial = await self.session.get(Filial, filial_id)
+        buffer_horas = buffer_horas
+        inter_svc = IntermediacaoService(self.session)
+        cfg = None
+        if filial:
+            cfg = await inter_svc.get_config(filial.tenant_id)
+            buffer_horas = cfg.buffer_disponibilidade_horas
+
         inicio_buf, fim_buf = _apply_buffer(inicio, fim, buffer_horas)
 
         veiculo_stmt = select(FrotaVeiculo).where(
@@ -306,6 +318,13 @@ class DisponibilidadeService:
         if categoria_id:
             veiculo_stmt = veiculo_stmt.where(FrotaVeiculo.categoria_id == categoria_id)
         veiculos = list((await self.session.execute(veiculo_stmt)).scalars().all())
+        if cfg:
+            from app.shared.enums import ModoOperacaoLocadora, VeiculoPropriedade
+
+            if cfg.modo_operacao == ModoOperacaoLocadora.PROPRIA:
+                veiculos = [v for v in veiculos if v.propriedade != VeiculoPropriedade.TERCEIRIZADA]
+            elif cfg.modo_operacao == ModoOperacaoLocadora.INTERMEDIACAO:
+                veiculos = [v for v in veiculos if v.propriedade == VeiculoPropriedade.TERCEIRIZADA]
 
         cat_ids = {v.categoria_id for v in veiculos}
         if not cat_ids:
@@ -341,6 +360,15 @@ class DisponibilidadeService:
         for veiculo in veiculos:
             por_categoria.setdefault(veiculo.categoria_id, []).append(veiculo)
 
+        if cfg and cfg.priorizar_frota_propria:
+            from app.shared.enums import VeiculoPropriedade
+
+            for cat_id, lista in por_categoria.items():
+                por_categoria[cat_id] = sorted(
+                    lista,
+                    key=lambda v: (0 if v.propriedade == VeiculoPropriedade.PROPRIA else 1, v.placa),
+                )
+
         resultado: list[DisponibilidadeCategoria] = []
         for cat_id, lista in por_categoria.items():
             categoria = categorias.get(cat_id)
@@ -355,6 +383,10 @@ class DisponibilidadeService:
                     and v.status not in _EXCLUDED_STATUSES
                     and v.id not in blocked_vehicle_ids
                 )
+                if disponivel:
+                    inter = IntermediacaoService(self.session)
+                    ok, _ = await inter.veiculo_disponivel_periodo(v, inicio_buf, fim_buf)
+                    disponivel = ok
                 if disponivel:
                     livres_veiculos += 1
                 veiculo_rows.append(
@@ -518,6 +550,23 @@ class ReservaService:
         await self._sync_itens(tenant_id, reserva.id, quote)
         await self._sync_motoristas(tenant_id, reserva.id, data.motoristas)
 
+        if data.veiculo_id:
+            from app.modules.intermediacao.service import IntermediacaoService
+
+            veiculo = await self.veiculo_svc.get(data.veiculo_id)
+            await IntermediacaoService(self.session).aplicar_intermediacao_reserva(reserva, veiculo)
+            await self.repo.flush()
+            if reserva.intermediacao_status == IntermediacaoStatus.PENDENTE_APROVACAO:
+                await IntermediacaoService(self.session).notificar_pendencia_fornecedor(reserva)
+                from app.modules.intermediacao.hooks import fire_intermediacao_event
+
+                await fire_intermediacao_event(
+                    self.session,
+                    tenant_id,
+                    "intermediacao_pendente",
+                    {"reserva_id": str(reserva.id), "numero": reserva.numero},
+                )
+
         # Hook §7.4: registra o uso do cupom validado na reserva recém-criada.
         if cupom_result is not None and cupom_result.ok and cupom_result.cupom_id:
             from app.modules.comercial.service import CupomService
@@ -629,6 +678,18 @@ class ReservaService:
             raise BusinessRuleError(
                 "Reserva de cliente bloqueado requer aprovação manual.",
                 code="requer_aprovacao",
+            )
+        from app.shared.enums import IntermediacaoStatus
+
+        if reserva.intermediacao_status == IntermediacaoStatus.PENDENTE_APROVACAO:
+            raise BusinessRuleError(
+                "Aguardando confirmação da locadora parceira.",
+                code="intermediacao_pendente",
+            )
+        if reserva.intermediacao_status == IntermediacaoStatus.REJEITADO_FORNECEDOR:
+            raise BusinessRuleError(
+                "Intermediação rejeitada pela locadora parceira.",
+                code="intermediacao_rejeitada",
             )
 
         if reserva.alocacao == ReservaAlocacao.VEICULO and reserva.veiculo_id:
@@ -844,6 +905,13 @@ class ReservaService:
             raise ValidationError("Veículo não pertence à categoria selecionada.")
         if veiculo.status in _EXCLUDED_STATUSES:
             raise ConflictError("Veículo indisponível para reserva.", code="veiculo_indisponivel")
+
+        from app.modules.intermediacao.service import IntermediacaoService
+
+        inter = IntermediacaoService(self.session)
+        ok, motivo = await inter.veiculo_disponivel_periodo(veiculo, inicio, fim)
+        if not ok:
+            raise ConflictError(motivo or "Veículo indisponível no período.", code="veiculo_indisponivel")
 
         disp = await self.disponibilidade.consultar(
             filial_id, inicio, fim, categoria_id=categoria_id

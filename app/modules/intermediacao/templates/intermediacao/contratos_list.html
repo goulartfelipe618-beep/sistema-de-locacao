@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <h2 class="card-title" style="margin:0">{{ title }}</h2>
+    {% if current_user.is_superuser or 'intermediacao.contrato.criar' in current_user.permissions %}
+    <a class="btn btn-primary" href="/intermediacao/contratos-fornecedor/novo">+ Novo contrato</a>
+    {% endif %}
+  </div>
+  {% if contratos %}
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Número</th>
+        <th>Locadora parceira</th>
+        <th>Modelo</th>
+        <th>Vigência</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for c in contratos %}
+    <tr>
+      <td><strong>{{ c.numero }}</strong><br><small>{{ c.titulo }}</small></td>
+      <td>{{ fornecedores.get(c.fornecedor_id).nome if fornecedores.get(c.fornecedor_id) else c.fornecedor_id }}</td>
+      <td><span class="badge badge-info">{{ c.modelo_negocio.value }}</span></td>
+      <td>{{ c.vigencia_inicio }} {% if c.vigencia_fim %}→ {{ c.vigencia_fim }}{% else %}→ aberto{% endif %}</td>
+      <td><span class="badge {% if c.status.value == 'ativo' %}badge-success{% elif c.status.value == 'rascunho' %}badge-warning{% else %}badge-danger{% endif %}">{{ c.status.value }}</span></td>
+      <td class="num">
+        {% if current_user.is_superuser or 'intermediacao.contrato.editar' in current_user.permissions %}
+        <a class="btn btn-sm" href="/intermediacao/contratos-fornecedor/{{ c.id }}/editar">Editar</a>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">Nenhum contrato com locadora parceira. Cadastre fornecedores como locadora parceira e crie o contrato comercial.</div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -145,6 +145,20 @@ REPORT_CATALOG: dict[str, ReportDef] = {
         RelCategoria.LOCACAO,
         colunas=("status", "quantidade", "valor_total", "valor_repassado"),
     ),
+    "intermediacao_margem_parceiro": _def(
+        "intermediacao_margem_parceiro",
+        "Margem por locadora parceira",
+        "Receita, repasse, margem e comissão por fornecedor terceirizado.",
+        RelCategoria.GERENCIAL,
+        colunas=("fornecedor", "modelo", "contratos", "receita", "repasse", "margem", "comissao"),
+    ),
+    "intermediacao_repasses_pendentes": _def(
+        "intermediacao_repasses_pendentes",
+        "Repasses e comissões pendentes",
+        "Lançamentos de intermediação em aberto por parceiro.",
+        RelCategoria.FINANCEIRO,
+        colunas=("fornecedor", "contrato", "modelo", "valor_repasse", "valor_comissao", "vencimento", "status"),
+    ),
     # §11.3 Financeiro
     "dre_simplificado": _def(
         "dre_simplificado",

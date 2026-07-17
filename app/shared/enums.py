@@ -103,6 +103,58 @@ class VeiculoPropriedade(str, enum.Enum):
     TERCEIRIZADA = "terceirizada"
 
 
+class ModeloNegocioTerceiro(str, enum.Enum):
+    """Modelo comercial de intermediação com locadora parceira."""
+
+    REPASSE = "repasse"  # Intermediador define preço e repassa custo ao parceiro
+    COMISSAO = "comissao"  # Parceiro define base e paga comissão ao intermediador
+
+
+class TipoCalculoRepasse(str, enum.Enum):
+    """Como calcular o valor devido ao fornecedor."""
+
+    PERCENTUAL_RECEITA = "percentual_receita"
+    DIARIA_FIXA = "diaria_fixa"
+    TABELA = "tabela"
+    VALOR_LIQUIDO = "valor_liquido"
+
+
+class ContratoFornecedorStatus(str, enum.Enum):
+    """Status do contrato com locadora parceira."""
+
+    RASCUNHO = "rascunho"
+    ATIVO = "ativo"
+    SUSPENSO = "suspenso"
+    ENCERRADO = "encerrado"
+
+
+class IntermediacaoStatus(str, enum.Enum):
+    """Status operacional da intermediação em reserva/contrato."""
+
+    NAO_APLICAVEL = "nao_aplicavel"
+    PENDENTE_APROVACAO = "pendente_aprovacao"
+    CONFIRMADO_FORNECEDOR = "confirmado_fornecedor"
+    REJEITADO_FORNECEDOR = "rejeitado_fornecedor"
+    BLOQUEADO_TERCEIRO = "bloqueado_terceiro"
+
+
+class IndisponibilidadeTerceiroMotivo(str, enum.Enum):
+    """Motivo de indisponibilidade declarada pelo proprietário."""
+
+    LOCADO_PELO_PROPRIETARIO = "locado_pelo_proprietario"
+    MANUTENCAO_TERCEIRO = "manutencao_terceiro"
+    INDISPONIVEL_SITE = "indisponivel_site"
+    OUTRO = "outro"
+
+
+class ModoOperacaoLocadora(str, enum.Enum):
+    """Modo de operação do tenant (própria, terceirizada ou híbrida)."""
+
+    PROPRIA = "propria"
+    INTERMEDIACAO = "intermediacao"
+    HIBRIDA = "hibrida"
+
+
 class CombustivelUnidade(str, enum.Enum):
     """Unidade de medida do combustível/energia."""
 
@@ -447,6 +499,7 @@ class ContaPagarOrigem(str, enum.Enum):
     OS = "os"
     FORNECEDOR = "fornecedor"
     COMISSAO = "comissao"
+    REPASSE_LOCACAO = "repasse_locacao"
     AVULSO = "avulso"
 
 
@@ -849,6 +902,9 @@ class AutoEventoGatilho(str, enum.Enum):
     CLIENTE_INADIMPLENTE = "cliente_inadimplente"
     ESTOQUE_MINIMO = "estoque_minimo"
     RESERVA_NO_SHOW = "reserva_no_show"
+    INTERMEDIACAO_PENDENTE = "intermediacao_pendente"
+    INTERMEDIACAO_APROVADA = "intermediacao_aprovada"
+    INTERMEDIACAO_REJEITADA = "intermediacao_rejeitada"
     MANUAL = "manual"
 
 

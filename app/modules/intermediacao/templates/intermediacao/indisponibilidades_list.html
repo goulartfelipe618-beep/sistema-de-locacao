@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% from "macros/forms.html" import field_label, form_legend %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:1100px">
+  <h2 class="card-title">{{ title }}</h2>
+  <p class="form-help">Quando a locadora parceira aluga o veículo por conta própria, registre aqui para bloquear reservas e retirar do site.</p>
+
+  {% if current_user.is_superuser or 'intermediacao.indisponibilidade.criar' in current_user.permissions %}
+  <form method="post" action="/intermediacao/indisponibilidades" class="erp-form" style="margin-bottom:24px">
+    <fieldset class="form-fieldset">
+      <legend>Registrar indisponibilidade</legend>
+      <div class="form-grid">
+        <div class="form-group">
+          {{ field_label('Veículo terceirizado', true, 'veiculo_id') }}
+          <select class="form-input" name="veiculo_id" required>
+            <option value="">Selecionar</option>
+            {% for v in veiculos_terceiros %}
+            <option value="{{ v.id }}">{{ v.placa }} — {{ v.proprietario_nome or 'terceiro' }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('Locadora parceira', true, 'fornecedor_id') }}
+          <select class="form-input" name="fornecedor_id" required>
+            <option value="">Selecionar</option>
+            {% for f in fornecedores %}<option value="{{ f.id }}">{{ f.nome }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('Início', true, 'inicio_em') }}
+          <input class="form-input" type="datetime-local" name="inicio_em" required>
+        </div>
+        <div class="form-group">
+          {{ field_label('Fim (opcional)', false, 'fim_em') }}
+          <input class="form-input" type="datetime-local" name="fim_em">
+        </div>
+        <div class="form-group">
+          {{ field_label('Motivo', true, 'motivo') }}
+          <select class="form-input" name="motivo">
+            {% for m in motivos %}
+            <option value="{{ m.value }}">{{ m.value }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group form-check-row">
+          <input type="checkbox" id="sincronizar_site" name="sincronizar_site" value="1" checked>
+          <label class="form-label" for="sincronizar_site">Remover do site durante o bloqueio</label>
+        </div>
+      </div>
+      <div class="form-group">
+        {{ field_label('Observações', false, 'observacoes') }}
+        <input class="form-input" name="observacoes">
+      </div>
+      <button class="btn btn-primary" type="submit">Registrar bloqueio</button>
+    </fieldset>
+    {{ form_legend() }}
+  </form>
+  {% endif %}
+
+  {% if rows %}
+  <table class="table">
+    <thead>
+      <tr><th>Veículo</th><th>Parceiro</th><th>Período</th><th>Motivo</th><th>Site</th></tr>
+    </thead>
+    <tbody>
+    {% for r in rows %}
+    <tr>
+      <td>{{ veiculos.get(r.veiculo_id).placa if veiculos.get(r.veiculo_id) else r.veiculo_id }}</td>
+      <td>{{ fornecedores.get(r.fornecedor_id).nome if fornecedores.get(r.fornecedor_id) else r.fornecedor_id }}</td>
+      <td>{{ r.inicio_em|datetime }}{% if r.fim_em %} → {{ r.fim_em|datetime }}{% else %} → indefinido{% endif %}</td>
+      <td>{{ r.motivo.value }}</td>
+      <td>{% if r.sincronizar_site %}Sim{% else %}Não{% endif %}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">Nenhuma indisponibilidade registrada.</div>
+  {% endif %}
+</div>
+{% endblock %}

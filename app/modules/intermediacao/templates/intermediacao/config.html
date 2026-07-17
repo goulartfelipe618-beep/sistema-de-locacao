@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% from "macros/forms.html" import field_label, form_legend %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card erp-form-card" style="max-width:900px">
+  <h2 class="card-title">{{ title }}</h2>
+  <p class="form-help">Configure como sua empresa opera: frota própria, intermediação com locadoras parceiras ou modelo híbrido.</p>
+  <form method="post" action="/intermediacao/config" class="erp-form">
+    <fieldset class="form-fieldset">
+      <legend>Modo de operação</legend>
+      <div class="form-grid">
+        <div class="form-group">
+          {{ field_label('Modo da locadora', true, 'modo_operacao') }}
+          <select class="form-input" id="modo_operacao" name="modo_operacao" required>
+            {% for m in ['propria','intermediacao','hibrida'] %}
+            <option value="{{ m }}" {% if config.modo_operacao.value == m %}selected{% endif %}>{{ m|capitalize }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('Margem mínima (%)', true, 'margem_minima_percentual') }}
+          <input class="form-input" id="margem_minima_percentual" name="margem_minima_percentual" required
+                 value="{{ config.margem_minima_percentual }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Buffer disponibilidade (horas)', true, 'buffer_disponibilidade_horas') }}
+          <input class="form-input" type="number" min="0" max="72" id="buffer_disponibilidade_horas" name="buffer_disponibilidade_horas"
+                 value="{{ config.buffer_disponibilidade_horas }}">
+          <p class="form-help">Tempo extra entre locações para logística com parceiros.</p>
+        </div>
+      </div>
+    </fieldset>
+    <fieldset class="form-fieldset">
+      <legend>Regras de intermediação</legend>
+      <div class="form-grid">
+        <div class="form-group form-check-row">
+          <input type="checkbox" id="exige_contrato_fornecedor" name="exige_contrato_fornecedor" value="1"
+                 {% if config.exige_contrato_fornecedor %}checked{% endif %}>
+          <label class="form-label" for="exige_contrato_fornecedor">Exigir contrato ativo com locadora parceira</label>
+        </div>
+        <div class="form-group form-check-row">
+          <input type="checkbox" id="aprovar_reserva_automaticamente" name="aprovar_reserva_automaticamente" value="1"
+                 {% if config.aprovar_reserva_automaticamente %}checked{% endif %}>
+          <label class="form-label" for="aprovar_reserva_automaticamente">Confirmar intermediação automaticamente na reserva</label>
+        </div>
+        <div class="form-group form-check-row">
+          <input type="checkbox" id="publicar_terceiros_site" name="publicar_terceiros_site" value="1"
+                 {% if config.publicar_terceiros_site %}checked{% endif %}>
+          <label class="form-label" for="publicar_terceiros_site">Publicar veículos terceirizados no site (quando marcados)</label>
+        </div>
+        <div class="form-group form-check-row">
+          <input type="checkbox" id="priorizar_frota_propria" name="priorizar_frota_propria" value="1"
+                 {% if config.priorizar_frota_propria %}checked{% endif %}>
+          <label class="form-label" for="priorizar_frota_propria">Priorizar frota própria na disponibilidade</label>
+        </div>
+      </div>
+    </fieldset>
+    <div class="form-group">
+      {{ field_label('Observações internas', false, 'observacoes') }}
+      <textarea class="form-input" id="observacoes" name="observacoes" rows="3">{{ config.observacoes or '' }}</textarea>
+    </div>
+    {% if current_user.is_superuser or 'intermediacao.config.editar' in current_user.permissions %}
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Salvar configurações</button>
+      <form method="post" action="/intermediacao/site/sincronizar" style="display:inline;margin-left:8px">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="btn" type="submit">Sincronizar catálogo do site</button>
+      </form>
+    </div>
+    {% endif %}
+    {{ form_legend() }}
+  </form>
+</div>
+{% endblock %}

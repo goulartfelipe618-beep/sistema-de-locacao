@@ -475,9 +475,17 @@ async def fornecedor_create(
     uf: Annotated[str, Form()] = "",
     prazo_pagamento_dias: Annotated[int, Form()] = 30,
     observacoes: Annotated[str, Form()] = "",
+    locadora_parceira: Annotated[str, Form()] = "",
+    modelo_negocio_padrao: Annotated[str, Form()] = "",
+    margem_padrao_percentual: Annotated[str, Form()] = "",
+    contato_operacional_nome: Annotated[str, Form()] = "",
+    contato_operacional_telefone: Annotated[str, Form()] = "",
+    contato_operacional_email: Annotated[str, Form()] = "",
 ) -> HTMLResponse:
     cats = await _categorias_fornecedor(session, current_user.tenant_id)
     try:
+        from app.shared.enums import ModeloNegocioTerceiro
+
         await FornecedorService(session).create(
             current_user.tenant_id,
             FornecedorCreate(
@@ -492,6 +500,16 @@ async def fornecedor_create(
                 uf=uf or None,
                 prazo_pagamento_dias=prazo_pagamento_dias,
                 observacoes=observacoes or None,
+                locadora_parceira=bool(locadora_parceira),
+                modelo_negocio_padrao=ModeloNegocioTerceiro(modelo_negocio_padrao)
+                if modelo_negocio_padrao
+                else None,
+                margem_padrao_percentual=Decimal(margem_padrao_percentual.replace(",", "."))
+                if margem_padrao_percentual.strip()
+                else None,
+                contato_operacional_nome=contato_operacional_nome or None,
+                contato_operacional_telefone=contato_operacional_telefone or None,
+                contato_operacional_email=contato_operacional_email or None,
             ),
         )
     except (AppError, ValueError) as exc:
@@ -547,8 +565,16 @@ async def fornecedor_update(
     bloqueado: Annotated[str, Form()] = "",
     motivo_bloqueio: Annotated[str, Form()] = "",
     observacoes: Annotated[str, Form()] = "",
+    locadora_parceira: Annotated[str, Form()] = "",
+    modelo_negocio_padrao: Annotated[str, Form()] = "",
+    margem_padrao_percentual: Annotated[str, Form()] = "",
+    contato_operacional_nome: Annotated[str, Form()] = "",
+    contato_operacional_telefone: Annotated[str, Form()] = "",
+    contato_operacional_email: Annotated[str, Form()] = "",
 ) -> HTMLResponse:
     try:
+        from app.shared.enums import ModeloNegocioTerceiro
+
         await FornecedorService(session).update(
             item_id,
             FornecedorUpdate(
@@ -564,6 +590,16 @@ async def fornecedor_update(
                 bloqueado=bool(bloqueado),
                 motivo_bloqueio=motivo_bloqueio or None,
                 observacoes=observacoes or None,
+                locadora_parceira=bool(locadora_parceira),
+                modelo_negocio_padrao=ModeloNegocioTerceiro(modelo_negocio_padrao)
+                if modelo_negocio_padrao
+                else None,
+                margem_padrao_percentual=Decimal(margem_padrao_percentual.replace(",", "."))
+                if margem_padrao_percentual.strip()
+                else None,
+                contato_operacional_nome=contato_operacional_nome or None,
+                contato_operacional_telefone=contato_operacional_telefone or None,
+                contato_operacional_email=contato_operacional_email or None,
             ),
         )
     except (AppError, ValueError) as exc:

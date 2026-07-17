@@ -26,6 +26,7 @@ from app.shared.enums import (
     CadastroStatus,
     MotoristaCnhStatus,
     MotoristaVinculo,
+    ModeloNegocioTerceiro,
     ParceiroTipo,
     PersonType,
 )
@@ -206,6 +207,16 @@ class Fornecedor(TenantBaseModel):
     bloqueado: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     motivo_bloqueio: Mapped[str | None] = mapped_column(String(255), nullable=True)
     observacoes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    locadora_parceira: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    modelo_negocio_padrao: Mapped[ModeloNegocioTerceiro | None] = mapped_column(
+        _str_enum(ModeloNegocioTerceiro, "fornecedor_modelo_negocio", 20),
+        nullable=True,
+    )
+    contato_operacional_nome: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    contato_operacional_telefone: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    contato_operacional_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    margem_padrao_percentual: Mapped[Decimal | None] = mapped_column(Numeric(7, 4), nullable=True)
 
 
 class Vendedor(TenantBaseModel):

@@ -18,6 +18,7 @@ from app.modules.automacoes.api import router as automacoes_router
 from app.modules.notificacoes.api import router as notificacoes_router
 from app.modules.integracoes.api import router as integracoes_router, webhooks_router
 from app.modules.integracoes.public_api import public_router
+from app.modules.intermediacao.api import router as intermediacao_router
 from app.modules.documentos.api import router as documentos_router
 from app.modules.relatorios.api import router as relatorios_router
 from app.modules.frota.api import router as frota_router
@@ -42,6 +43,7 @@ api_router.include_router(manutencao_router)
 api_router.include_router(tarifario_router)
 api_router.include_router(reservas_router)
 api_router.include_router(locacoes_router)
+api_router.include_router(intermediacao_router)
 api_router.include_router(financeiro_router)
 api_router.include_router(comercial_router)
 api_router.include_router(fiscal_router)

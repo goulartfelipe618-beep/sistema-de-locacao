@@ -32,6 +32,7 @@ DEFAULT_AUXILIARES: tuple[tuple[str, str, str, int], ...] = (
     ("categoria_fornecedor", "pneus", "Pneus", 50),
     ("categoria_fornecedor", "telemetria", "Rastreador/Telemetria", 60),
     ("categoria_fornecedor", "financeiro", "Financeiro/Banco", 70),
+    ("categoria_fornecedor", "locadora_parceira", "Locadora Parceira (Intermediação)", 15),
     ("categoria_fornecedor", "outros", "Outros", 99),
     ("cnh_categoria", "b", "B", 10),
     ("cnh_categoria", "ab", "AB", 20),

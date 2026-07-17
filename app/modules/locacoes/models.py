@@ -30,6 +30,8 @@ from app.shared.enums import (
     AvariaStatus,
     ContratoCondicaoPagamento,
     ContratoStatus,
+    IntermediacaoStatus,
+    ModeloNegocioTerceiro,
     MultaStatus,
     ReservaItemTipo,
     VistoriaTipo,
@@ -182,6 +184,32 @@ class LocContrato(TenantBaseModel):
         Boolean, nullable=False, default=False
     )
     observacoes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    fornecedor_id: Mapped[uuid.UUID | None] = mapped_column(
+        PgUUID(as_uuid=True),
+        ForeignKey("fornecedores.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    contrato_fornecedor_id: Mapped[uuid.UUID | None] = mapped_column(
+        PgUUID(as_uuid=True),
+        ForeignKey("fornecedor_contratos_locacao.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    modelo_negocio_terceiro: Mapped[ModeloNegocioTerceiro | None] = mapped_column(
+        _str_enum(ModeloNegocioTerceiro, "contrato_modelo_negocio", 20),
+        nullable=True,
+    )
+    intermediacao_status: Mapped[IntermediacaoStatus] = mapped_column(
+        _str_enum(IntermediacaoStatus, "contrato_intermediacao_status", 25),
+        nullable=False,
+        default=IntermediacaoStatus.NAO_APLICAVEL,
+    )
+    valor_repasse_total: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
+    valor_margem: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
+    valor_comissao: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
+    repasse_snapshot: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
 class LocContratoMotorista(TenantBaseModel):

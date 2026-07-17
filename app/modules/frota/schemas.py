@@ -224,6 +224,9 @@ class VeiculoCreate(BaseModel):
     proprietario_nome: str | None = None
     observacoes: str | None = None
     nivel_combustivel_atual: int = Field(default=8, ge=0, le=8)
+    contrato_fornecedor_id: uuid.UUID | None = None
+    publicar_site: bool = True
+    exige_aprovacao_fornecedor: bool = True
 
     @field_validator("placa")
     @classmethod
@@ -277,6 +280,9 @@ class VeiculoUpdate(BaseModel):
     proprietario_nome: str | None = None
     observacoes: str | None = None
     nivel_combustivel_atual: int | None = Field(default=None, ge=0, le=8)
+    contrato_fornecedor_id: uuid.UUID | None = None
+    publicar_site: bool | None = None
+    exige_aprovacao_fornecedor: bool | None = None
 
     @field_validator("placa")
     @classmethod

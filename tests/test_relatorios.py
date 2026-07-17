@@ -22,8 +22,8 @@ REL_PERMS = {
 }
 
 
-def test_catalogo_tem_29_relatorios() -> None:
-    assert len(REPORT_CATALOG) == 29
+def test_catalogo_tem_31_relatorios() -> None:
+    assert len(REPORT_CATALOG) == 31
 
 
 def test_catalogo_categorias() -> None:

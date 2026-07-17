@@ -1,0 +1,42 @@
+{% extends "documentos/base_pdf.html" %}
+{% block doc_body %}
+<h2>Confirmação de Reserva — Intermediação</h2>
+<p class="doc-muted">Documento para locação intermediada com locadora parceira. A {{ empresa_nome }} atua como locadora perante o cliente.</p>
+
+<p><strong>Número:</strong> {{ reserva.numero }}</p>
+<p><strong>Cliente:</strong> {{ cliente_nome }}</p>
+<p><strong>Veículo:</strong> {{ veiculo_label }}</p>
+<p><strong>Retirada:</strong> {{ filial_retirada }} — {{ reserva.retirada_em|datetime }}</p>
+<p><strong>Devolução:</strong> {{ filial_devolucao }} — {{ reserva.devolucao_em|datetime }}</p>
+
+<h3>Locadora parceira (proprietária do veículo)</h3>
+<p><strong>Parceiro:</strong> {{ fornecedor_nome }}</p>
+{% if contrato_numero %}<p><strong>Contrato comercial:</strong> {{ contrato_numero }} — {{ contrato_titulo }}</p>{% endif %}
+<p><strong>Modelo:</strong> {{ modelo_negocio }}</p>
+<p><strong>Status intermediação:</strong> {{ intermediacao_status }}</p>
+
+<h3>Valores</h3>
+<table class="doc-table">
+  <tr><td>Total cobrado do cliente</td><td class="num">{{ reserva.valor_total|currency }}</td></tr>
+  {% if valor_repasse %}<tr><td>Repasse ao parceiro</td><td class="num">{{ valor_repasse|currency }}</td></tr>{% endif %}
+  {% if valor_comissao %}<tr><td>Comissão da intermediadora</td><td class="num">{{ valor_comissao|currency }}</td></tr>{% endif %}
+  {% if valor_margem %}<tr><td>Margem líquida</td><td class="num">{{ valor_margem|currency }}</td></tr>{% endif %}
+</table>
+
+{% if itens %}
+<h3>Itens</h3>
+<table class="doc-table">
+  <thead><tr><th>Descrição</th><th>Qtd</th><th>Total</th></tr></thead>
+  <tbody>
+  {% for i in itens %}
+  <tr><td>{{ i.descricao }}</td><td>{{ i.quantidade }}</td><td>{{ i.valor_total|currency }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<p style="margin-top:24px;font-size:11px">
+  O veículo será apresentado conforme combinado com a locadora parceira.
+  Indisponibilidades declaradas pelo proprietário cancelam automaticamente a publicação no site.
+</p>
+{% endblock %}

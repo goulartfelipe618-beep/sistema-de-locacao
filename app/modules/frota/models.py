@@ -36,7 +36,6 @@ from app.shared.enums import (
     VeiculoStatus,
 )
 
-
 def _str_enum(enum_cls: type, name: str, length: int) -> SAEnum:
     return SAEnum(
         enum_cls,
@@ -244,6 +243,12 @@ class FrotaVeiculo(TenantBaseModel):
         nullable=True,
         index=True,
     )
+    contrato_fornecedor_id: Mapped[uuid.UUID | None] = mapped_column(
+        PgUUID(as_uuid=True),
+        ForeignKey("fornecedor_contratos_locacao.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     status: Mapped[VeiculoStatus] = mapped_column(
         _str_enum(VeiculoStatus, "veiculo_status", 20),
@@ -269,6 +274,8 @@ class FrotaVeiculo(TenantBaseModel):
     data_baixa: Mapped[date | None] = mapped_column(Date, nullable=True)
     motivo_baixa: Mapped[str | None] = mapped_column(String(255), nullable=True)
     nivel_combustivel_atual: Mapped[int] = mapped_column(Integer, nullable=False, default=8)
+    publicar_site: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    exige_aprovacao_fornecedor: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
 
 class FrotaVeiculoAcessorio(TenantBaseModel):

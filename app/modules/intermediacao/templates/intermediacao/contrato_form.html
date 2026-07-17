@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% from "macros/forms.html" import field_label, form_legend %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card erp-form-card" style="max-width:1100px">
+  <h2 class="card-title">{{ title }}</h2>
+  {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+  <form method="post" action="{{ action }}" class="erp-form">
+    <fieldset class="form-fieldset">
+      <legend>Dados do contrato</legend>
+      <div class="form-grid">
+        <div class="form-group">
+          {{ field_label('Locadora parceira', true, 'fornecedor_id') }}
+          <select class="form-input" id="fornecedor_id" name="fornecedor_id" required {% if contrato %}disabled{% endif %}>
+            <option value="">Selecionar</option>
+            {% for f in fornecedores %}
+            <option value="{{ f.id }}" {% if contrato and contrato.fornecedor_id == f.id %}selected{% endif %}>{{ f.nome }}</option>
+            {% endfor %}
+          </select>
+          {% if contrato %}<input type="hidden" name="fornecedor_id" value="{{ contrato.fornecedor_id }}">{% endif %}
+        </div>
+        <div class="form-group">
+          {{ field_label('Número', true, 'numero') }}
+          <input class="form-input" id="numero" name="numero" required {% if contrato %}readonly{% endif %}
+                 value="{{ contrato.numero if contrato else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Título', true, 'titulo') }}
+          <input class="form-input" id="titulo" name="titulo" required value="{{ contrato.titulo if contrato else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Modelo de negócio', true, 'modelo_negocio') }}
+          <select class="form-input" id="modelo_negocio" name="modelo_negocio" required>
+            <option value="repasse" {% if contrato and contrato.modelo_negocio.value == 'repasse' %}selected{% elif not contrato %}selected{% endif %}>Repasse (eu cobro e repasso)</option>
+            <option value="comissao" {% if contrato and contrato.modelo_negocio.value == 'comissao' %}selected{% endif %}>Comissão (parceiro paga %)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('Tipo de cálculo', true, 'tipo_calculo') }}
+          <select class="form-input" id="tipo_calculo" name="tipo_calculo" required>
+            {% for t in ['percentual_receita','diaria_fixa','tabela','valor_liquido'] %}
+            <option value="{{ t }}" {% if contrato and contrato.tipo_calculo.value == t %}selected{% elif not contrato and t == 'tabela' %}selected{% endif %}>{{ t }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('Vigência início', true, 'vigencia_inicio') }}
+          <input class="form-input" type="date" id="vigencia_inicio" name="vigencia_inicio" required
+                 value="{{ contrato.vigencia_inicio if contrato else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Vigência fim', false, 'vigencia_fim') }}
+          <input class="form-input" type="date" id="vigencia_fim" name="vigencia_fim"
+                 value="{{ contrato.vigencia_fim if contrato and contrato.vigencia_fim else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('% repasse sobre receita', false, 'percentual_repasse') }}
+          <input class="form-input" id="percentual_repasse" name="percentual_repasse"
+                 value="{{ contrato.percentual_repasse if contrato and contrato.percentual_repasse is not none else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('% comissão', false, 'percentual_comissao') }}
+          <input class="form-input" id="percentual_comissao" name="percentual_comissao"
+                 value="{{ contrato.percentual_comissao if contrato and contrato.percentual_comissao is not none else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Diária repasse (R$)', false, 'valor_diaria_repasse') }}
+          <input class="form-input" id="valor_diaria_repasse" name="valor_diaria_repasse" data-money="1"
+                 value="{{ contrato.valor_diaria_repasse if contrato and contrato.valor_diaria_repasse is not none else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Prazo pagamento (dias)', false, 'prazo_pagamento_dias') }}
+          <input class="form-input" type="number" min="0" id="prazo_pagamento_dias" name="prazo_pagamento_dias"
+                 value="{{ contrato.prazo_pagamento_dias if contrato else 30 }}">
+        </div>
+        {% if contrato %}
+        <div class="form-group">
+          {{ field_label('Status', true, 'status') }}
+          <select class="form-input" id="status" name="status">
+            {% for s in ['rascunho','ativo','suspenso','encerrado'] %}
+            <option value="{{ s }}" {% if contrato.status.value == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
+      </div>
+    </fieldset>
+    <div class="form-group">
+      {{ field_label('Cláusulas / observações contratuais', false, 'clausulas') }}
+      <textarea class="form-input" id="clausulas" name="clausulas" rows="4">{{ contrato.clausulas if contrato else '' }}</textarea>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Salvar contrato</button>
+      <a class="btn" href="/intermediacao/contratos-fornecedor">Voltar</a>
+    </div>
+    {{ form_legend() }}
+  </form>
+
+  {% if contrato %}
+  <div style="margin-top:32px;border-top:1px solid var(--border);padding-top:20px">
+    <h3>Tabela de preços (diária, filial, categoria, horário)</h3>
+    {% if precos %}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Vigência</th>
+          <th>Categoria</th>
+          <th>Filial</th>
+          <th>Dias mín.</th>
+          <th>Cliente/dia</th>
+          <th>Repasse/dia</th>
+          <th>Comissão %</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for p in precos %}
+      <tr>
+        <td>{{ p.vigencia_inicio }}{% if p.vigencia_fim %} → {{ p.vigencia_fim }}{% endif %}</td>
+        <td>{% for c in categorias %}{% if p.categoria_id == c.id %}{{ c.nome }}{% endif %}{% endfor %}{% if not p.categoria_id %}—{% endif %}</td>
+        <td>{% for f in filiais %}{% if p.filial_id == f.id %}{{ f.name }}{% endif %}{% endfor %}{% if not p.filial_id %}Todas{% endif %}</td>
+        <td class="num">{{ p.dias_minimos }}</td>
+        <td class="num">{{ p.valor_cliente_diaria|currency }}</td>
+        <td class="num">{{ p.valor_repasse_diaria|currency }}</td>
+        <td class="num">{{ p.percentual_comissao or '—' }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">Nenhuma faixa de preço cadastrada.</div>
+    {% endif %}
+
+    {% if current_user.is_superuser or 'intermediacao.contrato.editar' in current_user.permissions %}
+    <form method="post" action="/intermediacao/contratos-fornecedor/{{ contrato.id }}/precos" class="erp-form" style="margin-top:16px">
+      <fieldset class="form-fieldset">
+        <legend>Nova faixa de preço</legend>
+        <div class="form-grid">
+          <div class="form-group">
+            {{ field_label('Vigência início', true, 'vigencia_inicio') }}
+            <input class="form-input" type="date" name="vigencia_inicio" required>
+          </div>
+          <div class="form-group">
+            {{ field_label('Vigência fim', false, 'vigencia_fim') }}
+            <input class="form-input" type="date" name="vigencia_fim">
+          </div>
+          <div class="form-group">
+            {{ field_label('Categoria', false, 'categoria_id') }}
+            <select class="form-input" name="categoria_id">
+              <option value="">Todas</option>
+              {% for c in categorias %}<option value="{{ c.id }}">{{ c.nome }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            {{ field_label('Filial', false, 'filial_id') }}
+            <select class="form-input" name="filial_id">
+              <option value="">Todas</option>
+              {% for f in filiais %}<option value="{{ f.id }}">{{ f.name }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            {{ field_label('Dias mínimos', false, 'dias_minimos') }}
+            <input class="form-input" type="number" min="1" name="dias_minimos" value="1">
+          </div>
+          <div class="form-group">
+            {{ field_label('Valor cliente/dia', true, 'valor_cliente_diaria') }}
+            <input class="form-input" name="valor_cliente_diaria" data-money="1" required>
+          </div>
+          <div class="form-group">
+            {{ field_label('Valor repasse/dia', true, 'valor_repasse_diaria') }}
+            <input class="form-input" name="valor_repasse_diaria" data-money="1" required>
+          </div>
+          <div class="form-group">
+            {{ field_label('Comissão %', false, 'percentual_comissao') }}
+            <input class="form-input" name="percentual_comissao">
+          </div>
+        </div>
+        <button class="btn btn-sm btn-primary" type="submit">Adicionar faixa</button>
+      </fieldset>
+    </form>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

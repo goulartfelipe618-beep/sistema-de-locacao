@@ -101,4 +101,14 @@ BEAT_SCHEDULE: dict[str, dict] = {
         "schedule": crontab(minute="*/15"),
         "options": {"queue": "default"},
     },
+    "intermediacao-sincronizar-site": {
+        "task": "intermediacao.sincronizar_site",
+        "schedule": crontab(minute="*/10"),
+        "options": {"queue": "integrations"},
+    },
+    "intermediacao-lembrete-aprovacao": {
+        "task": "intermediacao.lembrete_aprovacao",
+        "schedule": crontab(hour="8,14", minute=0),
+        "options": {"queue": "notifications"},
+    },
 }

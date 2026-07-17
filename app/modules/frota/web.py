@@ -47,6 +47,7 @@ from app.modules.frota.service import (
     TelemetriaService,
     VeiculoService,
 )
+from app.modules.intermediacao.service import IntermediacaoService
 from app.modules.identity.service import AuthenticatedUser
 from app.modules.tenants.service import FilialService
 from app.shared.enums import (
@@ -168,12 +169,14 @@ async def _veiculo_lookups(session: AsyncSession, tenant_id: uuid.UUID) -> dict[
     combustiveis = await CombustiveisService(session).list_items(PageParams(page=1, size=100))
     modelos = await ModelosService(session).list_items(PageParams(page=1, size=500))
     filiais = await FilialService(session).list_filiais(PageParams(page=1, size=100))
+    locadoras = await IntermediacaoService(session).list_locadoras_parceiras(tenant_id)
     return {
         "categorias": cats.items,
         "marcas": marcas.items,
         "combustiveis": combustiveis.items,
         "modelos": modelos.items,
         "filiais": filiais.items,
+        "locadoras_parceiras": locadoras,
     }
 
 
@@ -260,6 +263,10 @@ async def veiculo_create(
     km_atual: Annotated[str, Form()] = "",
     nivel_combustivel_atual: Annotated[int, Form()] = 8,
     observacoes: Annotated[str, Form()] = "",
+    fornecedor_id: Annotated[str, Form()] = "",
+    contrato_fornecedor_id: Annotated[str, Form()] = "",
+    publicar_site: Annotated[str, Form()] = "",
+    exige_aprovacao_fornecedor: Annotated[str, Form()] = "",
 ) -> HTMLResponse:
     lookups = await _veiculo_lookups(session, current_user.tenant_id)
     ctx = {
@@ -283,6 +290,10 @@ async def veiculo_create(
             combustivel_id=uuid.UUID(combustivel_id),
             filial_id=_uuid(filial_id),
             propriedade=VeiculoPropriedade(propriedade),
+            fornecedor_id=_uuid(fornecedor_id),
+            contrato_fornecedor_id=_uuid(contrato_fornecedor_id),
+            publicar_site=bool(publicar_site),
+            exige_aprovacao_fornecedor=exige_aprovacao_fornecedor != "0",
             data_compra=_date(data_compra),
             valor_aquisicao=_dec(valor_aquisicao) if valor_aquisicao.strip() else None,
             valor_fipe=_dec(valor_fipe) if valor_fipe.strip() else None,
@@ -370,6 +381,10 @@ async def veiculo_update(
     km_atual: Annotated[str, Form()] = "",
     nivel_combustivel_atual: Annotated[int, Form()] = 8,
     observacoes: Annotated[str, Form()] = "",
+    fornecedor_id: Annotated[str, Form()] = "",
+    contrato_fornecedor_id: Annotated[str, Form()] = "",
+    publicar_site: Annotated[str, Form()] = "",
+    exige_aprovacao_fornecedor: Annotated[str, Form()] = "",
 ) -> HTMLResponse:
     lookups = await _veiculo_lookups(session, current_user.tenant_id)
     extras = await _veiculo_extras(session, veiculo_id)
@@ -387,6 +402,10 @@ async def veiculo_update(
             combustivel_id=uuid.UUID(combustivel_id),
             filial_id=_uuid(filial_id),
             propriedade=VeiculoPropriedade(propriedade),
+            fornecedor_id=_uuid(fornecedor_id),
+            contrato_fornecedor_id=_uuid(contrato_fornecedor_id),
+            publicar_site=bool(publicar_site) if publicar_site else None,
+            exige_aprovacao_fornecedor=exige_aprovacao_fornecedor != "0" if exige_aprovacao_fornecedor else None,
             data_compra=_date(data_compra),
             valor_aquisicao=_dec(valor_aquisicao) if valor_aquisicao.strip() else None,
             valor_fipe=_dec(valor_fipe) if valor_fipe.strip() else None,

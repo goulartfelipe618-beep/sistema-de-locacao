@@ -775,6 +775,9 @@ class VeiculoService:
         payload = data.model_dump()
         payload["status"] = VeiculoStatus.DISPONIVEL
         item = FrotaVeiculo(tenant_id=tenant_id, **payload)
+        from app.modules.intermediacao.service import IntermediacaoService
+
+        await IntermediacaoService(self.session).vincular_veiculo_terceirizado(item)
         self.repo.add(item)
         await self.repo.flush()
         await audit_service.record(
@@ -800,6 +803,9 @@ class VeiculoService:
         await self._assert_modelo_marca(modelo_id, marca_id)
         for k, v in payload.items():
             setattr(item, k, v)
+        from app.modules.intermediacao.service import IntermediacaoService
+
+        await IntermediacaoService(self.session).vincular_veiculo_terceirizado(item)
         await self.repo.flush()
         await audit_service.record(
             AuditAction.UPDATE, entity="frota_veiculo", entity_id=item.id,

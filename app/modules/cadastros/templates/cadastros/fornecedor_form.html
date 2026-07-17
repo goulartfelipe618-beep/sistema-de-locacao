@@ -70,6 +70,46 @@
         {% endif %}
       </div>
     </fieldset>
+
+    <fieldset class="form-fieldset" id="secao-locadora-parceira">
+      <legend>Intermediação — Locadora parceira</legend>
+      <div class="form-grid">
+        <div class="form-group form-check-row">
+          <input type="checkbox" id="locadora_parceira" name="locadora_parceira" value="1"
+                 {% if item and item.locadora_parceira %}checked{% endif %}>
+          <label class="form-label" for="locadora_parceira">É locadora parceira (frota terceirizada)</label>
+        </div>
+        <div class="form-group">
+          {{ field_label('Modelo de negócio padrão', false, 'modelo_negocio_padrao') }}
+          <select class="form-input" id="modelo_negocio_padrao" name="modelo_negocio_padrao">
+            <option value="">—</option>
+            <option value="repasse" {% if item and item.modelo_negocio_padrao and item.modelo_negocio_padrao.value == 'repasse' %}selected{% endif %}>Repasse</option>
+            <option value="comissao" {% if item and item.modelo_negocio_padrao and item.modelo_negocio_padrao.value == 'comissao' %}selected{% endif %}>Comissão</option>
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('Margem padrão (%)', false, 'margem_padrao_percentual') }}
+          <input class="form-input" id="margem_padrao_percentual" name="margem_padrao_percentual"
+                 value="{{ item.margem_padrao_percentual if item and item.margem_padrao_percentual is not none else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Contato operacional', false, 'contato_operacional_nome') }}
+          <input class="form-input" id="contato_operacional_nome" name="contato_operacional_nome"
+                 value="{{ item.contato_operacional_nome if item else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Tel. operacional', false, 'contato_operacional_telefone') }}
+          <input class="form-input" id="contato_operacional_telefone" name="contato_operacional_telefone"
+                 value="{{ item.contato_operacional_telefone if item else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('E-mail operacional', false, 'contato_operacional_email') }}
+          <input class="form-input" type="email" id="contato_operacional_email" name="contato_operacional_email"
+                 value="{{ item.contato_operacional_email if item else '' }}">
+        </div>
+      </div>
+      <p class="form-help">Cadastre contratos comerciais em <a href="/intermediacao/contratos-fornecedor">Intermediação → Contratos Parceiros</a>.</p>
+    </fieldset>
     <div class="form-group">
       {{ field_label('Observações', false, 'observacoes') }}
       <textarea class="form-input" id="observacoes" name="observacoes" rows="3">{{ item.observacoes if item else '' }}</textarea>

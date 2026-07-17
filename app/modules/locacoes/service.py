@@ -55,6 +55,7 @@ from app.shared.enums import (
     AvariaSeveridade,
     AvariaStatus,
     ContratoStatus,
+    IntermediacaoStatus,
     CorretivaCausa,
     CorretivaResponsavel,
     DocumentoVeiculoStatus,
@@ -524,6 +525,15 @@ class ContratoService:
         await self._copy_itens_from_reserva(reserva.tenant_id, contrato.id, reserva.id)
         await self._copy_motoristas_from_reserva(reserva.tenant_id, contrato.id, reserva.id)
 
+        from app.modules.frota.service import VeiculoService
+        from app.modules.intermediacao.service import IntermediacaoService
+
+        veiculo = await VeiculoService(self.session).get(reserva.veiculo_id)
+        await IntermediacaoService(self.session).propagar_intermediacao_contrato(
+            contrato, reserva, veiculo
+        )
+        await self.repo.flush()
+
         await audit_service.record(
             AuditAction.CREATE,
             entity="loc_contrato",
@@ -956,6 +966,13 @@ class CheckinService:
                 )
             except Exception:  # noqa: BLE001 - fidelidade não deve bloquear o check-in
                 pass
+            if contrato.intermediacao_status != IntermediacaoStatus.NAO_APLICAVEL:
+                try:
+                    from app.modules.intermediacao.service import IntermediacaoService
+
+                    await IntermediacaoService(self.session).gerar_financeiro_encerramento(contrato)
+                except Exception:  # noqa: BLE001 - repasse não deve bloquear encerramento
+                    pass
             # Hook §10.1: emite NFS-e automaticamente quando configurado na filial.
             try:
                 from app.modules.fiscal.service import ImpostoService, NfseService

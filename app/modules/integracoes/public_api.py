@@ -50,6 +50,36 @@ async def public_criar_reserva(
     return {"id": str(reserva.id), "numero": reserva.numero, "status": reserva.status.value}
 
 
+@public_router.get("/veiculos")
+async def public_veiculos(
+    session: PublicSessionDep,
+    key: Annotated[IntApiKey, Depends(require_api_key_scope("veiculos:read"))],
+    filial_id: uuid.UUID | None = Query(None),
+    categoria_id: uuid.UUID | None = Query(None),
+    retirada_em: datetime | None = Query(None),
+    devolucao_em: datetime | None = Query(None),
+) -> list[dict]:
+    from app.modules.intermediacao.service import IntermediacaoService
+
+    svc = IntermediacaoService(session)
+    rows = await svc.list_veiculos_site(
+        key.tenant_id, filial_id=filial_id, categoria_id=categoria_id
+    )
+    if retirada_em and devolucao_em:
+        from app.modules.frota.models import FrotaVeiculo
+
+        filtered = []
+        for item in rows:
+            veiculo = await session.get(FrotaVeiculo, uuid.UUID(item["id"]))
+            if veiculo is None:
+                continue
+            ok, _ = await svc.veiculo_disponivel_periodo(veiculo, retirada_em, devolucao_em)
+            if ok:
+                filtered.append(item)
+        return filtered
+    return rows
+
+
 @public_router.get("/contratos/{contrato_id}")
 async def public_status_contrato(
     contrato_id: uuid.UUID,

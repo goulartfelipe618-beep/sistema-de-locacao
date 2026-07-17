@@ -24,6 +24,8 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.shared.base_model import TenantBaseModel
 from app.shared.enums import (
     CotacaoStatus,
+    IntermediacaoStatus,
+    ModeloNegocioTerceiro,
     ReservaAlocacao,
     ReservaItemTipo,
     ReservaOrigem,
@@ -160,6 +162,32 @@ class ResReserva(TenantBaseModel):
     valor_retencao: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
     observacoes: Mapped[str | None] = mapped_column(Text, nullable=True)
     requer_aprovacao: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
+    fornecedor_id: Mapped[uuid.UUID | None] = mapped_column(
+        PgUUID(as_uuid=True),
+        ForeignKey("fornecedores.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    contrato_fornecedor_id: Mapped[uuid.UUID | None] = mapped_column(
+        PgUUID(as_uuid=True),
+        ForeignKey("fornecedor_contratos_locacao.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    modelo_negocio_terceiro: Mapped[ModeloNegocioTerceiro | None] = mapped_column(
+        _str_enum(ModeloNegocioTerceiro, "reserva_modelo_negocio", 20),
+        nullable=True,
+    )
+    intermediacao_status: Mapped[IntermediacaoStatus] = mapped_column(
+        _str_enum(IntermediacaoStatus, "reserva_intermediacao_status", 25),
+        nullable=False,
+        default=IntermediacaoStatus.NAO_APLICAVEL,
+    )
+    valor_repasse_total: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
+    valor_margem: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
+    valor_comissao: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
+    repasse_snapshot: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
 class ResReservaMotorista(TenantBaseModel):

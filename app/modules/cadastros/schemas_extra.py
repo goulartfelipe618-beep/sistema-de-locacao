@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from app.shared.enums import (
     CadastroStatus,
+    ModeloNegocioTerceiro,
     MotoristaCnhStatus,
     MotoristaVinculo,
     ParceiroTipo,
@@ -204,6 +205,18 @@ class FornecedorCreate(BaseModel):
     desconto_percentual: Decimal = Field(default=Decimal("0"), ge=0, le=100)
     rating: int | None = Field(default=None, ge=1, le=5)
     observacoes: str | None = None
+    locadora_parceira: bool = False
+    modelo_negocio_padrao: ModeloNegocioTerceiro | None = None
+    contato_operacional_nome: str | None = None
+    contato_operacional_telefone: str | None = None
+    contato_operacional_email: str | None = None
+    margem_padrao_percentual: Decimal | None = Field(default=None, ge=0, le=100)
+    locadora_parceira: bool = False
+    modelo_negocio_padrao: ModeloNegocioTerceiro | None = None
+    contato_operacional_nome: str | None = None
+    contato_operacional_telefone: str | None = None
+    contato_operacional_email: str | None = None
+    margem_padrao_percentual: Decimal | None = Field(default=None, ge=0, le=100)
 
     @field_validator("cnpj")
     @classmethod
@@ -254,6 +267,12 @@ class FornecedorUpdate(BaseModel):
     bloqueado: bool | None = None
     motivo_bloqueio: str | None = None
     observacoes: str | None = None
+    locadora_parceira: bool | None = None
+    modelo_negocio_padrao: str | None = None
+    contato_operacional_nome: str | None = None
+    contato_operacional_telefone: str | None = None
+    contato_operacional_email: str | None = None
+    margem_padrao_percentual: Decimal | None = Field(default=None, ge=0, le=100)
 
 
 class FornecedorRead(BaseModel):

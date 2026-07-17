@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <h2 class="card-title">{{ title }}</h2>
+  <p class="form-help">Reservas com veículo terceirizado aguardando confirmação da locadora parceira (e-mail/SMS enviados automaticamente).</p>
+  {% if pendentes %}
+  <table class="table">
+    <thead>
+      <tr><th>Reserva</th><th>Cliente</th><th>Parceiro</th><th>Retirada</th><th>Total</th><th>Repasse</th><th></th></tr>
+    </thead>
+    <tbody>
+    {% for r in pendentes %}
+    <tr>
+      <td><a href="/reservas/{{ r.id }}">{{ r.numero }}</a></td>
+      <td>{{ clientes.get(r.cliente_id).nome if clientes.get(r.cliente_id) else r.cliente_id }}</td>
+      <td>{{ fornecedores.get(r.fornecedor_id).nome if r.fornecedor_id and fornecedores.get(r.fornecedor_id) else '—' }}</td>
+      <td>{{ r.retirada_em|datetime }}</td>
+      <td class="num">{{ r.valor_total|currency }}</td>
+      <td class="num">{{ r.valor_repasse_total|currency if r.valor_repasse_total else '—' }}</td>
+      <td class="num" style="white-space:nowrap">
+        <form method="post" action="/intermediacao/aprovacoes/{{ r.id }}/aprovar" style="display:inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button class="btn btn-sm btn-primary" type="submit">Aprovar</button>
+        </form>
+        <form method="post" action="/intermediacao/aprovacoes/{{ r.id }}/rejeitar" style="display:inline;margin-left:4px">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input class="form-input" name="motivo" placeholder="Motivo" required style="width:120px;display:inline-block">
+          <button class="btn btn-sm" type="submit">Rejeitar</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">Nenhuma aprovação pendente.</div>
+  {% endif %}
+</div>
+{% endblock %}

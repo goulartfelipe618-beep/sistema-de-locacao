@@ -31,6 +31,14 @@ TEMPLATES: tuple[TemplateDef, ...] = (
         "reservas.reserva.visualizar",
     ),
     TemplateDef(
+        "reserva_confirmacao_terceirizada",
+        "documentos/reserva_confirmacao_terceirizada.html",
+        "Confirmação de Reserva (Intermediação)",
+        DocFamilia.TRANSACIONAL,
+        "reserva",
+        "reservas.reserva.visualizar",
+    ),
+    TemplateDef(
         "reserva_voucher",
         "documentos/reserva_voucher.html",
         "Voucher de Reserva",

@@ -123,6 +123,49 @@ async def build_reserva(session: AsyncSession, tenant_id: uuid.UUID, reserva_id:
     return ctx
 
 
+async def build_reserva_terceirizada(
+    session: AsyncSession, tenant_id: uuid.UUID, reserva_id: uuid.UUID
+) -> dict:
+    from app.modules.cadastros.models_extra import Fornecedor
+    from app.modules.intermediacao.models import FornecedorContratoLocacao
+
+    ctx = await build_reserva(session, tenant_id, reserva_id)
+    reserva = ctx["reserva"]
+    ctx["doc_titulo"] = f"Confirmação Intermediação — Reserva {reserva.numero}"
+    ctx["fornecedor_nome"] = "—"
+    ctx["contrato_numero"] = None
+    ctx["contrato_titulo"] = None
+    ctx["modelo_negocio"] = reserva.modelo_negocio_terceiro.value if reserva.modelo_negocio_terceiro else "—"
+    ctx["intermediacao_status"] = reserva.intermediacao_status.value
+    ctx["valor_repasse"] = reserva.valor_repasse_total
+    ctx["valor_comissao"] = reserva.valor_comissao
+    ctx["valor_margem"] = reserva.valor_margem
+    if reserva.fornecedor_id:
+        forn = (
+            await session.execute(
+                select(Fornecedor).where(
+                    Fornecedor.id == reserva.fornecedor_id,
+                    Fornecedor.deleted_at.is_(None),
+                )
+            )
+        ).scalar_one_or_none()
+        if forn:
+            ctx["fornecedor_nome"] = forn.nome
+    if reserva.contrato_fornecedor_id:
+        contrato = (
+            await session.execute(
+                select(FornecedorContratoLocacao).where(
+                    FornecedorContratoLocacao.id == reserva.contrato_fornecedor_id,
+                    FornecedorContratoLocacao.deleted_at.is_(None),
+                )
+            )
+        ).scalar_one_or_none()
+        if contrato:
+            ctx["contrato_numero"] = contrato.numero
+            ctx["contrato_titulo"] = contrato.titulo
+    return ctx
+
+
 async def build_cotacao(session: AsyncSession, tenant_id: uuid.UUID, cotacao_id: uuid.UUID) -> dict:
     cotacao = await CotacaoService(session).get(cotacao_id)
     ctx = await _empresa(session, tenant_id)
@@ -686,6 +729,7 @@ async def build_fechamento_caixa(
 
 BUILDERS: dict[str, str] = {
     "reserva_confirmacao": "reserva",
+    "reserva_confirmacao_terceirizada": "reserva",
     "reserva_voucher": "reserva",
     "cotacao": "cotacao",
     "contrato_locacao": "contrato",
@@ -725,6 +769,9 @@ async def build_context(
         ctx["doc_titulo"] = (
             "Confirmação de Reserva" if template_id == "reserva_confirmacao" else "Voucher de Reserva"
         )
+        return ctx
+    if template_id == "reserva_confirmacao_terceirizada":
+        ctx = await build_reserva_terceirizada(session, tenant_id, entidade_id)
         return ctx
     if template_id == "cotacao":
         return await build_cotacao(session, tenant_id, entidade_id)

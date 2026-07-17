@@ -94,6 +94,38 @@
       </div>
     </fieldset>
 
+    <fieldset class="form-fieldset" id="secao-terceirizado" style="display:none">
+      <legend>Locação terceirizada (intermediação)</legend>
+      <div class="form-grid">
+        <div class="form-group">
+          {{ field_label('Locadora parceira', true, 'fornecedor_id') }}
+          <select class="form-input" id="fornecedor_id" name="fornecedor_id">
+            <option value="">Selecionar fornecedor</option>
+            {% for lp in locadoras_parceiras %}
+            <option value="{{ lp.id }}" {% if veiculo and veiculo.fornecedor_id == lp.id %}selected{% endif %}>{{ lp.nome }}</option>
+            {% endfor %}
+          </select>
+          <p class="form-help">Cadastre em <a href="/cadastros/fornecedores">Fornecedores</a> marcando como locadora parceira.</p>
+        </div>
+        <div class="form-group">
+          {{ field_label('Contrato comercial', false, 'contrato_fornecedor_id') }}
+          <select class="form-input" id="contrato_fornecedor_id" name="contrato_fornecedor_id">
+            <option value="">Auto (contrato ativo da parceira)</option>
+          </select>
+        </div>
+        <div class="form-group form-check-row">
+          <input type="checkbox" id="publicar_site" name="publicar_site" value="1"
+                 {% if not veiculo or veiculo.publicar_site %}checked{% endif %}>
+          <label class="form-label" for="publicar_site">Publicar no site</label>
+        </div>
+        <div class="form-group form-check-row">
+          <input type="checkbox" id="exige_aprovacao_fornecedor" name="exige_aprovacao_fornecedor" value="1"
+                 {% if not veiculo or veiculo.exige_aprovacao_fornecedor %}checked{% endif %}>
+          <label class="form-label" for="exige_aprovacao_fornecedor">Exigir confirmação da locadora parceira</label>
+        </div>
+      </div>
+    </fieldset>
+
     <fieldset class="form-fieldset">
       <legend>Valores e operação</legend>
       <div class="form-grid">
@@ -250,4 +282,43 @@
   </div>
   {% endif %}
 </div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  const prop = document.getElementById('propriedade');
+  const sec = document.getElementById('secao-terceirizado');
+  const forn = document.getElementById('fornecedor_id');
+  const contrato = document.getElementById('contrato_fornecedor_id');
+  const selectedContrato = '{{ veiculo.contrato_fornecedor_id if veiculo and veiculo.contrato_fornecedor_id else '' }}';
+
+  function toggleTerceiro() {
+    if (!prop || !sec) return;
+    sec.style.display = prop.value === 'terceirizada' ? '' : 'none';
+  }
+
+  async function loadContratos() {
+    if (!forn || !contrato) return;
+    const fid = forn.value;
+    contrato.innerHTML = '<option value="">Auto (contrato ativo da parceira)</option>';
+    if (!fid) return;
+    try {
+      const r = await fetch('/intermediacao/contratos-fornecedor/json?fornecedor_id=' + encodeURIComponent(fid));
+      const items = await r.json();
+      items.forEach(function (c) {
+        const o = document.createElement('option');
+        o.value = c.id;
+        o.textContent = c.numero + ' — ' + c.titulo;
+        if (selectedContrato && selectedContrato === c.id) o.selected = true;
+        contrato.appendChild(o);
+      });
+    } catch (e) { /* silencioso */ }
+  }
+
+  if (prop) prop.addEventListener('change', toggleTerceiro);
+  if (forn) forn.addEventListener('change', loadContratos);
+  toggleTerceiro();
+  if (forn && forn.value) loadContratos();
+})();
+</script>
 {% endblock %}
