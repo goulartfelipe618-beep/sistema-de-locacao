@@ -96,6 +96,7 @@ async def company_update(
                 )
 
         request.session["tenant_branding"] = svc.session_branding(tenant)
+        request.session["_flash"] = {"type": "success", "message": "Dados da empresa salvos com sucesso."}
     except (AppError, ValueError) as exc:
         await session.rollback()
         tenant = await svc.get_tenant(current_user.tenant_id)

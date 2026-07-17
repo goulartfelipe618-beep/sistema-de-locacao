@@ -4,49 +4,89 @@
   </div>
   <div class="navbar-right">
     <div class="theme-switcher" x-data="{ open: false }">
-      <button type="button" class="theme-btn" @click="open = !open" aria-label="Alternar tema" title="Tema da interface">
+      <button type="button" class="theme-btn" @click.stop="open = !open" aria-label="Alternar tema" title="Tema da interface" aria-haspopup="true" :aria-expanded="open ? 'true' : 'false'">
         <span class="theme-btn-icon">◐</span>
         <span class="theme-btn-label">Tema</span>
       </button>
-      <div class="theme-menu" x-show="open" x-cloak @click.outside="open = false">
-        <button type="button" class="theme-option" data-theme-option="light" aria-pressed="false">
+      <div class="theme-menu" x-show="open" x-cloak @click.outside="open = false" @keydown.escape.window="open = false">
+        <button type="button" class="theme-option" data-theme-option="light" aria-pressed="false"
+                @click.stop="window.ErpTheme && window.ErpTheme.apply('light'); open = false">
           <strong>Claro</strong>
           <span>Sidebar e conteúdo claros</span>
         </button>
-        <button type="button" class="theme-option" data-theme-option="hybrid" aria-pressed="false">
+        <button type="button" class="theme-option" data-theme-option="hybrid" aria-pressed="false"
+                @click.stop="window.ErpTheme && window.ErpTheme.apply('hybrid'); open = false">
           <strong>Intermediário</strong>
           <span>Menu escuro · tela clara</span>
         </button>
-        <button type="button" class="theme-option" data-theme-option="dark" aria-pressed="false">
+        <button type="button" class="theme-option" data-theme-option="dark" aria-pressed="false"
+                @click.stop="window.ErpTheme && window.ErpTheme.apply('dark'); open = false">
           <strong>Escuro</strong>
           <span>Interface completa escura</span>
         </button>
       </div>
     </div>
     {% if current_user %}
-    <div class="user-menu" x-data="{ menu: false }">
-        <button type="button" class="user-btn" @click="menu = !menu">
-          <span class="user-avatar">{{ current_user.full_name[:1]|upper }}</span>
-          <span class="user-info">
-            <span class="user-name">{{ current_user.full_name }}</span>
-            <span class="user-email">{{ current_user.email }}</span>
-          </span>
-          <span class="user-caret">▾</span>
-        </button>
-        <div class="user-dropdown" x-show="menu" x-cloak @click.outside="menu = false">
-          <div class="user-dropdown-header">
-            {% if current_user.roles %}
-              {{ current_user.roles|join(', ') }}
-            {% else %}
-              Sem papel atribuído
-            {% endif %}
+    <div class="user-menu" x-data="{ menu: false, profileOpen: false }"
+         @profile-saved.window="profileOpen = false; menu = false">
+      <button type="button" class="user-btn" @click.stop="menu = !menu; profileOpen = false" aria-haspopup="true" :aria-expanded="menu ? 'true' : 'false'">
+        <span class="user-avatar">{{ current_user.full_name[:1]|upper }}</span>
+        <span class="user-info">
+          <span class="user-name">{{ current_user.full_name }}</span>
+          <span class="user-email">{{ current_user.email }}</span>
+        </span>
+        <span class="user-caret">▾</span>
+      </button>
+      <div class="user-dropdown" x-show="menu" x-cloak @click.outside="menu = false" @keydown.escape.window="menu = false">
+        <div class="user-dropdown-header">
+          {% if current_user.roles %}
+            {{ current_user.roles|join(', ') }}
+          {% else %}
+            Sem papel atribuído
+          {% endif %}
+        </div>
+        <button type="button" class="user-dropdown-item user-dropdown-btn"
+                @click="menu = false; profileOpen = true; var e=document.getElementById('profile-form-error'); if(e){e.style.display='none'; e.textContent='';}">Meu perfil</button>
+        <a class="user-dropdown-item" href="/configuracoes/seguranca" @click="menu = false">Segurança (2FA)</a>
+        <form method="post" action="/logout" class="user-dropdown-form" data-no-form-engine="true">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button type="submit" class="user-dropdown-item user-dropdown-btn">Sair</button>
+        </form>
+      </div>
+
+      <div class="profile-modal-backdrop" x-show="profileOpen" x-cloak
+           @click.self="profileOpen = false" @keydown.escape.window="profileOpen = false">
+        <div class="profile-modal" role="dialog" aria-labelledby="profile-modal-title" @click.stop>
+          <div class="profile-modal-header">
+            <h2 id="profile-modal-title">Meu perfil</h2>
+            <button type="button" class="profile-modal-close" @click="profileOpen = false" aria-label="Fechar">×</button>
           </div>
-          <form method="post" action="/logout" class="user-dropdown-form">
+          <form method="post" action="/configuracoes/perfil" data-no-form-engine="true"
+                hx-post="/configuracoes/perfil" hx-swap="none">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <button type="submit" class="user-dropdown-item user-dropdown-btn">Sair</button>
+            <div class="form-group">
+              <label class="form-label" for="profile_full_name">Nome completo</label>
+              <input class="form-input" id="profile_full_name" name="full_name"
+                     value="{{ current_user.full_name }}" required minlength="2" maxlength="200">
+            </div>
+            <div class="form-group">
+              <label class="form-label">E-mail</label>
+              <input class="form-input" type="email" value="{{ current_user.email }}" disabled>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="profile_password">Nova senha</label>
+              <input class="form-input" type="password" id="profile_password" name="password" autocomplete="new-password">
+              <span class="form-help">Deixe em branco para manter a senha atual.</span>
+            </div>
+            <div id="profile-form-error" class="alert alert-danger" style="display:none" role="alert"></div>
+            <div class="form-actions profile-modal-actions">
+              <button type="submit" class="btn btn-primary">Salvar</button>
+              <button type="button" class="btn" @click="profileOpen = false">Cancelar</button>
+            </div>
           </form>
         </div>
       </div>
+    </div>
     {% endif %}
   </div>
 </header>

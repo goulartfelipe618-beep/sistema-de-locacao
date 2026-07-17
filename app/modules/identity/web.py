@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import json
 import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -631,6 +632,38 @@ async def role_delete(
     except (AppError, ValueError):
         await session.rollback()
     return RedirectResponse(url="/configuracoes/papeis", status_code=303)
+
+
+# ==============================================================  Perfil (usuário logado)
+@router.post("/configuracoes/perfil")
+async def profile_update(
+    session: SessionDep,
+    current_user: Annotated[AuthenticatedUser, Depends(require_web_user)],
+    full_name: Annotated[str, Form()],
+    password: Annotated[str, Form()] = "",
+) -> Response:
+    """Atualiza nome e senha do usuário logado (modal do cabeçalho)."""
+    try:
+        data = UserUpdate(
+            full_name=full_name.strip(),
+            password=password.strip() or None,
+        )
+        user = await UserService(session).update_user(current_user.id, data)
+    except (AppError, ValueError) as exc:
+        await session.rollback()
+        message = exc.message if isinstance(exc, AppError) else str(exc)
+        return Response(
+            status_code=422,
+            headers={"HX-Trigger": json.dumps({"profileError": {"message": message}})},
+        )
+    return Response(
+        status_code=204,
+        headers={
+            "HX-Trigger": json.dumps(
+                {"profileSaved": {"full_name": user.full_name, "email": user.email}}
+            )
+        },
+    )
 
 
 # ==============================================================  2FA (§14.3)

@@ -15,12 +15,18 @@
   <div class="alert alert-danger">{{ error }}</div>
   {% endif %}
 
-  <form method="get" class="erp-form" style="margin-bottom: 1rem;">
+  <form method="get" class="erp-form" style="margin-bottom: 1rem;"
+        hx-get="/configuracoes/parametros"
+        hx-target="#app-content"
+        hx-select="#app-content"
+        hx-swap="innerHTML"
+        hx-push-url="true"
+        hx-trigger="change from:#filial_id">
     <fieldset class="form-fieldset">
       <legend>Escopo</legend>
       <div class="form-group" style="max-width:360px">
         {{ field_label('Filial', false, 'filial_id') }}
-        <select name="filial_id" id="filial_id" class="form-input" onchange="this.form.submit()">
+        <select name="filial_id" id="filial_id" class="form-input">
           <option value="">Padrão do tenant</option>
           {% for filial in filiais %}
           <option value="{{ filial.id }}" {% if filial_id and filial_id == filial.id %}selected{% endif %}>
@@ -34,7 +40,11 @@
   </form>
 
   {% if can_edit %}
-  <form method="post" action="/configuracoes/parametros" class="erp-form">
+  <form method="post" action="/configuracoes/parametros" class="erp-form"
+        hx-post="/configuracoes/parametros"
+        hx-target="#app-content"
+        hx-select="#app-content"
+        hx-swap="innerHTML">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <input type="hidden" name="filial_id" value="{{ filial_id or '' }}">
   {% endif %}

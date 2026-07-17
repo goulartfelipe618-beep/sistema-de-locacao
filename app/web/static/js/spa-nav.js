@@ -6,6 +6,7 @@
   var CONTENT = "#app-content";
   var NAVBAR_TITLE = ".page-title";
   var MAIN = ".main";
+  var LOADER = "#spa-loader";
 
   function csrfToken() {
     var meta = document.querySelector('meta[name="csrf-token"]');
@@ -14,6 +15,24 @@
 
   function appName() {
     return document.documentElement.getAttribute("data-app-name") || "ERP";
+  }
+
+  function loaderEl() {
+    return document.querySelector(LOADER);
+  }
+
+  function showLoader() {
+    var el = loaderEl();
+    if (!el) return;
+    el.hidden = false;
+    el.setAttribute("aria-hidden", "false");
+  }
+
+  function hideLoader() {
+    var el = loaderEl();
+    if (!el) return;
+    el.hidden = true;
+    el.setAttribute("aria-hidden", "true");
   }
 
   function isSpaLink(link) {
@@ -32,6 +51,7 @@
       window.location.href = url;
       return;
     }
+    showLoader();
     window.htmx.ajax("GET", url, {
       target: CONTENT,
       select: CONTENT,
@@ -80,6 +100,7 @@
 
   function shouldSpaNavigate(link) {
     if (!isSpaLink(link)) return false;
+    if (link.closest(".navbar, .profile-modal, .profile-modal-backdrop")) return false;
     return !!(link.closest(".sidebar") || link.closest(CONTENT) || link.closest(MAIN));
   }
 
@@ -95,6 +116,7 @@
     if (!form || form.tagName !== "FORM") return;
     if (form.method.toLowerCase() !== "get") return;
     if (form.dataset.noSpa === "true") return;
+    if (form.closest(".navbar, .profile-modal")) return;
     if (!form.closest(CONTENT) && !form.closest(".sidebar")) return;
     event.preventDefault();
     spaNavigate(buildGetUrl(form));
@@ -104,6 +126,7 @@
     var target = event.detail.target;
     if (target && target.id === "app-content") {
       target.classList.add("is-loading");
+      showLoader();
     }
   });
 
@@ -111,12 +134,20 @@
     var target = event.detail.target;
     if (target && target.id === "app-content") {
       target.classList.remove("is-loading");
+      hideLoader();
     }
+  });
+
+  document.addEventListener("htmx:responseError", function () {
+    hideLoader();
+    var target = document.querySelector(CONTENT);
+    if (target) target.classList.remove("is-loading");
   });
 
   document.addEventListener("htmx:afterSwap", function (event) {
     if (event.detail.target && event.detail.target.id === "app-content") {
       syncChrome();
+      hideLoader();
       window.scrollTo(0, 0);
     }
   });

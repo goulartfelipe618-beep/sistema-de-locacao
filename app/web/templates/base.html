@@ -28,6 +28,7 @@
     {% include "partials/sidebar.html" %}
     <div class="main">
       {% include "partials/navbar.html" %}
+      {% include "partials/spa_loader.html" %}
       <main class="content" id="app-content" data-page-title="{{ title|default('Painel') }}">
         {% block breadcrumb %}
         <div class="breadcrumb">

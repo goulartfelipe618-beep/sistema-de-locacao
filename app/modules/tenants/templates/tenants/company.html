@@ -5,7 +5,12 @@
   <h2 class="card-title">Dados da Empresa</h2>
   {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
 
-  <form method="post" action="/configuracoes/empresa" enctype="multipart/form-data">
+  <form method="post" action="/configuracoes/empresa" enctype="multipart/form-data"
+        hx-post="/configuracoes/empresa"
+        hx-target="#app-content"
+        hx-select="#app-content"
+        hx-swap="innerHTML"
+        hx-encoding="multipart/form-data">
     <h3 style="margin-top:0">Cadastro</h3>
     <div class="form-grid">
       <div class="form-group">

@@ -1070,8 +1070,20 @@
     });
   }
 
+  function shouldEnhanceForm(form) {
+    if (form.dataset.noFormEngine === "true") return false;
+    if (form.closest(".navbar, .user-menu, .theme-switcher, .profile-modal, .profile-modal-backdrop")) {
+      return false;
+    }
+    if (form.classList.contains("user-dropdown-form")) return false;
+    return !!form.closest("#app-content");
+  }
+
   function initAll(root) {
-    (root || document).querySelectorAll("form").forEach(enhanceForm);
+    (root || document).querySelectorAll("form").forEach(function (form) {
+      if (!shouldEnhanceForm(form)) return;
+      enhanceForm(form);
+    });
   }
 
   document.addEventListener("DOMContentLoaded", function () { initAll(document); });

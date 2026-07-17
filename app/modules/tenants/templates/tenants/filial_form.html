@@ -6,7 +6,11 @@
   <h2 class="card-title">{{ title }}</h2>
   {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
 
-  <form method="post" action="{{ action }}" class="erp-form">
+  <form method="post" action="{{ action }}" class="erp-form"
+        hx-post="{{ action }}"
+        hx-target="#app-content"
+        hx-select="#app-content"
+        hx-swap="innerHTML">
     <fieldset class="form-fieldset">
       <legend>Dados da filial</legend>
       <div class="form-grid">
