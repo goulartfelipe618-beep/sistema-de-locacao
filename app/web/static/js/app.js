@@ -1,19 +1,111 @@
 /**
  * Boot do painel administrativo.
- * - Injeta CSRF em formulários mutáveis
- * - Propaga CSRF para requisições HTMX
+ * - CSRF em formulários e HTMX
+ * - Menu lateral mobile
+ * - Scroll horizontal seguro em tabelas
  */
 (function () {
+  var MOBILE_BP = 1024;
+
   function csrfToken() {
-    const meta = document.querySelector('meta[name="csrf-token"]');
+    var meta = document.querySelector('meta[name="csrf-token"]');
     return meta ? meta.getAttribute("content") : "";
   }
 
+  function isMobileLayout() {
+    return window.matchMedia("(max-width: " + (MOBILE_BP - 1) + "px)").matches;
+  }
+
+  function sidebarOpen() {
+    return document.body.classList.contains("sidebar-open");
+  }
+
+  function setSidebarOpen(open) {
+    var toggle = document.getElementById("nav-toggle");
+    var backdrop = document.getElementById("sidebar-backdrop");
+    document.body.classList.toggle("sidebar-open", open);
+    if (toggle) toggle.setAttribute("aria-expanded", open ? "true" : "false");
+    if (backdrop) backdrop.setAttribute("aria-hidden", open ? "false" : "true");
+  }
+
+  function closeSidebar() {
+    if (sidebarOpen()) setSidebarOpen(false);
+  }
+
+  function openSidebar() {
+    if (isMobileLayout()) setSidebarOpen(true);
+  }
+
+  function toggleSidebar() {
+    setSidebarOpen(!sidebarOpen());
+  }
+
+  function bindSidebarControls() {
+    var toggle = document.getElementById("nav-toggle");
+    var closeBtn = document.getElementById("sidebar-close");
+    var backdrop = document.getElementById("sidebar-backdrop");
+    if (toggle && !toggle.dataset.bound) {
+      toggle.dataset.bound = "1";
+      toggle.addEventListener("click", function () {
+        toggleSidebar();
+      });
+    }
+    if (closeBtn && !closeBtn.dataset.bound) {
+      closeBtn.dataset.bound = "1";
+      closeBtn.addEventListener("click", closeSidebar);
+    }
+    if (backdrop && !backdrop.dataset.bound) {
+      backdrop.dataset.bound = "1";
+      backdrop.addEventListener("click", closeSidebar);
+    }
+    document.querySelectorAll(".sidebar .nav-sub-link, .sidebar .nav-group-link").forEach(function (link) {
+      if (link.dataset.sidebarBound) return;
+      link.dataset.sidebarBound = "1";
+      link.addEventListener("click", function () {
+        if (isMobileLayout()) closeSidebar();
+      });
+    });
+  }
+
+  function wrapTables(root) {
+    var scope = root && root.querySelectorAll ? root : document;
+    scope.querySelectorAll("table.table").forEach(function (table) {
+      if (table.closest(".table-scroll")) return;
+      var wrap = document.createElement("div");
+      wrap.className = "table-scroll";
+      wrap.setAttribute("role", "region");
+      wrap.setAttribute("aria-label", "Tabela com rolagem horizontal");
+      wrap.setAttribute("tabindex", "0");
+      if (table.parentNode) {
+        table.parentNode.insertBefore(wrap, table);
+        wrap.appendChild(table);
+      }
+    });
+  }
+
+  function normalizeCardWidths(root) {
+    var scope = root && root.querySelectorAll ? root : document;
+    scope.querySelectorAll('.card[style*="max-width"]').forEach(function (card) {
+      var style = card.getAttribute("style") || "";
+      var match = style.match(/max-width:\s*([^;]+)/i);
+      if (match) {
+        card.style.setProperty("--inline-card-max", match[1].trim());
+        card.style.maxWidth = "min(" + match[1].trim() + ", 100%)";
+      }
+    });
+  }
+
+  function initLayout(root) {
+    wrapTables(root);
+    normalizeCardWidths(root);
+    bindSidebarControls();
+  }
+
   document.addEventListener("submit", function (event) {
-    const form = event.target;
+    var form = event.target;
     if (!(form instanceof HTMLFormElement)) return;
     if ((form.getAttribute("method") || "get").toUpperCase() === "GET") return;
-    let input = form.querySelector('input[name="csrf_token"]');
+    var input = form.querySelector('input[name="csrf_token"]');
     if (!input) {
       input = document.createElement("input");
       input.type = "hidden";
@@ -26,4 +118,26 @@
   document.addEventListener("htmx:configRequest", function (event) {
     event.detail.headers["X-CSRF-Token"] = csrfToken();
   });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    initLayout(document);
+  });
+
+  document.addEventListener("htmx:afterSwap", function (event) {
+    if (event.detail.target) initLayout(event.detail.target);
+  });
+
+  window.addEventListener("resize", function () {
+    if (!isMobileLayout()) closeSidebar();
+  });
+
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") closeSidebar();
+  });
+
+  window.erpLayout = {
+    closeSidebar: closeSidebar,
+    openSidebar: openSidebar,
+    wrapTables: wrapTables,
+  };
 })();

@@ -24,6 +24,12 @@
   --sidebar-w: 244px;
   --navbar-h: 52px;
   --font: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --z-sidebar-backdrop: 200;
+  --z-sidebar: 210;
+  --z-navbar: 220;
+  --z-dropdown: 230;
+  --z-spa-loader: 240;
+  --z-modal: 1000;
 }
 
 * { box-sizing: border-box; }
@@ -74,7 +80,7 @@ a:hover { text-decoration: underline; }
   background: var(--sidebar-bg);
   color: var(--sidebar-fg);
   overflow-y: auto;
-  z-index: 20;
+  z-index: var(--z-sidebar);
 }
 
 .brand {
@@ -84,6 +90,7 @@ a:hover { text-decoration: underline; }
   gap: 8px;
   padding: 0 16px;
   border-bottom: 1px solid rgba(255,255,255,.08);
+  min-width: 0;
 }
 .brand-mark {
   background: var(--primary);
@@ -149,7 +156,7 @@ a:hover { text-decoration: underline; }
   align-items: center;
   justify-content: space-between;
   padding: 0 20px;
-  position: sticky; top: 0; z-index: 40;
+  position: sticky; top: 0; z-index: var(--z-navbar);
   overflow: visible;
   flex-shrink: 0;
 }
@@ -163,7 +170,7 @@ a:hover { text-decoration: underline; }
 }
 .page-title { font-size: 15px; font-weight: 600; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.user-menu { position: relative; z-index: 45; }
+.user-menu { position: relative; z-index: var(--z-dropdown); }
 .user-btn {
   display: flex; align-items: center; gap: 8px;
   background: transparent; border: 1px solid transparent; cursor: pointer;
@@ -184,7 +191,7 @@ a:hover { text-decoration: underline; }
   position: absolute; right: 0; top: calc(100% + 4px);
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--radius); min-width: 220px; box-shadow: 0 4px 14px rgba(0,0,0,.12);
-  z-index: 50;
+  z-index: var(--z-dropdown);
 }
 .user-dropdown-header { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text-muted); font-size: 11px; }
 .user-dropdown-item { display: block; padding: 8px 12px; color: var(--text); width: 100%; text-align: left; }
@@ -354,7 +361,7 @@ a:hover { text-decoration: underline; }
   overflow: hidden; clip: rect(0,0,0,0); border: 0;
 }
 .combobox-dropdown {
-  position: absolute; top: 100%; left: 0; right: 0; z-index: 50;
+  position: absolute; top: 100%; left: 0; right: 0; z-index: var(--z-dropdown);
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--radius); max-height: 220px; overflow-y: auto;
   box-shadow: 0 6px 18px rgba(0,0,0,.12); margin-top: 2px;
@@ -367,7 +374,7 @@ a:hover { text-decoration: underline; }
 .combobox-empty { padding: 10px; color: var(--text-muted); font-size: 12px; }
 
 /* Impact modal */
-.impact-modal { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; }
+.impact-modal { position: fixed; inset: 0; z-index: var(--z-modal); display: flex; align-items: center; justify-content: center; }
 .impact-modal[hidden] { display: none !important; }
 .impact-modal-backdrop { position: absolute; inset: 0; background: rgba(31,42,55,.45); }
 .impact-modal-card {
@@ -501,7 +508,7 @@ a:hover { text-decoration: underline; }
 .error-message { color: var(--text-muted); margin-bottom: 18px; }
 
 /* ---------------------------------------------------------- Theme switch - */
-.theme-switcher { position: relative; z-index: 45; }
+.theme-switcher { position: relative; z-index: var(--z-dropdown); }
 .theme-btn {
   display: inline-flex; align-items: center; gap: 6px;
   background: transparent; border: 1px solid var(--border);
@@ -513,7 +520,7 @@ a:hover { text-decoration: underline; }
 .theme-btn-label { font-size: 12px; font-weight: 600; }
 
 .theme-menu {
-  position: absolute; right: 0; top: calc(100% + 6px); z-index: 50;
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: var(--z-dropdown);
   min-width: 220px; background: var(--surface);
   border: 1px solid var(--border); border-radius: var(--radius);
   box-shadow: 0 6px 18px rgba(0,0,0,.14); overflow: hidden;
@@ -639,7 +646,7 @@ a:hover { text-decoration: underline; }
   left: 0; right: 0;
   top: var(--navbar-h);
   bottom: 0;
-  z-index: 25;
+  z-index: var(--z-spa-loader);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -704,7 +711,7 @@ a:hover { text-decoration: underline; }
 .profile-modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 200;
+  z-index: var(--z-modal);
   background: rgba(15, 20, 25, 0.45);
   display: flex;
   align-items: center;

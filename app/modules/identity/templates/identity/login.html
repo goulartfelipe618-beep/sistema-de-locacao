@@ -2,13 +2,14 @@
 <html lang="pt-BR" data-theme="{{ ui_theme|default('hybrid') }}">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="robots" content="noindex, nofollow">
   <meta name="csrf-token" content="{{ csrf_token }}">
   <title>Acesso ao Sistema · {{ app_name }}</title>
   {% include "partials/theme_boot.html" %}
   <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/static/css/app.css">
+  <link rel="stylesheet" href="/static/css/responsive.css">
   <script src="/static/js/theme.js"></script>
   <script src="/static/js/app.js" defer></script>
   <script src="/static/js/form-engine.js" defer></script>
