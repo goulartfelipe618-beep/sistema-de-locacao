@@ -1,12 +1,4 @@
-<aside class="sidebar" id="app-sidebar"
-       x-data
-       x-init="
-         $el.querySelectorAll('[data-nav-group]').forEach((group) => {
-           if (group.querySelector('.nav-sub-link.is-active')) {
-             group.__x.$data.open = true;
-           }
-         });
-       ">
+<aside class="sidebar" id="app-sidebar">
   <div class="brand">
     {% if tenant_branding and tenant_branding.logo_url %}
     <img src="{{ tenant_branding.logo_url }}" alt="" class="brand-logo">

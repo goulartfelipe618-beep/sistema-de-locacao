@@ -30,11 +30,7 @@
 
   {% if edit_mode %}
   <form method="post" action="/configuracoes/sistema" enctype="multipart/form-data"
-        hx-post="/configuracoes/sistema"
-        hx-target="#app-content"
-        hx-select="#app-content"
-        hx-swap="innerHTML"
-        hx-encoding="multipart/form-data">
+        data-no-spa="true">
 
     <h3 style="margin-top:0">Identidade no sistema</h3>
     <div class="form-grid">
@@ -50,8 +46,9 @@
                value="{{ tenant.brand_primary_color or '#1e5a8a' }}">
       </div>
       <div class="form-group">
-        <label class="form-label" for="logo_file">Logo (PNG/JPG/SVG)</label>
-        <input class="form-input" type="file" id="logo_file" name="logo_file" accept="image/*">
+        <label class="form-label" for="logo_file">Logo (PNG/JPG/SVG){% if setup_mode %} *{% endif %}</label>
+        <input class="form-input" type="file" id="logo_file" name="logo_file" accept="image/*"
+               {% if setup_mode and not logo_preview %}required{% endif %}>
         {% if logo_preview %}
         <p class="form-help">Atual: <img src="{{ logo_preview }}" alt="Logo" style="max-height:40px;vertical-align:middle"></p>
         {% endif %}

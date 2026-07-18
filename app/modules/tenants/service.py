@@ -22,7 +22,7 @@ from app.modules.tenants.branding import (
 from app.modules.tenants.models import Filial, Tenant
 from app.modules.tenants.repository import FilialRepository, TenantRepository
 from app.modules.tenants.schemas import FilialCreate, FilialUpdate, TenantSystemUpdate, TenantUpdate
-from app.modules.tenants.setup import can_complete_setup
+from app.modules.tenants.setup import setup_missing_fields
 from app.shared.enums import AuditAction
 
 logger = get_logger(__name__)
@@ -84,8 +84,9 @@ class TenantService:
         tenant.website = (data.website or "").strip() or None
         tenant.document_footer_text = (data.document_footer_text or "").strip() or None
         tenant.brand_primary_color = data.brand_primary_color
-        if data.logo_url is not None:
-            tenant.logo_url = data.logo_url.strip() or None
+        if data.logo_url:
+            tenant.logo_url = data.logo_url.strip()
+            tenant.logo_storage_key = None
         tenant.zip_code = data.zip_code
         tenant.address = data.address.strip()
         tenant.number = data.number.strip()
@@ -95,9 +96,12 @@ class TenantService:
         tenant.state = data.state
 
         if complete_setup:
-            if not can_complete_setup(tenant):
+            missing = setup_missing_fields(tenant)
+            if missing:
                 raise ValidationError(
-                    "Preencha todos os campos obrigatórios e envie a logo antes de concluir."
+                    "Preencha todos os campos obrigatórios antes de concluir: "
+                    + ", ".join(missing)
+                    + "."
                 )
             tenant.setup_completed_at = datetime.now(tz=UTC)
 
@@ -121,12 +125,17 @@ class TenantService:
             raise ValidationError("Arquivo de logo vazio.")
         tenant = await self.get_tenant(tenant_id)
         safe_type = content_type or "image/png"
+        uploaded = False
         if storage_service.is_configured():
-            key = storage_service.build_key(tenant_id, "tenants", "logo", filename or "logo.png")
-            storage_service.upload_bytes(key, file_bytes, safe_type)
-            tenant.logo_storage_key = key
-            tenant.logo_url = None
-        else:
+            try:
+                key = storage_service.build_key(tenant_id, "tenants", "logo", filename or "logo.png")
+                storage_service.upload_bytes(key, file_bytes, safe_type)
+                tenant.logo_storage_key = key
+                tenant.logo_url = None
+                uploaded = True
+            except Exception as exc:
+                logger.warning("Falha ao enviar logo ao R2, usando armazenamento inline: %s", exc)
+        if not uploaded:
             encoded = base64.b64encode(file_bytes).decode("ascii")
             tenant.logo_url = f"data:{safe_type};base64,{encoded}"
             tenant.logo_storage_key = None

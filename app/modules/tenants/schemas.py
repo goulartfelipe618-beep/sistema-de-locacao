@@ -74,7 +74,7 @@ class TenantSystemUpdate(BaseModel):
     legal_name: str = Field(min_length=2, max_length=200)
     trade_name: str | None = Field(default=None, max_length=200)
     app_display_name: str = Field(min_length=2, max_length=200)
-    cnpj: str = Field(min_length=14, max_length=18)
+    cnpj: str = Field(min_length=1, max_length=18)
     email: str = Field(min_length=5, max_length=255)
     phone: str = Field(min_length=8, max_length=20)
     ie: str | None = Field(default=None, max_length=20)
@@ -94,6 +94,8 @@ class TenantSystemUpdate(BaseModel):
     @classmethod
     def _validate_cnpj(cls, value: str) -> str:
         digits = only_digits(value)
+        if len(digits) != 14:
+            raise ValueError("CNPJ deve conter 14 dígitos.")
         if not is_valid_cnpj(digits):
             raise ValueError("CNPJ inválido.")
         return digits

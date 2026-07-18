@@ -6,6 +6,7 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
+from pydantic import ValidationError as PydanticValidationError
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -34,6 +35,20 @@ SessionDep = Annotated[AsyncSession, Depends(get_db_session)]
 
 def _can_edit_empresa(user: AuthenticatedUser) -> bool:
     return user.is_superuser or "configuracoes.empresa.editar" in user.permissions
+
+
+def _format_validation_error(exc: PydanticValidationError | ValueError) -> str:
+    if isinstance(exc, PydanticValidationError):
+        parts: list[str] = []
+        for err in exc.errors():
+            loc = ".".join(str(x) for x in err.get("loc", ()))
+            msg = err.get("msg", "Valor inválido.")
+            if loc:
+                parts.append(f"{loc}: {msg}")
+            else:
+                parts.append(str(msg))
+        return " ".join(parts) if parts else "Dados inválidos."
+    return str(exc)
 
 
 def _sistema_context(
@@ -166,6 +181,7 @@ async def sistema_config_save(
                     logo_file.filename,
                     logo_file.content_type or "image/png",
                 )
+                await session.flush()
 
         data = TenantSystemUpdate(
             legal_name=legal_name,
@@ -178,7 +194,7 @@ async def sistema_config_save(
             website=website or None,
             document_footer_text=document_footer_text or None,
             brand_primary_color=brand_primary_color,
-            logo_url=logo_url or None,
+            logo_url=logo_url.strip() if logo_url and logo_url.strip() else None,
             zip_code=zip_code,
             address=address,
             number=number,
@@ -222,6 +238,21 @@ async def sistema_config_save(
             "message": "Configurações do sistema salvas com sucesso.",
         }
         return RedirectResponse(url=SETUP_PATH, status_code=303)
+    except PydanticValidationError as exc:
+        await session.rollback()
+        tenant = await svc.get_tenant(current_user.tenant_id)
+        return render(
+            request,
+            "tenants/sistema_config.html",
+            _sistema_context(
+                request,
+                tenant,
+                can_edit=True,
+                edit_mode=True,
+                error=_format_validation_error(exc),
+            ),
+            status_code=400,
+        )
     except (AppError, ValueError) as exc:
         await session.rollback()
         tenant = await svc.get_tenant(current_user.tenant_id)
