@@ -33,24 +33,35 @@ def render_xlsx(columns: list[str], rows: list[list[Any]]) -> bytes:
     return out.getvalue()
 
 
-def render_pdf_html(titulo: str, columns: list[str], rows: list[list[Any]], summary: dict) -> bytes:
+def render_pdf_html(
+    titulo: str,
+    columns: list[str],
+    rows: list[list[Any]],
+    summary: dict,
+    empresa: dict[str, Any] | None = None,
+) -> bytes:
     from app.modules.documentos.pdf_engine import render_pdf
 
-    return render_pdf(
-        "documentos/relatorio_analitico.html",
-        {
-            "doc_titulo": titulo,
-            "empresa_nome": "Relatório",
-            "empresa_razao": "",
-            "empresa_cnpj": "—",
-            "empresa_email": "—",
-            "empresa_phone": "—",
-            "columns": columns,
-            "rows": rows,
-            "summary": summary,
-            "watermark": None,
-        },
-    )
+    ctx: dict[str, Any] = {
+        "doc_titulo": titulo,
+        "columns": columns,
+        "rows": rows,
+        "summary": summary,
+        "watermark": None,
+    }
+    if empresa:
+        ctx.update(empresa)
+    else:
+        ctx.update(
+            {
+                "empresa_nome": "Relatório",
+                "empresa_razao": "",
+                "empresa_cnpj": "—",
+                "empresa_email": "—",
+                "empresa_phone": "—",
+            }
+        )
+    return render_pdf("documentos/relatorio_analitico.html", ctx)
 
 
 def sha256_bytes(data: bytes) -> str:

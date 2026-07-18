@@ -3,7 +3,7 @@
     {% if tenant_branding and tenant_branding.logo_url %}
     <img src="{{ tenant_branding.logo_url }}" alt="" class="brand-logo">
     {% else %}
-    <span class="brand-mark">ERP</span>
+    <span class="brand-mark">{{ (tenant_branding.display_name if tenant_branding else 'L')[:1]|upper }}</span>
     {% endif %}
     <span class="brand-name">{{ tenant_branding.display_name if tenant_branding else 'Locadora' }}</span>
     <button type="button" class="sidebar-close" id="sidebar-close" aria-label="Fechar menu">×</button>

@@ -6,7 +6,11 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 from starlette.requests import Request
 from starlette.responses import RedirectResponse, Response
 
-from app.modules.tenants.setup import is_setup_exempt_path, resolve_setup_redirect
+from app.modules.tenants.setup import (
+    is_setup_exempt_path,
+    refresh_tenant_session_from_db,
+    resolve_setup_redirect,
+)
 
 
 class TenantSetupMiddleware(BaseHTTPMiddleware):
@@ -16,6 +20,10 @@ class TenantSetupMiddleware(BaseHTTPMiddleware):
         session = request.scope.get("session") or {}
         user_id = session.get("user_id")
         path = request.url.path
+
+        if user_id:
+            await refresh_tenant_session_from_db(request)
+            session = request.scope.get("session") or {}
 
         if user_id and not is_setup_exempt_path(path):
             redirect = resolve_setup_redirect(session)

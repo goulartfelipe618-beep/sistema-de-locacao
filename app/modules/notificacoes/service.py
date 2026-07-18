@@ -14,6 +14,7 @@ from app.modules.identity.models import User
 from app.modules.notificacoes.adapters.registry import get_email_provider, get_sms_provider
 from app.modules.notificacoes.models import Notificacao, NotificacaoEnvio
 from app.modules.notificacoes.schemas import NotificacaoSendInput
+from app.modules.tenants.repository import TenantRepository
 from app.shared.enums import NotificacaoCanal, NotificacaoEnvioStatus
 from app.shared.repository import BaseRepository
 
@@ -184,9 +185,15 @@ class NotificationService:
 
         try:
             if envio.canal == NotificacaoCanal.EMAIL:
+                tenant = await TenantRepository(self.session).get(envio.tenant_id)
+                default_subject = (
+                    f"Notificação {tenant.sidebar_display_name}"
+                    if tenant
+                    else "Notificação"
+                )
                 get_email_provider().send(
                     to=envio.destino,
-                    subject=envio.assunto or "Notificação ERP Locadora",
+                    subject=envio.assunto or default_subject,
                     body=envio.corpo,
                 )
             elif envio.canal == NotificacaoCanal.SMS:

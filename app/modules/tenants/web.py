@@ -227,17 +227,25 @@ async def sistema_config_save(
             tenant,
             can_edit_empresa=True,
         )
-        if setup_mode and is_setup_complete(tenant):
+        if is_setup_complete(tenant):
             request.session["_flash"] = {
                 "type": "success",
-                "message": "Configurações concluídas! O sistema está pronto para uso.",
+                "message": (
+                    "Configurações concluídas! O sistema está pronto para uso."
+                    if setup_mode
+                    else "Configurações do sistema salvas com sucesso."
+                ),
             }
-            return RedirectResponse(url="/", status_code=303)
+            if setup_mode:
+                return RedirectResponse(url="/", status_code=303)
+            return RedirectResponse(url=SETUP_PATH, status_code=303)
         request.session["_flash"] = {
-            "type": "success",
-            "message": "Configurações do sistema salvas com sucesso.",
+            "type": "warning",
+            "message": "Salvo parcialmente. Preencha os campos obrigatórios: "
+            + ", ".join(setup_missing_fields(tenant))
+            + ".",
         }
-        return RedirectResponse(url=SETUP_PATH, status_code=303)
+        return RedirectResponse(url=SETUP_EDIT_PATH, status_code=303)
     except PydanticValidationError as exc:
         await session.rollback()
         tenant = await svc.get_tenant(current_user.tenant_id)

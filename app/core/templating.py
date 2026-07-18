@@ -94,7 +94,10 @@ def render(
     ctx.setdefault("current_path", request.url.path)
     ctx.setdefault("menu", build_menu(current_user))
     ctx.setdefault("csrf_token", ensure_csrf_token(request))
-    ctx.setdefault("tenant_branding", request.session.get("tenant_branding"))
+    branding = request.session.get("tenant_branding")
+    ctx.setdefault("tenant_branding", branding)
+    display_name = (branding or {}).get("display_name")
+    ctx["app_name"] = display_name if display_name else settings.app_name
     ctx.setdefault("ui_theme", read_ui_theme(request))
     flash = request.session.pop("_flash", None)
     ctx.setdefault("flash", flash)

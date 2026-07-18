@@ -11,5 +11,5 @@ th,td{border:1px solid #ccc;padding:4px 6px;text-align:left} th{background:#eee}
 <table><thead><tr>{% for c in columns %}<th>{{ c }}</th>{% endfor %}</tr></thead>
 <tbody>{% for row in rows %}<tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>{% endfor %}
 </tbody></table>
-<div class="footer">ERP Locadora — relatório gerado automaticamente</div>
+<div class="footer">{{ empresa_nome|default('Relatório') }} — relatório gerado automaticamente</div>
 </body></html>

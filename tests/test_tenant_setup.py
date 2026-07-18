@@ -100,3 +100,16 @@ def test_format_tenant_address() -> None:
     assert "Av. Paulista" in text
     assert "São Paulo" in text
     assert "CEP" in text
+
+
+def test_post_login_redirect_incomplete_goes_setup() -> None:
+    session = {"tenant_setup_complete": False, "can_edit_empresa": True}
+    assert post_login_redirect_url(session) == "/configuracoes/sistema"
+
+
+def test_base_pdf_footer_uses_tenant_name_not_platform() -> None:
+    from pathlib import Path
+
+    html = Path("app/modules/documentos/templates/documentos/base_pdf.html").read_text(encoding="utf-8")
+    assert "ERP Locadora" not in html
+    assert "empresa_nome" in html

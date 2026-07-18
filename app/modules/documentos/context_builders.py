@@ -57,6 +57,11 @@ def _assinatura_b64_from_key(assinatura_key: str | None) -> str | None:
     return None
 
 
+async def build_empresa_pdf_context(session: AsyncSession, tenant_id: uuid.UUID) -> dict[str, Any]:
+    """Contexto de empresa/tenant para templates PDF (contratos, relatórios, etc.)."""
+    return await _empresa(session, tenant_id)
+
+
 async def _empresa(session: AsyncSession, tenant_id: uuid.UUID) -> dict[str, Any]:
     tenant = await TenantRepository(session).get(tenant_id)
     if tenant is None:

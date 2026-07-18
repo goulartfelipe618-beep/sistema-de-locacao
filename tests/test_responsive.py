@@ -66,6 +66,17 @@ def test_form_engine_uses_referencia_ibge_urls() -> None:
     assert "/referencia/cep/" in js
 
 
+def test_sidebar_uses_tenant_initial_not_erp() -> None:
+    html = Path("app/web/templates/partials/sidebar.html").read_text(encoding="utf-8")
+    assert 'brand-mark">ERP<' not in html
+    assert "display_name" in html
+
+
+def test_templating_uses_tenant_display_name() -> None:
+    src = Path("app/core/templating.py").read_text(encoding="utf-8")
+    assert 'ctx["app_name"] = display_name if display_name else settings.app_name' in src
+
+
 def test_sistema_config_address_order() -> None:
     html = Path("app/modules/tenants/templates/tenants/sistema_config.html").read_text(encoding="utf-8")
     state_pos = html.index('id="state"')

@@ -42,7 +42,7 @@
   </div>
   {% endif %}
   <div class="footer">
-    {% if document_footer_text %}{{ document_footer_text }}{% else %}Documento gerado pelo ERP Locadora · {{ empresa_razao }}{% endif %}
+    {% if document_footer_text %}{{ document_footer_text }}{% else %}Documento gerado por {{ empresa_nome }} · {{ empresa_razao }}{% endif %}
   </div>
 </body>
 </html>

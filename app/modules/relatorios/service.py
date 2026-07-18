@@ -177,7 +177,16 @@ class EmissaoService:
             elif fmt == "xlsx":
                 blob = render_xlsx(data.columns, data.rows)
             else:
-                blob = render_pdf_html(data.titulo, data.columns, data.rows, data.summary)
+                from app.modules.documentos.context_builders import build_empresa_pdf_context
+
+                empresa = await build_empresa_pdf_context(self.session, emissao.tenant_id)
+                blob = render_pdf_html(
+                    data.titulo,
+                    data.columns,
+                    data.rows,
+                    data.summary,
+                    empresa=empresa,
+                )
 
             emissao.content_type = CONTENT_TYPES.get(fmt, "application/octet-stream")
             emissao.tamanho_bytes = len(blob)

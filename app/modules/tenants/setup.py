@@ -5,8 +5,13 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
+from starlette.requests import Request
+
+from app.core.logging import get_logger
 from app.modules.tenants.branding import branding_session_payload
 from app.modules.tenants.models import Tenant
+
+logger = get_logger(__name__)
 
 SETUP_PATH = "/configuracoes/sistema"
 SETUP_PENDING_PATH = "/configuracoes/sistema/aguardando"
@@ -96,6 +101,42 @@ def sync_tenant_session_flags(
     session["tenant_branding"] = branding_session_payload(tenant)
     session["tenant_setup_complete"] = is_setup_complete(tenant)
     session["can_edit_empresa"] = can_edit_empresa
+
+
+async def refresh_tenant_session_from_db(request: Request) -> None:
+    """Sincroniza branding e status de setup da sessão com o banco (fonte da verdade)."""
+    session = request.scope.get("session")
+    if not isinstance(session, dict):
+        return
+    if not session.get("user_id") or not session.get("tenant_id"):
+        return
+
+    from app.core.database import _apply_tenant_context, _reset_tenant_context, async_session_factory
+    from app.modules.tenants.repository import TenantRepository
+
+    try:
+        tenant_id = uuid.UUID(str(session["tenant_id"]))
+    except (ValueError, TypeError):
+        return
+
+    db = async_session_factory()
+    try:
+        await _apply_tenant_context(db, tenant_id)
+        tenant = await TenantRepository(db).get(tenant_id)
+        if tenant is not None:
+            sync_tenant_session_flags(
+                session,
+                tenant,
+                can_edit_empresa=bool(session.get("can_edit_empresa")),
+            )
+    except Exception:
+        logger.warning(
+            "Falha ao sincronizar sessão do tenant com o banco.",
+            exc_info=True,
+        )
+    finally:
+        await _reset_tenant_context(db)
+        await db.close()
 
 
 def populate_authenticated_session(
