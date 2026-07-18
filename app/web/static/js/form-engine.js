@@ -65,7 +65,7 @@
     var name = (input.name || input.id || "").toLowerCase();
     if (name === "cpf") return "cpf";
     if (name === "cnpj") return "cnpj";
-    if (name === "cep") return "cep";
+    if (name === "cep" || name === "zip_code") return "cep";
     if (name === "placa") return "placa";
     if (name === "renavam") return "renavam";
     if (name === "phone" || name === "telefone") return "phone";
@@ -186,14 +186,21 @@
     sync();
   }
 
+  var IBGE_UFS_URL = "/referencia/ibge/ufs";
+  var IBGE_MUNICIPIOS_URL = "/referencia/ibge/municipios/";
+  var CEP_URL = "/referencia/cep/";
+
   async function fetchJson(url) {
-    var resp = await fetch(url, { headers: { Accept: "application/json" } });
+    var resp = await fetch(url, {
+      headers: { Accept: "application/json" },
+      credentials: "same-origin",
+    });
     if (!resp.ok) throw new Error("HTTP " + resp.status);
     return resp.json();
   }
 
   function setupViaCep(form) {
-    var cep = form.querySelector("#cep, [name=cep]");
+    var cep = form.querySelector("#cep, [name=cep], #zip_code, [name=zip_code]");
     if (!cep || cep.dataset.erpCepBound) return;
     cep.dataset.erpCepBound = "1";
 
@@ -202,24 +209,49 @@
       if (d.length !== 8) return;
       cep.classList.add("is-loading");
       try {
-        var data = await fetchJson("/cadastros/cep/" + d);
+        var data = await fetchJson(CEP_URL + d);
         var set = function (id, val) {
           var el = form.querySelector("#" + id + ", [name=" + id + "]");
           if (el && val && !el.dataset.userEdited) el.value = val;
         };
         set("endereco", data.endereco);
+        set("address", data.endereco);
         set("complemento", data.complemento);
+        set("complement", data.complemento);
         set("bairro", data.bairro);
-        set("cidade", data.cidade);
-        set("city", data.cidade);
-        set("uf", data.uf);
-        set("state", data.uf);
+        set("district", data.bairro);
         var ufEl = form.querySelector("#uf, [name=uf], #state, [name=state]");
-        if (ufEl && ufEl.tagName === "SELECT" && data.uf) {
+        if (ufEl && data.uf) {
           ufEl.value = data.uf;
           ufEl.dispatchEvent(new Event("change"));
         }
-        var num = form.querySelector("#numero, [name=numero]");
+        var cityName = data.cidade || "";
+        window.setTimeout(function () {
+          var cidadeEl = form.querySelector("#cidade, [name=cidade], #city, [name=city]");
+          if (cidadeEl && cityName) {
+            if (cidadeEl.tagName === "SELECT") {
+              var found = false;
+              for (var i = 0; i < cidadeEl.options.length; i++) {
+                if (cidadeEl.options[i].value === cityName) {
+                  cidadeEl.selectedIndex = i;
+                  found = true;
+                  break;
+                }
+              }
+              if (!found) {
+                var opt = document.createElement("option");
+                opt.value = cityName;
+                opt.textContent = cityName;
+                opt.selected = true;
+                cidadeEl.appendChild(opt);
+              }
+            } else {
+              cidadeEl.value = cityName;
+            }
+            cidadeEl.dispatchEvent(new Event("change"));
+          }
+        }, 450);
+        var num = form.querySelector("#numero, [name=numero], #number, [name=number]");
         if (num) num.focus();
       } catch (_) { /* silencioso */ }
       finally { cep.classList.remove("is-loading"); }
@@ -237,7 +269,7 @@
     select.name = ufEl.name;
     select.innerHTML = '<option value="">Selecione a UF</option>';
     try {
-      var ufs = await fetchJson("/cadastros/ibge/ufs");
+      var ufs = await fetchJson(IBGE_UFS_URL);
       ufs.forEach(function (u) {
         var opt = document.createElement("option");
         opt.value = u.sigla;
@@ -286,7 +318,7 @@
       }
       cidadeEl.innerHTML = '<option value="">Carregando...</option>';
       try {
-        var cities = await fetchJson("/cadastros/ibge/municipios/" + encodeURIComponent(uf));
+        var cities = await fetchJson(IBGE_MUNICIPIOS_URL + encodeURIComponent(uf));
         cidadeEl.innerHTML = '<option value="">Selecione a cidade</option>';
         cities.forEach(function (c) {
           var opt = document.createElement("option");
@@ -297,7 +329,18 @@
         });
         cidadeEl.disabled = false;
       } catch (_) {
-        cidadeEl.innerHTML = '<option value="">Erro ao carregar cidades</option>';
+        var manual = document.createElement("input");
+        manual.type = "text";
+        manual.className = cidadeEl.className;
+        manual.id = cidadeEl.id;
+        manual.name = cidadeEl.name;
+        manual.required = cidadeEl.required;
+        manual.placeholder = "Digite a cidade";
+        manual.value = currentCity;
+        cidadeEl.replaceWith(manual);
+        cidadeEl = manual;
+        isSelect = false;
+        cidadeEl.disabled = false;
       }
     }
 
@@ -326,7 +369,7 @@
     }
 
     try {
-      var ufs = await fetchJson("/cadastros/ibge/ufs");
+      var ufs = await fetchJson(IBGE_UFS_URL);
       ufs.forEach(function (u) {
         var opt = document.createElement("option");
         opt.value = u.sigla;
@@ -366,7 +409,7 @@
       }
       cidadeEl.innerHTML = '<option value="">Carregando...</option>';
       try {
-        var cities = await fetchJson("/cadastros/ibge/municipios/" + encodeURIComponent(uf));
+        var cities = await fetchJson(IBGE_MUNICIPIOS_URL + encodeURIComponent(uf));
         cidadeEl.innerHTML = '<option value="">Selecione o município</option>';
         cities.forEach(function (c) {
           var opt = document.createElement("option");
@@ -382,7 +425,18 @@
           ibgeEl.value = selOpt && selOpt.dataset.ibgeId ? selOpt.dataset.ibgeId : "";
         }
       } catch (_) {
-        cidadeEl.innerHTML = '<option value="">Erro ao carregar municípios</option>';
+        var manual = document.createElement("input");
+        manual.type = "text";
+        manual.className = cidadeEl.className;
+        manual.id = cidadeEl.id;
+        manual.name = cidadeEl.name;
+        manual.required = cidadeEl.required;
+        manual.placeholder = "Digite o município";
+        manual.value = currentCity;
+        cidadeEl.replaceWith(manual);
+        cidadeEl = manual;
+        isSelect = false;
+        cidadeEl.disabled = false;
       }
     }
 

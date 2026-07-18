@@ -88,12 +88,23 @@
 
     <fieldset class="form-fieldset">
       <legend>Endereço</legend>
+      <p class="form-help">Selecione o estado e a cidade; depois informe CEP e logradouro.</p>
       <div class="form-grid">
+        <div class="form-group">
+          {{ field_label('UF', false, 'uf') }}
+          <input class="form-input" id="uf" name="uf" maxlength="2" placeholder="SP"
+                 value="{{ cliente.uf if cliente else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Cidade', false, 'cidade') }}
+          <input class="form-input" id="cidade" name="cidade"
+                 value="{{ cliente.cidade if cliente else '' }}">
+        </div>
         <div class="form-group">
           {{ field_label('CEP', false, 'cep') }}
           <input class="form-input" id="cep" name="cep" data-mask="cep" placeholder="00000-000"
                  value="{{ cliente.cep if cliente else '' }}">
-          <p class="form-help">Ao sair do campo, o endereço é preenchido automaticamente.</p>
+          <p class="form-help">Ao sair do campo, logradouro e bairro podem ser preenchidos automaticamente.</p>
         </div>
         <div class="form-group">
           {{ field_label('Endereço', false, 'endereco') }}
@@ -114,17 +125,6 @@
           {{ field_label('Bairro', false, 'bairro') }}
           <input class="form-input" id="bairro" name="bairro"
                  value="{{ cliente.bairro if cliente else '' }}">
-        </div>
-        <div class="form-group">
-          {{ field_label('UF', false, 'uf') }}
-          <input class="form-input" id="uf" name="uf" maxlength="2" placeholder="SP"
-                 value="{{ cliente.uf if cliente else '' }}">
-        </div>
-        <div class="form-group">
-          {{ field_label('Cidade', false, 'cidade') }}
-          <input class="form-input" id="cidade" name="cidade"
-                 value="{{ cliente.cidade if cliente else '' }}">
-          <p class="form-help">Selecione a UF para carregar as cidades (IBGE).</p>
         </div>
       </div>
     </fieldset>

@@ -59,10 +59,20 @@ def test_app_js_layout_helpers() -> None:
     assert "erpLayout" in js
 
 
-def test_sistema_config_form_uses_full_post() -> None:
+def test_form_engine_uses_referencia_ibge_urls() -> None:
+    js = Path("app/web/static/js/form-engine.js").read_text(encoding="utf-8")
+    assert "/referencia/ibge/ufs" in js
+    assert "/referencia/ibge/municipios/" in js
+    assert "/referencia/cep/" in js
+
+
+def test_sistema_config_address_order() -> None:
     html = Path("app/modules/tenants/templates/tenants/sistema_config.html").read_text(encoding="utf-8")
-    assert 'data-no-spa="true"' in html
-    assert "hx-post" not in html
+    state_pos = html.index('id="state"')
+    city_pos = html.index('id="city"')
+    zip_pos = html.index('id="zip_code"')
+    address_pos = html.index('id="address"')
+    assert state_pos < city_pos < zip_pos < address_pos
 
 
 def test_login_page_renders_nav_toggle_absent(client: TestClient) -> None:

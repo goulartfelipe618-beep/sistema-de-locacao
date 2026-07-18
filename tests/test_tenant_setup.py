@@ -63,6 +63,9 @@ def test_setup_complete_when_timestamp_set() -> None:
 def test_setup_exempt_paths() -> None:
     assert is_setup_exempt_path("/login") is True
     assert is_setup_exempt_path("/configuracoes/sistema/editar") is True
+    assert is_setup_exempt_path("/referencia/ibge/ufs") is True
+    assert is_setup_exempt_path("/referencia/ibge/municipios/SP") is True
+    assert is_setup_exempt_path("/cadastros/cep/01310100") is True
     assert is_setup_exempt_path("/") is False
     assert is_setup_exempt_path("/cadastros/clientes") is False
 

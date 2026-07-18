@@ -20,6 +20,9 @@ SETUP_EXEMPT_PREFIXES: tuple[str, ...] = (
     "/favicon.ico",
     "/configuracoes/sistema",
     "/configuracoes/tema",
+    "/cadastros/ibge",
+    "/cadastros/cep",
+    "/referencia/",
     "/health",
 )
 

@@ -11,7 +11,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db_session
-from app.core.deps import require_web_permission
+from app.core.deps import require_web_permission, require_web_user
 from app.core.exceptions import AppError
 from app.core.pagination import PageParams
 from app.core.templating import render
@@ -29,9 +29,7 @@ SessionDep = Annotated[AsyncSession, Depends(get_db_session)]
 @router.get("/cadastros/cep/{cep}")
 async def consultar_cep_web(
     cep: str,
-    _user: Annotated[
-        AuthenticatedUser, Depends(require_web_permission("cadastros.cliente.visualizar"))
-    ],
+    _user: Annotated[AuthenticatedUser, Depends(require_web_user)],
 ) -> JSONResponse:
     from app.shared.viacep import consultar_cep
 
@@ -41,9 +39,7 @@ async def consultar_cep_web(
 
 @router.get("/cadastros/ibge/ufs")
 async def ibge_ufs_web(
-    _user: Annotated[
-        AuthenticatedUser, Depends(require_web_permission("cadastros.cliente.visualizar"))
-    ],
+    _user: Annotated[AuthenticatedUser, Depends(require_web_user)],
 ) -> JSONResponse:
     from app.shared.ibge import list_ufs
 
@@ -53,9 +49,7 @@ async def ibge_ufs_web(
 @router.get("/cadastros/ibge/municipios/{uf}")
 async def ibge_municipios_web(
     uf: str,
-    _user: Annotated[
-        AuthenticatedUser, Depends(require_web_permission("cadastros.cliente.visualizar"))
-    ],
+    _user: Annotated[AuthenticatedUser, Depends(require_web_user)],
 ) -> JSONResponse:
     from app.shared.ibge import list_municipios
 

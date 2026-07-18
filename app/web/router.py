@@ -28,8 +28,11 @@ from app.modules.reservas.web import router as reservas_router
 from app.modules.tarifario.web import router as tarifario_router
 from app.modules.parametros.web import router as parametros_router
 from app.modules.tenants.web import router as tenants_router
+from app.web.reference import router as reference_router
 
 web_router = APIRouter(include_in_schema=False)
+
+web_router.include_router(reference_router)
 
 web_router.include_router(dashboard_router)
 web_router.include_router(identity_router)
