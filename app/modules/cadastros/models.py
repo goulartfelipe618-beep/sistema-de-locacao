@@ -12,6 +12,7 @@ from sqlalchemy import (
     Enum as SAEnum,
     ForeignKey,
     Index,
+    Integer,
     Numeric,
     String,
     Text,
@@ -28,7 +29,7 @@ from app.modules.cadastros.models_extra import (  # noqa: F401
     Vendedor,
 )
 from app.shared.base_model import TenantBaseModel
-from app.shared.enums import ClienteStatus, PersonType
+from app.shared.enums import ClienteStatus, MotoristaCnhStatus, PersonType
 
 
 class TabelaAuxiliar(TenantBaseModel):
@@ -137,6 +138,24 @@ class Cliente(TenantBaseModel):
     blacklist: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     motivo_bloqueio: Mapped[str | None] = mapped_column(String(255), nullable=True)
     observacoes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    cnh_numero: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    cnh_categoria: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    cnh_emissao: Mapped[date | None] = mapped_column(Date, nullable=True)
+    cnh_validade: Mapped[date | None] = mapped_column(Date, nullable=True)
+    cnh_orgao: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    cnh_status: Mapped[MotoristaCnhStatus] = mapped_column(
+        SAEnum(
+            MotoristaCnhStatus,
+            name="motorista_cnh_status",
+            native_enum=False,
+            length=20,
+            values_callable=lambda enum_cls: [item.value for item in enum_cls],
+        ),
+        nullable=False,
+        default=MotoristaCnhStatus.REGULAR,
+    )
+    cnh_pontuacao: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<Cliente nome={self.nome!r} tipo={self.person_type.value}>"

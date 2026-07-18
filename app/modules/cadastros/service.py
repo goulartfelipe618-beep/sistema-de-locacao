@@ -193,6 +193,10 @@ class ClienteService:
             entity_id=cliente.id,
             description=f"Cliente criado: {cliente.nome}",
         )
+        from app.modules.cadastros.condutor import refresh_cnh_status, sync_shadow_motorista
+
+        refresh_cnh_status(cliente)
+        await sync_shadow_motorista(self.session, cliente)
         return cliente
 
     async def update(self, cliente_id: uuid.UUID, data: ClienteUpdate) -> Cliente:
@@ -217,6 +221,10 @@ class ClienteService:
             description=f"Cliente atualizado: {cliente.nome}",
             changes={k: str(v) for k, v in payload.items()},
         )
+        from app.modules.cadastros.condutor import refresh_cnh_status, sync_shadow_motorista
+
+        refresh_cnh_status(cliente)
+        await sync_shadow_motorista(self.session, cliente)
         return cliente
 
     async def delete(self, cliente_id: uuid.UUID) -> None:

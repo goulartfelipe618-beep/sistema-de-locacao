@@ -484,6 +484,7 @@ async def contrato_detalhe(
     ],
 ) -> HTMLResponse:
     contrato = await ContratoService(session).get(contrato_id)
+    cliente = await ClienteService(session).get(contrato.cliente_id)
     lookups = await _locacoes_lookups(session, _user.tenant_id)
     extras = await _contrato_extras(session, contrato_id)
     return render(
@@ -491,6 +492,7 @@ async def contrato_detalhe(
         "locacoes/contrato_detalhe.html",
         {
             "contrato": contrato,
+            "cliente": cliente,
             "title": f"Contrato {contrato.numero}",
             "error": None,
             "status_badge": _contrato_status_badge(contrato.status),

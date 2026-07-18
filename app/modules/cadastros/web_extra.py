@@ -115,167 +115,30 @@ async def _cnh_cats(session: AsyncSession, tenant_id: uuid.UUID):
     ).items
 
 
-# ============================================================== Motoristas
-@router.get("/cadastros/motoristas", response_class=HTMLResponse)
-async def motoristas_list(
-    request: Request,
-    session: SessionDep,
-    _user: Annotated[AuthenticatedUser, Depends(require_web_permission("cadastros.motorista.visualizar"))],
-    page: int = 1,
-    q: str = "",
-) -> HTMLResponse:
-    result = await MotoristaService(session).list_items(PageParams(page=page, size=25), search=q or None)
-    return render(
-        request,
-        "cadastros/motoristas_list.html",
-        {"page_result": result, "q": q, "title": "Motoristas"},
-    )
+# ============================================================== Motoristas (legado → Clientes)
+@router.get("/cadastros/motoristas", response_class=RedirectResponse)
+async def motoristas_list_redirect() -> RedirectResponse:
+    return RedirectResponse(url="/cadastros/clientes", status_code=302)
 
 
-@router.get("/cadastros/motoristas/novo", response_class=HTMLResponse)
-async def motorista_new(
-    request: Request,
-    session: SessionDep,
-    current_user: Annotated[
-        AuthenticatedUser, Depends(require_web_permission("cadastros.motorista.criar"))
-    ],
-) -> HTMLResponse:
-    return render(
-        request,
-        "cadastros/motorista_form.html",
-        {
-            "item": None,
-            "error": None,
-            "cnh_cats": await _cnh_cats(session, current_user.tenant_id),
-            "title": "Novo Motorista",
-            "action": "/cadastros/motoristas/novo",
-        },
-    )
+@router.get("/cadastros/motoristas/novo", response_class=RedirectResponse)
+async def motorista_new_redirect() -> RedirectResponse:
+    return RedirectResponse(url="/cadastros/clientes/novo", status_code=302)
 
 
-@router.post("/cadastros/motoristas/novo", response_class=HTMLResponse)
-async def motorista_create(
-    request: Request,
-    session: SessionDep,
-    current_user: Annotated[
-        AuthenticatedUser, Depends(require_web_permission("cadastros.motorista.criar"))
-    ],
-    nome: Annotated[str, Form()],
-    vinculo: Annotated[str, Form()] = "terceiro",
-    status: Annotated[str, Form()] = "active",
-    cpf: Annotated[str, Form()] = "",
-    email: Annotated[str, Form()] = "",
-    celular: Annotated[str, Form()] = "",
-    cnh_numero: Annotated[str, Form()] = "",
-    cnh_categoria: Annotated[str, Form()] = "",
-    cnh_validade: Annotated[str, Form()] = "",
-    cnh_status: Annotated[str, Form()] = "regular",
-    observacoes: Annotated[str, Form()] = "",
-) -> HTMLResponse:
-    ctx = {
-        "item": None,
-        "cnh_cats": await _cnh_cats(session, current_user.tenant_id),
-        "title": "Novo Motorista",
-        "action": "/cadastros/motoristas/novo",
-    }
-    try:
-        await MotoristaService(session).create(
-            current_user.tenant_id,
-            MotoristaCreate(
-                nome=nome,
-                vinculo=MotoristaVinculo(vinculo),
-                status=CadastroStatus(status),
-                cpf=cpf or None,
-                email=email or None,
-                celular=celular or None,
-                cnh_numero=cnh_numero or None,
-                cnh_categoria=cnh_categoria or None,
-                cnh_validade=_date(cnh_validade),
-                cnh_status=MotoristaCnhStatus(cnh_status),
-                observacoes=observacoes or None,
-            ),
-        )
-    except (AppError, ValueError) as exc:
-        await session.rollback()
-        ctx["error"] = exc.message if isinstance(exc, AppError) else str(exc)
-        return render(request, "cadastros/motorista_form.html", ctx, status_code=400)
-    return RedirectResponse("/cadastros/motoristas", status_code=303)
+@router.post("/cadastros/motoristas/novo", response_class=RedirectResponse)
+async def motorista_create_redirect() -> RedirectResponse:
+    return RedirectResponse(url="/cadastros/clientes/novo", status_code=302)
 
 
-@router.get("/cadastros/motoristas/{item_id}/editar", response_class=HTMLResponse)
-async def motorista_edit(
-    request: Request,
-    session: SessionDep,
-    item_id: uuid.UUID,
-    current_user: Annotated[
-        AuthenticatedUser, Depends(require_web_permission("cadastros.motorista.editar"))
-    ],
-) -> HTMLResponse:
-    item = await MotoristaService(session).get(item_id)
-    return render(
-        request,
-        "cadastros/motorista_form.html",
-        {
-            "item": item,
-            "error": None,
-            "cnh_cats": await _cnh_cats(session, current_user.tenant_id),
-            "title": "Editar Motorista",
-            "action": f"/cadastros/motoristas/{item_id}/editar",
-        },
-    )
+@router.get("/cadastros/motoristas/{item_id}/editar", response_class=RedirectResponse)
+async def motorista_edit_redirect(item_id: uuid.UUID) -> RedirectResponse:
+    return RedirectResponse(url="/cadastros/clientes", status_code=302)
 
 
-@router.post("/cadastros/motoristas/{item_id}/editar", response_class=HTMLResponse)
-async def motorista_update(
-    request: Request,
-    session: SessionDep,
-    item_id: uuid.UUID,
-    current_user: Annotated[
-        AuthenticatedUser, Depends(require_web_permission("cadastros.motorista.editar"))
-    ],
-    nome: Annotated[str, Form()],
-    vinculo: Annotated[str, Form()] = "terceiro",
-    status: Annotated[str, Form()] = "active",
-    email: Annotated[str, Form()] = "",
-    celular: Annotated[str, Form()] = "",
-    cnh_numero: Annotated[str, Form()] = "",
-    cnh_categoria: Annotated[str, Form()] = "",
-    cnh_validade: Annotated[str, Form()] = "",
-    cnh_status: Annotated[str, Form()] = "regular",
-    observacoes: Annotated[str, Form()] = "",
-) -> HTMLResponse:
-    try:
-        await MotoristaService(session).update(
-            item_id,
-            MotoristaUpdate(
-                nome=nome,
-                vinculo=MotoristaVinculo(vinculo),
-                status=CadastroStatus(status),
-                email=email or None,
-                celular=celular or None,
-                cnh_numero=cnh_numero or None,
-                cnh_categoria=cnh_categoria or None,
-                cnh_validade=_date(cnh_validade),
-                cnh_status=MotoristaCnhStatus(cnh_status),
-                observacoes=observacoes or None,
-            ),
-        )
-    except (AppError, ValueError) as exc:
-        await session.rollback()
-        item = await MotoristaService(session).get(item_id)
-        return render(
-            request,
-            "cadastros/motorista_form.html",
-            {
-                "item": item,
-                "error": exc.message if isinstance(exc, AppError) else str(exc),
-                "cnh_cats": await _cnh_cats(session, current_user.tenant_id),
-                "title": "Editar Motorista",
-                "action": f"/cadastros/motoristas/{item_id}/editar",
-            },
-            status_code=400,
-        )
-    return RedirectResponse("/cadastros/motoristas", status_code=303)
+@router.post("/cadastros/motoristas/{item_id}/editar", response_class=RedirectResponse)
+async def motorista_update_redirect(item_id: uuid.UUID) -> RedirectResponse:
+    return RedirectResponse(url="/cadastros/clientes", status_code=302)
 
 
 # ============================================================== Parceiros

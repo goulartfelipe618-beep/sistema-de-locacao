@@ -152,6 +152,55 @@
       </div>
     </fieldset>
 
+    <fieldset class="form-fieldset">
+      <legend>CNH — Condutor</legend>
+      <p class="form-help">O cliente é quem dirige o veículo. Informe a carteira de habilitação.</p>
+      <div class="form-grid">
+        <div class="form-group">
+          {{ field_label('Número CNH', false, 'cnh_numero') }}
+          <input class="form-input" id="cnh_numero" name="cnh_numero" placeholder="Número da CNH"
+                 value="{{ cliente.cnh_numero if cliente else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Categoria CNH', false, 'cnh_categoria') }}
+          <select class="form-input" id="cnh_categoria" name="cnh_categoria">
+            <option value="">Selecionar</option>
+            {% for c in cnh_cats %}
+            <option value="{{ c.codigo }}" {% if cliente and cliente.cnh_categoria == c.codigo %}selected{% endif %}>{{ c.descricao }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('Validade CNH', false, 'cnh_validade') }}
+          <input class="form-input" type="date" id="cnh_validade" name="cnh_validade"
+                 value="{{ cliente.cnh_validade if cliente and cliente.cnh_validade else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Situação CNH', false, 'cnh_status') }}
+          <select class="form-input" id="cnh_status" name="cnh_status">
+            {% for s in ['regular','vencida','suspensa','cassada'] %}
+            <option value="{{ s }}" {% if cliente and cliente.cnh_status.value == s %}selected{% elif not cliente and s == 'regular' %}selected{% endif %}>{{ s|capitalize }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          {{ field_label('Emissão CNH', false, 'cnh_emissao') }}
+          <input class="form-input" type="date" id="cnh_emissao" name="cnh_emissao"
+                 value="{{ cliente.cnh_emissao if cliente and cliente.cnh_emissao else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Órgão emissor', false, 'cnh_orgao') }}
+          <input class="form-input" id="cnh_orgao" name="cnh_orgao" placeholder="DETRAN/UF"
+                 value="{{ cliente.cnh_orgao if cliente else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Pontuação', false, 'cnh_pontuacao') }}
+          <input class="form-input" type="number" id="cnh_pontuacao" name="cnh_pontuacao" min="0" max="40"
+                 value="{{ cliente.cnh_pontuacao if cliente and cliente.cnh_pontuacao is not none else '' }}">
+        </div>
+      </div>
+    </fieldset>
+
     <div class="form-group">
       {{ field_label('Observações', false, 'observacoes') }}
       <textarea class="form-input" id="observacoes" name="observacoes" rows="3"

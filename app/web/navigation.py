@@ -61,12 +61,6 @@ NAVIGATION: tuple[MenuSection, ...] = (
                 implemented=True,
             ),
             MenuItem(
-                "Motoristas",
-                url="/cadastros/motoristas",
-                permission="cadastros.motorista.visualizar",
-                implemented=True,
-            ),
-            MenuItem(
                 "Parceiros",
                 url="/cadastros/parceiros",
                 permission="cadastros.parceiro.visualizar",

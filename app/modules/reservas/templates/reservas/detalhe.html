@@ -32,9 +32,9 @@
     {% endif %}
   </div>
 
-  {% if motoristas_vinc %}
-  <h4>Motoristas</h4>
-  <ul>{% for mv in motoristas_vinc %}<li>{{ motorista_nomes.get(mv.motorista_id|string, mv.motorista_id) }}{% if mv.principal %} (principal){% endif %}</li>{% endfor %}</ul>
+  {% if cliente %}
+  <h4>Condutor</h4>
+  <p>{{ cliente.nome }}{% if cliente.cnh_numero %} — CNH {{ cliente.cnh_numero }}{% if cliente.cnh_categoria %} ({{ cliente.cnh_categoria }}){% endif %}{% if cliente.cnh_validade %}, validade {{ cliente.cnh_validade }}{% endif %}{% if cliente.cnh_status %} — {{ cliente.cnh_status.value }}{% endif %}{% else %} <em class="text-muted">CNH não cadastrada</em>{% endif %}</p>
   {% endif %}
 
   {% if itens %}

@@ -58,7 +58,6 @@ def test_menu_clientes_enabled_with_permission() -> None:
 
 def test_menu_cadastros_extras_enabled() -> None:
     perms = {
-        "cadastros.motorista.visualizar",
         "cadastros.parceiro.visualizar",
         "cadastros.fornecedor.visualizar",
         "cadastros.vendedor.visualizar",
@@ -66,8 +65,8 @@ def test_menu_cadastros_extras_enabled() -> None:
     menu = build_menu(_make_user(perms))
     cadastros = next(s for s in menu if s["label"] == "Cadastros")
     by_label = {i["label"]: i for i in cadastros["children"]}
+    assert "Motoristas" not in by_label
     for label, url in (
-        ("Motoristas", "/cadastros/motoristas"),
         ("Parceiros", "/cadastros/parceiros"),
         ("Fornecedores", "/cadastros/fornecedores"),
         ("Vendedores", "/cadastros/vendedores"),

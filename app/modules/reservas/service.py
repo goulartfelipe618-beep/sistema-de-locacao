@@ -548,7 +548,12 @@ class ReservaService:
         await self.repo.flush()
 
         await self._sync_itens(tenant_id, reserva.id, quote)
-        await self._sync_motoristas(tenant_id, reserva.id, data.motoristas)
+        motoristas = data.motoristas
+        if not motoristas:
+            from app.modules.cadastros.condutor import motorista_inputs_for_cliente
+
+            motoristas = await motorista_inputs_for_cliente(self.session, data.cliente_id)
+        await self._sync_motoristas(tenant_id, reserva.id, motoristas)
 
         if data.veiculo_id:
             from app.modules.intermediacao.service import IntermediacaoService
@@ -654,6 +659,10 @@ class ReservaService:
 
         if motoristas is not None:
             await self.motorista_repo.delete_by_reserva(reserva.id)
+            if not motoristas:
+                from app.modules.cadastros.condutor import motorista_inputs_for_cliente
+
+                motoristas = await motorista_inputs_for_cliente(self.session, reserva.cliente_id)
             await self._sync_motoristas(reserva.tenant_id, reserva.id, motoristas)
 
         if reserva.veiculo_id:

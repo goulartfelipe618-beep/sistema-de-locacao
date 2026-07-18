@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+from datetime import date
 from decimal import Decimal, InvalidOperation
 from typing import Annotated
 
@@ -19,7 +20,7 @@ from app.modules.cadastros.schemas import ClienteCreate, ClienteUpdate, TabelaAu
 from app.modules.cadastros.service import ClienteService, TabelaAuxiliarService
 from app.modules.cadastros.web_extra import router as cadastros_extra_router
 from app.modules.identity.service import AuthenticatedUser
-from app.shared.enums import ClienteStatus, PersonType
+from app.shared.enums import ClienteStatus, MotoristaCnhStatus, PersonType
 
 router = APIRouter()
 router.include_router(cadastros_extra_router)
@@ -113,6 +114,42 @@ def _parse_decimal(raw: str | None) -> Decimal:
         raise ValueError("Limite de crédito inválido.") from exc
 
 
+def _parse_date(raw: str | None) -> date | None:
+    if not raw or not raw.strip():
+        return None
+    return date.fromisoformat(raw.strip())
+
+
+async def _cnh_categorias(session: AsyncSession, tenant_id: uuid.UUID):
+    await TabelaAuxiliarService(session).ensure_defaults(tenant_id)
+    return (
+        await TabelaAuxiliarService(session).list_by_grupo(
+            "cnh_categoria", PageParams(page=1, size=50), apenas_ativos=True
+        )
+    ).items
+
+
+def _cliente_cnh_fields(
+    *,
+    cnh_numero: str,
+    cnh_categoria: str,
+    cnh_validade: str,
+    cnh_status: str,
+    cnh_emissao: str = "",
+    cnh_orgao: str = "",
+    cnh_pontuacao: str = "",
+) -> dict:
+    return {
+        "cnh_numero": cnh_numero.strip() or None,
+        "cnh_categoria": cnh_categoria.strip() or None,
+        "cnh_validade": _parse_date(cnh_validade),
+        "cnh_emissao": _parse_date(cnh_emissao),
+        "cnh_orgao": cnh_orgao.strip() or None,
+        "cnh_status": MotoristaCnhStatus(cnh_status or "regular"),
+        "cnh_pontuacao": int(cnh_pontuacao) if cnh_pontuacao.strip().isdigit() else None,
+    }
+
+
 # ============================================================== Clientes
 @router.get("/cadastros/clientes", response_class=HTMLResponse)
 async def clientes_list(
@@ -154,6 +191,7 @@ async def cliente_new_form(
             "cliente": None,
             "error": None,
             "categorias": categorias.items,
+            "cnh_cats": await _cnh_categorias(session, current_user.tenant_id),
             "title": "Novo Cliente",
             "action": "/cadastros/clientes/novo",
         },
@@ -186,11 +224,19 @@ async def cliente_create(
     categoria_codigo: Annotated[str, Form()] = "",
     limite_credito: Annotated[str, Form()] = "0",
     observacoes: Annotated[str, Form()] = "",
+    cnh_numero: Annotated[str, Form()] = "",
+    cnh_categoria: Annotated[str, Form()] = "",
+    cnh_validade: Annotated[str, Form()] = "",
+    cnh_status: Annotated[str, Form()] = "regular",
+    cnh_emissao: Annotated[str, Form()] = "",
+    cnh_orgao: Annotated[str, Form()] = "",
+    cnh_pontuacao: Annotated[str, Form()] = "",
 ) -> HTMLResponse:
     """Cria cliente."""
     categorias = await TabelaAuxiliarService(session).list_by_grupo(
         "categoria_cliente", PageParams(page=1, size=100), apenas_ativos=True
     )
+    cnh_cats = await _cnh_categorias(session, current_user.tenant_id)
     try:
         data = ClienteCreate(
             person_type=PersonType(person_type),
@@ -212,6 +258,15 @@ async def cliente_create(
             categoria_codigo=categoria_codigo or None,
             limite_credito=_parse_decimal(limite_credito),
             observacoes=observacoes or None,
+            **_cliente_cnh_fields(
+                cnh_numero=cnh_numero,
+                cnh_categoria=cnh_categoria,
+                cnh_validade=cnh_validade,
+                cnh_status=cnh_status,
+                cnh_emissao=cnh_emissao,
+                cnh_orgao=cnh_orgao,
+                cnh_pontuacao=cnh_pontuacao,
+            ),
         )
         await ClienteService(session).create(current_user.tenant_id, data)
     except (AppError, ValueError) as exc:
@@ -224,6 +279,7 @@ async def cliente_create(
                 "cliente": None,
                 "error": message,
                 "categorias": categorias.items,
+                "cnh_cats": cnh_cats,
                 "title": "Novo Cliente",
                 "action": "/cadastros/clientes/novo",
                 "form": {
@@ -261,6 +317,7 @@ async def cliente_edit_form(
             "cliente": cliente,
             "error": None,
             "categorias": categorias.items,
+            "cnh_cats": await _cnh_categorias(session, current_user.tenant_id),
             "title": "Editar Cliente",
             "action": f"/cadastros/clientes/{cliente_id}/editar",
         },
@@ -291,11 +348,19 @@ async def cliente_update(
     categoria_codigo: Annotated[str, Form()] = "",
     limite_credito: Annotated[str, Form()] = "0",
     observacoes: Annotated[str, Form()] = "",
+    cnh_numero: Annotated[str, Form()] = "",
+    cnh_categoria: Annotated[str, Form()] = "",
+    cnh_validade: Annotated[str, Form()] = "",
+    cnh_status: Annotated[str, Form()] = "regular",
+    cnh_emissao: Annotated[str, Form()] = "",
+    cnh_orgao: Annotated[str, Form()] = "",
+    cnh_pontuacao: Annotated[str, Form()] = "",
 ) -> HTMLResponse:
     """Atualiza cliente."""
     categorias = await TabelaAuxiliarService(session).list_by_grupo(
         "categoria_cliente", PageParams(page=1, size=100), apenas_ativos=True
     )
+    cnh_cats = await _cnh_categorias(session, current_user.tenant_id)
     try:
         data = ClienteUpdate(
             status=ClienteStatus(status),
@@ -314,6 +379,15 @@ async def cliente_update(
             categoria_codigo=categoria_codigo or None,
             limite_credito=_parse_decimal(limite_credito),
             observacoes=observacoes or None,
+            **_cliente_cnh_fields(
+                cnh_numero=cnh_numero,
+                cnh_categoria=cnh_categoria,
+                cnh_validade=cnh_validade,
+                cnh_status=cnh_status,
+                cnh_emissao=cnh_emissao,
+                cnh_orgao=cnh_orgao,
+                cnh_pontuacao=cnh_pontuacao,
+            ),
         )
         await ClienteService(session).update(cliente_id, data)
     except (AppError, ValueError) as exc:
@@ -327,6 +401,7 @@ async def cliente_update(
                 "cliente": cliente,
                 "error": message,
                 "categorias": categorias.items,
+                "cnh_cats": cnh_cats,
                 "title": "Editar Cliente",
                 "action": f"/cadastros/clientes/{cliente_id}/editar",
             },

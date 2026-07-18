@@ -456,7 +456,12 @@ class ContratoService:
         await self.repo.flush()
 
         await self._sync_itens_from_quote(tenant_id, contrato.id, quote)
-        await self._sync_motoristas(tenant_id, contrato.id, data.motoristas)
+        motoristas = data.motoristas
+        if not motoristas:
+            from app.modules.cadastros.condutor import motorista_inputs_for_cliente
+
+            motoristas = await motorista_inputs_for_cliente(self.session, data.cliente_id)
+        await self._sync_motoristas(tenant_id, contrato.id, motoristas)
 
         await audit_service.record(
             AuditAction.CREATE,
@@ -534,6 +539,9 @@ class ContratoService:
 
         await self._copy_itens_from_reserva(reserva.tenant_id, contrato.id, reserva.id)
         await self._copy_motoristas_from_reserva(reserva.tenant_id, contrato.id, reserva.id)
+        from app.modules.cadastros.condutor import ensure_contrato_motoristas_from_cliente
+
+        await ensure_contrato_motoristas_from_cliente(self.session, contrato)
 
         from app.modules.frota.service import VeiculoService
         from app.modules.intermediacao.service import IntermediacaoService
@@ -617,6 +625,10 @@ class ContratoService:
 
         if motoristas is not None:
             await self.motorista_repo.delete_by_contrato(contrato.id)
+            if not motoristas:
+                from app.modules.cadastros.condutor import motorista_inputs_for_cliente
+
+                motoristas = await motorista_inputs_for_cliente(self.session, contrato.cliente_id)
             await self._sync_motoristas(contrato.tenant_id, contrato.id, motoristas)
 
         await self.repo.flush()
@@ -823,6 +835,10 @@ class CheckoutService:
     async def _validar_precondicoes(
         self, contrato: LocContrato, data: CheckoutConcluirInput
     ) -> None:
+        from app.modules.cadastros.condutor import ensure_contrato_motoristas_from_cliente
+
+        await ensure_contrato_motoristas_from_cliente(self.session, contrato)
+
         if not data.caucao_confirmada and not data.allow_force:
             raise BusinessRuleError(
                 "Caução não confirmada.",
@@ -848,19 +864,19 @@ class CheckoutService:
         motoristas_vinc = list((await self.session.execute(mot_stmt)).scalars().all())
         if not motoristas_vinc and not data.allow_force:
             raise BusinessRuleError(
-                "Contrato sem motorista autorizado.",
-                code="sem_motorista",
+                "Cliente sem CNH válida cadastrada.",
+                code="sem_condutor",
             )
 
         for vinc in motoristas_vinc:
             mot = await self.session.get(Motorista, vinc.motorista_id)
             if mot is None or mot.deleted_at is not None:
                 if not data.allow_force:
-                    raise NotFoundError("Motorista do contrato não encontrado.")
+                    raise NotFoundError("Condutor do contrato não encontrado.")
                 continue
             if mot.cnh_status in _CNH_INVALID and not data.allow_force:
                 raise BusinessRuleError(
-                    f"CNH do motorista {mot.nome} inválida ({mot.cnh_status.value}).",
+                    f"CNH do cliente {mot.nome} inválida ({mot.cnh_status.value}).",
                     code="cnh_invalida",
                 )
 

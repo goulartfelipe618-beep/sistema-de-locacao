@@ -759,6 +759,7 @@ async def reserva_detalhe(
     ],
 ) -> HTMLResponse:
     reserva = await ReservaService(session).get(reserva_id)
+    cliente = await ClienteService(session).get(reserva.cliente_id)
     lookups = await _reservas_lookups(session, _user.tenant_id)
     extras = await _reserva_extras(session, reserva_id)
     return render(
@@ -766,6 +767,7 @@ async def reserva_detalhe(
         "reservas/detalhe.html",
         {
             "reserva": reserva,
+            "cliente": cliente,
             "title": f"Reserva {reserva.numero}",
             "error": None,
             **extras,

@@ -11,7 +11,7 @@ from sqlalchemy import and_, case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.rbac import has_permission
-from app.modules.cadastros.models_extra import Motorista
+from app.modules.cadastros.models import Cliente
 from app.modules.comercial.models import CrmOportunidade, CrmProposta
 from app.modules.financeiro.models import (
     FinCaixaLancamento,
@@ -177,7 +177,7 @@ class DashboardService:
         snap.alertas.extend(await self._alertas_frota(filial_id))
         snap.alertas.extend(await self._alertas_locacoes(filial_id))
         snap.alertas.extend(await self._alertas_contratos_atrasados(filial_id))
-        snap.alertas.extend(await self._alertas_motoristas())
+        snap.alertas.extend(await self._alertas_clientes_cnh())
         snap.alertas.extend(await self._alertas_fiscal())
         return snap
 
@@ -212,7 +212,7 @@ class DashboardService:
             filtered.comercial = snap.comercial
         alerta_perms = {
             "documentacao": "frota.veiculo.visualizar",
-            "cnh": "cadastros.motorista.visualizar",
+            "cnh": "cadastros.cliente.visualizar",
             "multa": "locacoes.contrato.visualizar",
             "checkin": "locacoes.contrato.visualizar",
             "nfe": "fiscal.nfe.visualizar",
@@ -524,24 +524,24 @@ class DashboardService:
             ]
         return []
 
-    async def _alertas_motoristas(self) -> list[AlertaItem]:
+    async def _alertas_clientes_cnh(self) -> list[AlertaItem]:
         limite = date.today() + timedelta(days=30)
         qtd = await self._count(
             select(func.count())
-            .select_from(Motorista)
+            .select_from(Cliente)
             .where(
-                Motorista.deleted_at.is_(None),
-                Motorista.cnh_validade.is_not(None),
-                Motorista.cnh_validade <= limite,
-                Motorista.cnh_validade >= date.today(),
+                Cliente.deleted_at.is_(None),
+                Cliente.cnh_validade.is_not(None),
+                Cliente.cnh_validade <= limite,
+                Cliente.cnh_validade >= date.today(),
             )
         )
         if qtd:
             return [
                 AlertaItem(
                     tipo="cnh",
-                    mensagem=f"{qtd} motorista(s) com CNH vencendo em até 30 dias",
-                    url="/cadastros/motoristas",
+                    mensagem=f"{qtd} cliente(s) com CNH vencendo em até 30 dias",
+                    url="/cadastros/clientes",
                 )
             ]
         return []

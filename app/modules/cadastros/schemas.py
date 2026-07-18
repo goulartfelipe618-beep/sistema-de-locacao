@@ -8,7 +8,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from app.shared.enums import ClienteStatus, PersonType
+from app.shared.enums import ClienteStatus, MotoristaCnhStatus, PersonType
 from app.shared.value_objects import is_valid_cnpj, is_valid_cpf, only_digits
 
 
@@ -79,6 +79,13 @@ class ClienteBase(BaseModel):
     limite_credito: Decimal = Field(default=Decimal("0.00"), ge=0)
     observacoes: str | None = None
     filial_id: uuid.UUID | None = None
+    cnh_numero: str | None = Field(default=None, max_length=20)
+    cnh_categoria: str | None = Field(default=None, max_length=10)
+    cnh_emissao: date | None = None
+    cnh_validade: date | None = None
+    cnh_orgao: str | None = Field(default=None, max_length=60)
+    cnh_status: MotoristaCnhStatus = MotoristaCnhStatus.REGULAR
+    cnh_pontuacao: int | None = Field(default=None, ge=0)
 
     @field_validator("cpf")
     @classmethod
@@ -158,6 +165,13 @@ class ClienteUpdate(BaseModel):
     limite_credito: Decimal | None = Field(default=None, ge=0)
     observacoes: str | None = None
     filial_id: uuid.UUID | None = None
+    cnh_numero: str | None = Field(default=None, max_length=20)
+    cnh_categoria: str | None = Field(default=None, max_length=10)
+    cnh_emissao: date | None = None
+    cnh_validade: date | None = None
+    cnh_orgao: str | None = Field(default=None, max_length=60)
+    cnh_status: MotoristaCnhStatus | None = None
+    cnh_pontuacao: int | None = Field(default=None, ge=0)
     blacklist: bool | None = None
     motivo_bloqueio: str | None = Field(default=None, max_length=255)
 
@@ -200,4 +214,8 @@ class ClienteRead(BaseModel):
     categoria_codigo: str | None
     limite_credito: Decimal
     blacklist: bool
+    cnh_numero: str | None
+    cnh_categoria: str | None
+    cnh_validade: date | None
+    cnh_status: MotoristaCnhStatus
     created_at: datetime

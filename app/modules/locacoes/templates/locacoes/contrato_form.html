@@ -68,6 +68,7 @@
             <option value="">Buscar cliente...</option>
             {% for cl in clientes %}<option value="{{ cl.id }}" {% if form.cliente_id == cl.id|string %}selected{% endif %}>{{ cl.nome }}</option>{% endfor %}
           </select>
+          <p class="form-help">O cliente é o condutor — cadastre a CNH em Cadastros → Clientes.</p>
         </div>
         <div class="form-group">
           {{ field_label('Parceiro (opcional)', false, 'parceiro_id') }}
@@ -80,27 +81,7 @@
     </fieldset>
 
     <fieldset class="form-fieldset">
-      <legend>3. Motoristas</legend>
-      <div class="form-grid">
-        <div class="form-group">
-          {{ field_label('Motoristas autorizados', false, 'motorista_ids') }}
-          <select class="form-input" id="motorista_ids" name="motorista_ids" multiple size="4">
-            {% for m in motoristas %}<option value="{{ m.id }}" {% if m.id|string in form.motorista_ids %}selected{% endif %}>{{ m.nome }}</option>{% endfor %}
-          </select>
-          <p class="form-help">Segure Ctrl (Windows) ou Cmd (Mac) para selecionar vários.</p>
-        </div>
-        <div class="form-group">
-          {{ field_label('Motorista principal', false, 'motorista_principal') }}
-          <select class="form-input" id="motorista_principal" name="motorista_principal">
-            <option value="">Primeiro da lista</option>
-            {% for m in motoristas %}<option value="{{ m.id }}" {% if form.motorista_principal == m.id|string %}selected{% endif %}>{{ m.nome }}</option>{% endfor %}
-          </select>
-        </div>
-      </div>
-    </fieldset>
-
-    <fieldset class="form-fieldset">
-      <legend>4. Cobrança</legend>
+      <legend>3. Cobrança</legend>
       <div class="form-grid">
         <div class="form-group">
           {{ field_label('Forma de pagamento', false, 'forma_pagamento') }}
@@ -134,7 +115,7 @@
     </fieldset>
 
     <fieldset class="form-fieldset">
-      <legend>5. Confirmar</legend>
+      <legend>4. Confirmar</legend>
       <div class="form-actions">
         <button class="btn btn-primary" type="submit">Criar contrato</button>
         <a class="btn" href="/locacoes/contratos">Cancelar</a>
