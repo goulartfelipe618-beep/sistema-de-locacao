@@ -31,12 +31,14 @@ def resolve_logo_url(tenant: Tenant) -> str | None:
     return None
 
 
-def branding_session_payload(tenant: Tenant) -> dict[str, Any]:
+def branding_session_payload(tenant: Tenant, *, include_logo_url: bool = True) -> dict[str, Any]:
     """Resumo leve para sessão/UI (sidebar, CSS)."""
+    logo = resolve_logo_url(tenant) if include_logo_url else None
     return {
         "display_name": tenant.sidebar_display_name,
         "brand_primary_color": tenant.brand_primary_color or "#1e5a8a",
-        "logo_url": resolve_logo_url(tenant),
+        "logo_url": logo,
+        "has_logo": tenant.has_logo,
         "setup_complete": tenant.setup_complete,
     }
 

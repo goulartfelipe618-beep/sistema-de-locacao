@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="/static/css/app.css">
   <link rel="stylesheet" href="/static/css/responsive.css">
   {% if tenant_branding and tenant_branding.brand_primary_color %}
-  <style>:root { --primary: {{ tenant_branding.brand_primary_color }}; --primary-hover: {{ tenant_branding.brand_primary_color }}; }</style>
+  <style>:root { --primary: {{ tenant_branding.brand_primary_color }}; --primary-hover: color-mix(in srgb, {{ tenant_branding.brand_primary_color }} 78%, #ffffff); }</style>
   {% endif %}
   <script src="/static/js/theme.js" defer></script>
   <script src="/static/js/htmx.min.js" defer></script>

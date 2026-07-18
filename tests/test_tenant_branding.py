@@ -43,7 +43,14 @@ def test_branding_session_payload() -> None:
     assert payload["display_name"] == "Demo ERP"
     assert payload["brand_primary_color"] == "#2563eb"
     assert payload["logo_url"] == "https://example.com/logo.png"
+    assert payload["has_logo"] is True
     assert payload["setup_complete"] is False
+
+
+def test_branding_session_payload_omits_presigned_logo_url() -> None:
+    payload = branding_session_payload(_tenant(logo_url=None, logo_storage_key="tenants/x/logo.png"), include_logo_url=False)
+    assert payload["logo_url"] is None
+    assert payload["has_logo"] is True
 
 
 def test_branding_session_payload_app_display_name_priority() -> None:

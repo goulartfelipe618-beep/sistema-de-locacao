@@ -98,7 +98,7 @@ def sync_tenant_session_flags(
     can_edit_empresa: bool,
 ) -> None:
     """Atualiza flags de sessão usadas pelo middleware e pela sidebar."""
-    session["tenant_branding"] = branding_session_payload(tenant)
+    session["tenant_branding"] = branding_session_payload(tenant, include_logo_url=False)
     session["tenant_setup_complete"] = is_setup_complete(tenant)
     session["can_edit_empresa"] = can_edit_empresa
 
@@ -124,6 +124,7 @@ async def refresh_tenant_session_from_db(request: Request) -> None:
         await _apply_tenant_context(db, tenant_id)
         tenant = await TenantRepository(db).get(tenant_id)
         if tenant is not None:
+            request.state.tenant_branding = branding_session_payload(tenant, include_logo_url=True)
             sync_tenant_session_flags(
                 session,
                 tenant,

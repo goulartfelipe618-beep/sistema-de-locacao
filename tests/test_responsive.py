@@ -77,6 +77,18 @@ def test_templating_uses_tenant_display_name() -> None:
     assert 'ctx["app_name"] = display_name if display_name else settings.app_name' in src
 
 
+def test_theme_css_uses_surface_variables() -> None:
+    css = Path("app/web/static/css/app.css").read_text(encoding="utf-8")
+    assert "color-mix(in srgb, var(--sector-color) 12%, var(--surface))" in css
+    assert "background: var(--surface)" in css
+
+
+def test_theme_js_reads_cookie_before_local_storage() -> None:
+    js = Path("app/web/static/js/theme.js").read_text(encoding="utf-8")
+    assert "readStoredTheme" in js
+    assert "fromCookie" in js or "document.cookie.match" in js
+
+
 def test_sistema_config_address_order() -> None:
     html = Path("app/modules/tenants/templates/tenants/sistema_config.html").read_text(encoding="utf-8")
     state_pos = html.index('id="state"')

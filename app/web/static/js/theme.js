@@ -61,15 +61,24 @@
     window.dispatchEvent(new CustomEvent("erp-theme-change", { detail: { theme: theme } }));
   }
 
-  function initTheme() {
+  function readStoredTheme() {
     var root = document.documentElement;
     var current = root.getAttribute("data-theme");
-    if (!current || !VALID[current]) {
-      try {
-        current = localStorage.getItem(STORAGE_KEY);
-      } catch (e) { /* ignore */ }
-    }
-    applyTheme(current || "hybrid", { persistServer: false });
+    if (current && VALID[current]) return current;
+    try {
+      var m = document.cookie.match(new RegExp("(?:^|; )" + STORAGE_KEY + "=([^;]*)"));
+      if (m) {
+        var fromCookie = decodeURIComponent(m[1]);
+        if (VALID[fromCookie]) return fromCookie;
+      }
+      current = localStorage.getItem(STORAGE_KEY);
+      if (current && VALID[current]) return current;
+    } catch (e) { /* ignore */ }
+    return "hybrid";
+  }
+
+  function initTheme() {
+    applyTheme(readStoredTheme(), { persistServer: false });
   }
 
   function updateProfileChrome(detail) {
@@ -111,7 +120,12 @@
   function boot() {
     initTheme();
     bindBodyEvents();
+    window.setTimeout(function () { syncButtons(readStoredTheme()); }, 0);
   }
+
+  window.addEventListener("erp-theme-change", function (event) {
+    if (event.detail && event.detail.theme) syncButtons(event.detail.theme);
+  });
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", boot);
@@ -126,4 +140,4 @@
     },
   };
 })();
-
+
