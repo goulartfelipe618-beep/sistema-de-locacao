@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request
@@ -11,11 +10,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db_session
 from app.core.deps import require_web_permission
-from app.core.pagination import PageParams
 from app.core.templating import render
 from app.modules.dashboard.service import DashboardService
 from app.modules.identity.service import AuthenticatedUser
 from app.modules.tenants.service import FilialService
+from app.shared.query_params import parse_optional_uuid
 from app.web.sectors import build_quick_links, resolve_primary_sector
 
 router = APIRouter()
@@ -30,11 +29,9 @@ async def dashboard_home(
     current_user: Annotated[
         AuthenticatedUser, Depends(require_web_permission("dashboard.painel.visualizar"))
     ],
-    filial_id: uuid.UUID | None = None,
 ) -> HTMLResponse:
     """Renderiza a visão geral com KPIs condicionados às permissões do usuário."""
-    filial_param = request.query_params.get("filial_id")
-    parsed_filial = uuid.UUID(filial_param) if filial_param else filial_id
+    parsed_filial = parse_optional_uuid(request.query_params.get("filial_id"))
 
     snapshot, materialized_at = await DashboardService(session).get_snapshot(
         permissions=current_user.permissions,
@@ -42,7 +39,7 @@ async def dashboard_home(
         filial_id=parsed_filial,
         tenant_id=current_user.tenant_id,
     )
-    filiais = await FilialService(session).list_filiais(PageParams(page=1, size=100))
+    filiais = await FilialService(session).list_all()
     sector = resolve_primary_sector(current_user)
     return render(
         request,
@@ -51,7 +48,7 @@ async def dashboard_home(
             "snapshot": snapshot,
             "title": "Visão Geral",
             "filial_id": parsed_filial,
-            "filiais": filiais.items,
+            "filiais": filiais,
             "materialized_at": materialized_at,
             "sector": sector,
             "quick_links": build_quick_links(current_user),

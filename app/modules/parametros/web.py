@@ -12,13 +12,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db_session
 from app.core.deps import require_web_permission
 from app.core.exceptions import AppError
-from app.core.pagination import PageParams
 from app.core.templating import render
 from app.modules.identity.service import AuthenticatedUser
 from app.modules.parametros.catalog import CATEGORIA_LABELS
 from app.modules.parametros.service import ParametroService
 from app.modules.tenants.service import FilialService
 from app.shared.enums import ParametroCategoria, ParametroTipo
+from app.shared.query_params import parse_optional_uuid
 
 router = APIRouter()
 SessionDep = Annotated[AsyncSession, Depends(get_db_session)]
@@ -31,12 +31,12 @@ async def parametros_list(
     current_user: Annotated[
         AuthenticatedUser, Depends(require_web_permission("configuracoes.parametro.visualizar"))
     ],
-    filial_id: uuid.UUID | None = None,
     categoria: ParametroCategoria | None = None,
 ) -> Any:
+    filial_id = parse_optional_uuid(request.query_params.get("filial_id"))
     svc = ParametroService(session)
     parametros = await svc.list_resolved(current_user.tenant_id, filial_id=filial_id, categoria=categoria)
-    filiais = await FilialService(session).list_filiais(PageParams(page=1, size=100))
+    filiais = await FilialService(session).list_all()
     can_edit = (
         current_user.is_superuser
         or "configuracoes.parametro.editar" in current_user.permissions
@@ -51,7 +51,7 @@ async def parametros_list(
         {
             "title": "Parâmetros do Sistema",
             "grouped": grouped,
-            "filiais": filiais.items,
+            "filiais": filiais,
             "filial_id": filial_id,
             "categoria": categoria,
             "categorias": svc.list_categorias(),
@@ -74,9 +74,7 @@ async def parametros_save(
     filial_id: Annotated[str, Form()] = "",
 ) -> HTMLResponse:
     form = await request.form()
-    parsed_filial: uuid.UUID | None = None
-    if filial_id.strip():
-        parsed_filial = uuid.UUID(filial_id.strip())
+    parsed_filial = parse_optional_uuid(filial_id)
 
     svc = ParametroService(session)
     try:
@@ -88,7 +86,7 @@ async def parametros_save(
     except (AppError, ValueError) as exc:
         await session.rollback()
         parametros = await svc.list_resolved(current_user.tenant_id, filial_id=parsed_filial)
-        filiais = await FilialService(session).list_filiais(PageParams(page=1, size=100))
+        filiais = await FilialService(session).list_all()
         grouped: dict[str, list] = {}
         for param in parametros:
             label = CATEGORIA_LABELS.get(param.categoria, param.categoria.value)
@@ -100,7 +98,7 @@ async def parametros_save(
             {
                 "title": "Parâmetros do Sistema",
                 "grouped": grouped,
-                "filiais": filiais.items,
+                "filiais": filiais,
                 "filial_id": parsed_filial,
                 "categoria": None,
                 "categorias": svc.list_categorias(),

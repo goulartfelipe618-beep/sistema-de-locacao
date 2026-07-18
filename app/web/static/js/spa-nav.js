@@ -63,7 +63,12 @@
 
   function buildGetUrl(form) {
     var action = form.getAttribute("action") || window.location.pathname;
-    var params = new URLSearchParams(new FormData(form));
+    var params = new URLSearchParams();
+    new FormData(form).forEach(function (value, key) {
+      if (value !== null && String(value).trim() !== "") {
+        params.append(key, value);
+      }
+    });
     var qs = params.toString();
     return qs ? action + "?" + qs : action;
   }
