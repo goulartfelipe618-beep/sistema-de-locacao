@@ -116,6 +116,14 @@
     }
   }
 
+  function formActionsEl(form) {
+    var nodes = form.querySelectorAll(".form-actions");
+    for (var i = 0; i < nodes.length; i++) {
+      if (nodes[i].closest("form") === form) return nodes[i];
+    }
+    return null;
+  }
+
   function markRequiredLabels(form) {
     form.querySelectorAll("[required]").forEach(function (el) {
       var id = el.id || el.name;
@@ -136,7 +144,7 @@
       var legend = document.createElement("p");
       legend.className = "form-legend-required";
       legend.textContent = "* Campos obrigatórios";
-      var actions = form.querySelector(".form-actions");
+      var actions = formActionsEl(form);
       if (actions) form.insertBefore(legend, actions);
       else form.appendChild(legend);
     }
@@ -769,7 +777,7 @@
     var legend = document.createElement("p");
     legend.className = "form-legend-required";
     legend.textContent = "* Campos obrigatórios";
-    var actions = form.querySelector(".form-actions");
+    var actions = formActionsEl(form);
     if (actions) form.insertBefore(legend, actions);
     else form.appendChild(legend);
   }
@@ -819,7 +827,9 @@
     form.addEventListener("input", function () { dirty = true; });
     form.addEventListener("change", function () { dirty = true; });
     form.addEventListener("submit", function () { dirty = false; });
-    form.querySelectorAll(".form-actions a.btn[href], .form-actions a[href].btn").forEach(function (link) {
+    var actions = formActionsEl(form);
+    if (!actions) return;
+    actions.querySelectorAll("a.btn[href], a[href].btn").forEach(function (link) {
       link.addEventListener("click", function (ev) {
         if (!dirty) return;
         if (!window.confirm("Existem alterações não salvas. Deseja sair mesmo assim?")) {

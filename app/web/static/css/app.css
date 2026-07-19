@@ -487,10 +487,14 @@ a:hover { text-decoration: underline; }
 
 .param-category-panel {
   border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; margin-bottom: 16px;
-  background: #fff;
+  background: var(--surface);
 }
 .param-category-panel legend {
-  font-size: 13px; font-weight: 600; padding: 0 6px;
+  font-size: 12px; font-weight: 600; padding: 0 0 8px; width: 100%;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--border);
 }
 
 .multi-list {

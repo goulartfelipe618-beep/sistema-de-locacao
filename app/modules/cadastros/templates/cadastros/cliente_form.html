@@ -7,7 +7,7 @@
   {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
   {% if msg %}<div class="alert alert-success">{{ msg|replace('+', ' ') }}</div>{% endif %}
 
-  <form method="post" action="{{ action }}" class="erp-form">
+  <form method="post" action="{{ action }}" class="erp-form"{% if cliente %} enctype="multipart/form-data"{% endif %}>
     <fieldset class="form-fieldset">
       <legend>Identificação</legend>
       <div class="form-grid">
@@ -210,33 +210,27 @@
     {% if cliente %}
     <fieldset class="form-fieldset">
       <legend>Documentação anexada</legend>
-      <p class="form-help">Envie PDF ou imagem (JPG, PNG, WEBP) — máximo 10 MB por arquivo.</p>
-      <form method="post" action="/cadastros/clientes/{{ cliente.id }}/documentos" enctype="multipart/form-data" class="erp-form">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <div class="doc-upload-grid">
-          {% for tipo, field_name, label, required in documento_campos %}
-          {% set doc = documentos.get(tipo) %}
-          <div class="doc-upload-item">
-            <label class="form-label" for="{{ field_name }}">
-              {{ label }}{% if required %} *{% else %} <span class="form-help">(opcional)</span>{% endif %}
-            </label>
-            {% if doc %}
-            <p class="doc-upload-current">
-              Arquivo atual: <a href="/cadastros/clientes/{{ cliente.id }}/documentos/{{ tipo }}/download" target="_blank" rel="noopener">{{ doc.filename }}</a>
-              <span class="form-help"> — enviado em {{ doc.created_at|datetime }}</span>
-            </p>
-            {% else %}
-            <p class="form-help doc-upload-empty">Nenhum arquivo enviado.</p>
-            {% endif %}
-            <input class="form-input" type="file" id="{{ field_name }}" name="{{ field_name }}"
-                   accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp">
-          </div>
-          {% endfor %}
+      <p class="form-help">PDF ou imagem (JPG, PNG, WEBP) — máximo 10 MB. Os arquivos selecionados são salvos ao clicar em <strong>Salvar</strong>.</p>
+      <div class="doc-upload-grid">
+        {% for tipo, field_name, label, required in documento_campos %}
+        {% set doc = documentos.get(tipo) %}
+        <div class="doc-upload-item">
+          <label class="form-label" for="{{ field_name }}">
+            {{ label }}{% if required %} *{% else %} <span class="form-help">(opcional)</span>{% endif %}
+          </label>
+          {% if doc %}
+          <p class="doc-upload-current">
+            Arquivo atual: <a href="/cadastros/clientes/{{ cliente.id }}/documentos/{{ tipo }}/download" target="_blank" rel="noopener">{{ doc.filename }}</a>
+            <span class="form-help"> — enviado em {{ doc.created_at|datetime }}</span>
+          </p>
+          {% else %}
+          <p class="form-help doc-upload-empty">Nenhum arquivo enviado.</p>
+          {% endif %}
+          <input class="form-input" type="file" id="{{ field_name }}" name="{{ field_name }}"
+                 accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp">
         </div>
-        <div class="form-actions">
-          <button type="submit" class="btn btn-primary">Enviar documentos</button>
-        </div>
-      </form>
+        {% endfor %}
+      </div>
     </fieldset>
     {% endif %}
 

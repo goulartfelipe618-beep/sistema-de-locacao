@@ -175,6 +175,45 @@ _UPLOAD_FIELD_TO_TIPO: dict[str, ClienteDocumentoTipo] = {
 }
 
 
+async def _process_cliente_document_uploads(
+    session: AsyncSession,
+    tenant_id: uuid.UUID,
+    cliente_id: uuid.UUID,
+    uploads: dict[str, UploadFile | None],
+) -> tuple[int, list[str]]:
+    """Processa uploads de documentos; retorna (quantidade enviada, erros)."""
+    svc = ClienteDocumentoService(session)
+    enviados = 0
+    erros: list[str] = []
+    for field_name, upload in uploads.items():
+        if upload is None or not upload.filename:
+            continue
+        tipo = _UPLOAD_FIELD_TO_TIPO[field_name]
+        try:
+            data = await upload.read()
+            await svc.upload(
+                tenant_id,
+                cliente_id,
+                tipo,
+                file_bytes=data,
+                filename=upload.filename,
+                content_type=upload.content_type or "application/octet-stream",
+            )
+            enviados += 1
+        except AppError as exc:
+            erros.append(exc.message)
+    return enviados, erros
+
+
+def _documento_upload_msg(enviados: int, erros: list[str]) -> str | None:
+    if erros and not enviados:
+        return erros[0]
+    if erros:
+        return f"{enviados} documento(s) enviado(s). Erros: {'; '.join(erros)}"
+    if enviados:
+        return f"{enviados} documento(s) anexado(s) com sucesso"
+    return None
+
 # ============================================================== Clientes
 @router.get("/cadastros/clientes", response_class=HTMLResponse)
 async def clientes_list(
@@ -410,6 +449,10 @@ async def cliente_update(
     cnh_emissao: Annotated[str, Form()] = "",
     cnh_orgao: Annotated[str, Form()] = "",
     cnh_pontuacao: Annotated[str, Form()] = "",
+    doc_cnh: UploadFile | None = File(None),
+    doc_comprovante_residencia: UploadFile | None = File(None),
+    doc_holerite: UploadFile | None = File(None),
+    doc_identidade: UploadFile | None = File(None),
 ) -> HTMLResponse:
     """Atualiza cliente."""
     categorias = await TabelaAuxiliarService(session).list_by_grupo(
@@ -417,6 +460,8 @@ async def cliente_update(
     )
     cnh_cats = await _cnh_categorias(session, current_user.tenant_id)
     existing = await ClienteService(session).get(cliente_id)
+    enviados = 0
+    erros: list[str] = []
     try:
         if existing.status == ClienteStatus.BLOCKED:
             status_value = ClienteStatus.BLOCKED
@@ -452,6 +497,17 @@ async def cliente_update(
             ),
         )
         await ClienteService(session).update(cliente_id, data)
+        enviados, erros = await _process_cliente_document_uploads(
+            session,
+            current_user.tenant_id,
+            cliente_id,
+            {
+                "doc_cnh": doc_cnh,
+                "doc_comprovante_residencia": doc_comprovante_residencia,
+                "doc_holerite": doc_holerite,
+                "doc_identidade": doc_identidade,
+            },
+        )
     except (AppError, ValueError) as exc:
         await session.rollback()
         cliente = await ClienteService(session).get(cliente_id)
@@ -470,62 +526,11 @@ async def cliente_update(
             },
             status_code=400,
         )
-    return RedirectResponse(url=f"/cadastros/clientes/{cliente_id}", status_code=303)
-
-
-@router.post("/cadastros/clientes/{cliente_id}/documentos", response_class=HTMLResponse)
-async def cliente_upload_documentos(
-    session: SessionDep,
-    cliente_id: uuid.UUID,
-    current_user: Annotated[
-        AuthenticatedUser, Depends(require_web_permission("cadastros.cliente.editar"))
-    ],
-    doc_cnh: UploadFile | None = File(None),
-    doc_comprovante_residencia: UploadFile | None = File(None),
-    doc_holerite: UploadFile | None = File(None),
-    doc_identidade: UploadFile | None = File(None),
-) -> RedirectResponse:
-    """Envia documentos anexados ao cliente."""
-    uploads = {
-        "doc_cnh": doc_cnh,
-        "doc_comprovante_residencia": doc_comprovante_residencia,
-        "doc_holerite": doc_holerite,
-        "doc_identidade": doc_identidade,
-    }
-    svc = ClienteDocumentoService(session)
-    enviados = 0
-    erros: list[str] = []
-    for field_name, upload in uploads.items():
-        if upload is None or not upload.filename:
-            continue
-        tipo = _UPLOAD_FIELD_TO_TIPO[field_name]
-        try:
-            data = await upload.read()
-            await svc.upload(
-                current_user.tenant_id,
-                cliente_id,
-                tipo,
-                file_bytes=data,
-                filename=upload.filename,
-                content_type=upload.content_type or "application/octet-stream",
-            )
-            enviados += 1
-        except AppError as exc:
-            await session.rollback()
-            erros.append(exc.message)
-
-    if erros and not enviados:
-        msg = erros[0].replace(" ", "+")
-    elif erros:
-        msg = f"{enviados}+documento(s)+enviado(s).+Erros:+" + "+".join(erros).replace(" ", "+")
-    elif enviados:
-        msg = f"{enviados}+documento(s)+anexado(s)+com+sucesso"
-    else:
-        msg = "Nenhum+arquivo+selecionado"
-    return RedirectResponse(
-        url=f"/cadastros/clientes/{cliente_id}/editar?msg={msg}",
-        status_code=303,
-    )
+    redirect_url = f"/cadastros/clientes/{cliente_id}"
+    doc_msg = _documento_upload_msg(enviados, erros)
+    if doc_msg:
+        redirect_url += f"?msg={doc_msg.replace(' ', '+')}"
+    return RedirectResponse(url=redirect_url, status_code=303)
 
 
 @router.get(
