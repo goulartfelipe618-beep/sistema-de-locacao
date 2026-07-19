@@ -633,7 +633,8 @@ a:hover { text-decoration: underline; }
   --text: #e8edf2;
   --text-muted: #9aa8b6;
   --danger-bg: #3a1f1f;
-  --primary-hover: #4a8fd4;
+  --primary: #6eb0e8;
+  --primary-hover: #8ec4f0;
 }
 
 [data-theme="dark"] .form-input,
@@ -644,7 +645,39 @@ a:hover { text-decoration: underline; }
   border-color: var(--border);
 }
 [data-theme="dark"] .table thead th { background: #121820; }
+[data-theme="dark"] .table tbody td { color: var(--text); }
+[data-theme="dark"] .table tbody td a,
+[data-theme="dark"] .table tbody td a strong { color: #9ec5ef; }
+[data-theme="dark"] .table tbody td a:hover,
+[data-theme="dark"] .table tbody td a:hover strong { color: #c5dff7; }
 [data-theme="dark"] .table tbody tr:hover { background: rgba(255,255,255,.04); }
+[data-theme="dark"] .card-title { color: var(--text); }
+[data-theme="dark"] .breadcrumb strong { color: var(--text); }
+[data-theme="dark"] .form-instructions-heading { color: #9ec5ef; }
+[data-theme="dark"] .form-instructions-intro,
+[data-theme="dark"] .form-instructions-list { color: var(--text); }
+[data-theme="dark"] .form-instructions-btn {
+  color: #9ec5ef;
+  border-color: #6eb0e8;
+  background: var(--surface-alt);
+}
+[data-theme="dark"] .form-instructions-btn:hover,
+[data-theme="dark"] .form-instructions-btn[aria-expanded="true"] {
+  background: var(--primary);
+  color: #0f1419;
+}
+[data-theme="dark"] .form-instructions-panel {
+  background: var(--surface-alt);
+  border-color: var(--border);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.45);
+}
+[data-theme="dark"] .btn {
+  background: var(--surface-alt);
+  border-color: var(--border);
+  color: var(--text);
+}
+[data-theme="dark"] .btn:hover { background: #2b3947; color: var(--text); }
+[data-theme="dark"] .btn-primary { color: #fff; }
 [data-theme="dark"] .form-fieldset {
   background: var(--surface);
   border-color: var(--border);
@@ -962,6 +995,7 @@ a:hover { text-decoration: underline; }
 }
 .toolbar .list-create-actions { margin-left: auto; }
 
+.form-page-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
