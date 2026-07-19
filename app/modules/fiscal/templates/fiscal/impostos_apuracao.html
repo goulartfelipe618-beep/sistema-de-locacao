@@ -1,10 +1,11 @@
 {% extends "base.html" %}
 {% from "macros/forms.html" import field_label, form_legend %}
+{% from "macros/form_instructions.html" import form_page_header %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
 <div class="card erp-form-card">
   <a class="btn btn-sm" href="/fiscal/impostos">&larr; Configurações</a>
-  <h2 class="card-title">Apuração de Impostos</h2>
+  {{ form_page_header("Apuração de Impostos", "fiscal.impostos_apuracao") }}
 
   <form method="get" action="/fiscal/impostos/apuracao/periodo" class="erp-form">
     <fieldset class="form-fieldset">

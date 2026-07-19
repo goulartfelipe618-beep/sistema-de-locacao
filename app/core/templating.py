@@ -68,6 +68,9 @@ def _build_environment() -> Environment:
     env.filters["cnpj"] = format_cnpj
     env.globals["app_name"] = settings.app_name
     env.globals["environment"] = settings.environment
+    from app.web.form_instructions import get_form_instruction
+
+    env.globals["form_instruction"] = get_form_instruction
     return env
 
 

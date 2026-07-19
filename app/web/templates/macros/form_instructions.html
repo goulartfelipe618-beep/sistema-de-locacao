@@ -1,0 +1,33 @@
+{# Botão Instruções + painel explicativo para formulários de cadastro #}
+
+{% macro form_instructions(key) %}
+{% set data = form_instruction(key) %}
+{% if data %}
+{% set panel_id = 'fi-' ~ key|replace('.', '-') %}
+<div class="form-instructions" data-instructions-root>
+  <button type="button" class="btn btn-sm form-instructions-btn" aria-expanded="false" aria-controls="{{ panel_id }}">
+    Instruções
+  </button>
+  <div id="{{ panel_id }}" class="form-instructions-panel" hidden role="region" aria-label="Instruções do formulário">
+    <div class="form-instructions-panel-inner">
+      {% if data.intro %}<p class="form-instructions-intro">{{ data.intro }}</p>{% endif %}
+      {% for section in data.sections %}
+      <div class="form-instructions-section">
+        <h4 class="form-instructions-heading">{{ section.heading }}</h4>
+        <ul class="form-instructions-list">
+          {% for item in section.items %}<li>{{ item }}</li>{% endfor %}
+        </ul>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endmacro %}
+
+{% macro form_page_header(title, instructions_key=None) %}
+<div class="form-page-header">
+  <h2 class="card-title">{{ title }}</h2>
+  {% if instructions_key %}{{ form_instructions(instructions_key) }}{% endif %}
+</div>
+{% endmacro %}

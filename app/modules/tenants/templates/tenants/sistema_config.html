@@ -1,10 +1,14 @@
 {% extends "base.html" %}
+{% from "macros/form_instructions.html" import form_instructions %}
 {% block title %}Configurações do Sistema{% endblock %}
 {% block content %}
 <div class="card card-constrained" style="--card-max-width: 960px;">
   <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
-    <div>
-      <h2 class="card-title" style="margin:0">Configurações do Sistema</h2>
+    <div style="flex:1;min-width:0">
+      <div class="form-page-header" style="margin-bottom:0">
+        <h2 class="card-title" style="margin:0">Configurações do Sistema</h2>
+        {{ form_instructions("tenants.sistema") }}
+      </div>
       <p class="form-help" style="margin-top:6px">
         Identidade visual, dados cadastrais e contato reutilizados em contratos, reservas e PDFs.
       </p>

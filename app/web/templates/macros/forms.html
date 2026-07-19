@@ -1,4 +1,5 @@
 {# Macros reutilizáveis para formulários ERP #}
+{% from "macros/form_instructions.html" import form_page_header %}
 
 {% macro field_label(text, required=false, for_id='') %}
 <label class="form-label{% if required %} form-label--required{% endif %}"{% if for_id %} for="{{ for_id }}"{% endif %}>{{ text }}</label>
@@ -31,9 +32,13 @@
 </fieldset>
 {% endmacro %}
 
-{% macro form_shell(title, action, error=None, max_width='960px') %}
+{% macro form_shell(title, action, error=None, max_width='960px', instructions_key=None) %}
 <div class="card erp-form-card card-constrained" style="--card-max-width: {{ max_width }}">
+  {% if instructions_key %}
+  {{ form_page_header(title, instructions_key) }}
+  {% else %}
   <h2 class="card-title">{{ title }}</h2>
+  {% endif %}
   {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
   <form method="post" action="{{ action }}" class="erp-form">
     {{ caller() }}

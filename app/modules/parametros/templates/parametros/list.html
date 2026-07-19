@@ -1,10 +1,11 @@
 {% extends "base.html" %}
 {% from "macros/forms.html" import field_label, form_legend %}
+{% from "macros/form_instructions.html" import form_instructions, form_page_header %}
 {% block title %}Parâmetros do Sistema{% endblock %}
 {% block content %}
 <div class="card erp-form-card">
-  <div class="toolbar">
-    <h2 class="card-title" style="margin:0">Parâmetros do Sistema</h2>
+  {{ form_page_header("Parâmetros do Sistema", "parametros.geral") }}
+  <div class="toolbar" style="margin-top:-4px">
     <span class="form-help">Central de parametrização por tenant{% if filial_id %} / filial{% endif %}</span>
   </div>
 

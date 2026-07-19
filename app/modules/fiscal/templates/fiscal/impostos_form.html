@@ -1,12 +1,13 @@
 {% extends "base.html" %}
 {% from "macros/forms.html" import field_label, form_legend, aliquota_item_row %}
+{% from "macros/form_instructions.html" import form_instructions, form_page_header %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
 {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
 
 <div class="card erp-form-card" style="margin-bottom:16px">
   <a class="btn btn-sm" href="/fiscal/impostos">&larr; Configurações</a>
-  <h2 class="card-title">Configuração Tributária</h2>
+  {{ form_page_header("Configuração Tributária", "fiscal.impostos") }}
   <div class="form-summary-panel">
     <div><strong>Filial</strong>{{ filial_nomes.get(config.filial_id|string, 'Padrão do tenant') if config.filial_id else 'Padrão do tenant' }}</div>
     <div><strong>Regime</strong>{{ config.regime.value }}</div>

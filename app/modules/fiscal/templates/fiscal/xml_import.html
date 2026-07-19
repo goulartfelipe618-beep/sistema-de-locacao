@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 {% from "macros/forms.html" import field_label, form_legend %}
+{% from "macros/form_instructions.html" import form_instructions, form_page_header %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
 <div class="card erp-form-card" style="max-width:720px">
-  <h2 class="card-title">{{ title }}</h2>
+  {{ form_page_header(title, "fiscal.xml_import") }}
   <p class="form-help">Cole ou arraste o XML de NF-e de fornecedor. Com filial informada, um título em Contas a Pagar pode ser rascunhado automaticamente.</p>
   {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
 

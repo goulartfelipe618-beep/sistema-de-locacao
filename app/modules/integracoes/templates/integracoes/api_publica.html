@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 {% from "macros/forms.html" import field_label, form_legend %}
+{% from "macros/form_instructions.html" import form_page_header %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
 <div class="card erp-form-card">
-  <h2 class="card-title">API Pública</h2>
+  {{ form_page_header("API Pública", "integracoes.api_publica") }}
   <p class="form-help">Gestão de chaves para consumidores externos (site, app, parceiros).</p>
   <p><a href="{{ docs_url }}" target="_blank">Documentação OpenAPI (Swagger)</a> · <a href="{{ openapi_url }}" target="_blank">openapi.json</a></p>
   <p class="form-help">Autenticação: header <code>X-API-Key</code> + <code>X-Tenant-Slug</code></p>

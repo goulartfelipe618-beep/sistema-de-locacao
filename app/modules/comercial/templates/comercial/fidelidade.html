@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros/form_instructions.html" import form_page_header %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
 {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
@@ -6,7 +7,7 @@
 {% set can_create = current_user.is_superuser or 'comercial.fidelidade.criar' in current_user.permissions %}
 
 <div class="card" style="margin-bottom:16px">
-  <h2 class="card-title">Regra do Programa</h2>
+  {{ form_page_header("Regra do Programa", "comercial.fidelidade") }}
   <form method="post" action="/comercial/fidelidade/regra">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <div class="form-grid">

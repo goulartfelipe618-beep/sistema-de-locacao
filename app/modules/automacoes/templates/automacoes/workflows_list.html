@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 {% from "macros/forms.html" import field_label, form_legend, workflow_etapa_row %}
+{% from "macros/form_instructions.html" import form_instructions, form_page_header %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
 <div class="card erp-form-card">
-  <h2 class="card-title">{{ title }}</h2>
+  {{ form_page_header(title, "automacoes.workflow") }}
   <p class="form-help">Processos com etapas de aprovação, SLA e timeout configurável.</p>
 
   {% if current_user.is_superuser or 'automacoes.workflows.criar' in current_user.permissions %}

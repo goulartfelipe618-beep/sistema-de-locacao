@@ -951,3 +951,67 @@ a:hover { text-decoration: underline; }
 .doc-upload-item .form-label { margin-bottom: 6px; }
 .doc-upload-current { margin: 4px 0 8px; font-size: 12.5px; color: var(--text); }
 .doc-upload-empty { margin: 4px 0 8px; }
+
+/* Instruções de formulário */
+.form-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.form-page-header .card-title { margin: 0; flex: 1; min-width: 0; }
+.form-instructions { position: relative; flex-shrink: 0; }
+.form-instructions-btn {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid var(--primary);
+  color: var(--primary);
+  background: var(--surface);
+}
+.form-instructions-btn:hover,
+.form-instructions-btn[aria-expanded="true"] {
+  background: var(--primary);
+  color: #fff;
+}
+.form-instructions-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: var(--z-dropdown);
+  width: min(520px, calc(100vw - 32px));
+  max-height: min(70vh, 560px);
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+}
+.form-instructions-panel-inner { padding: 14px 16px; }
+.form-instructions-intro {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text);
+}
+.form-instructions-section + .form-instructions-section { margin-top: 12px; }
+.form-instructions-heading {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--primary);
+}
+.form-instructions-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text);
+}
+.form-instructions-list li + li { margin-top: 4px; }
+.card > .form-instructions-standalone { margin-bottom: 12px; }

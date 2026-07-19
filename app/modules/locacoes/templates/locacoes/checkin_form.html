@@ -1,11 +1,15 @@
 {% extends "base.html" %}
 {% from "macros/forms.html" import field_label, form_legend %}
+{% from "macros/form_instructions.html" import form_instructions %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
 <div class="card erp-form-card" style="max-width:980px">
-  <div class="toolbar">
-    <h2 class="card-title" style="margin:0">{{ title }}</h2>
-    <a class="btn btn-sm" href="/locacoes/checkin">← Voltar</a>
+  <div class="form-page-header">
+    <h2 class="card-title">{{ title }}</h2>
+    <div style="display:flex;gap:8px;align-items:flex-start;flex-shrink:0">
+      {{ form_instructions("locacoes.checkin") }}
+      <a class="btn btn-sm" href="/locacoes/checkin">← Voltar</a>
+    </div>
   </div>
   {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
 

@@ -1,7 +1,9 @@
 {% extends "base.html" %}
+{% from "macros/form_instructions.html" import form_instructions, form_page_header %}
 {% block title %}Tabelas Auxiliares{% endblock %}
 {% block content %}
 <div class="card">
+  {{ form_page_header("Tabelas Auxiliares", "cadastros.tabela_auxiliar") }}
   <div class="toolbar">
     <form method="get" action="/cadastros/tabelas" style="display:flex;gap:8px;align-items:center;margin:0">
       <label class="form-label" for="grupo" style="margin:0">Grupo</label>

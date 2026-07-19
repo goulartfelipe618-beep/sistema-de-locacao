@@ -1,8 +1,9 @@
 {% extends "base.html" %}
+{% from "macros/form_instructions.html" import form_instructions, form_page_header %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
 <div class="card" style="max-width:960px">
-  <h2 class="card-title">{{ title }}</h2>
+  {{ form_page_header(title, "manutencao.os") }}
   {% if os %}
   <p>Status: <span class="badge {% if os.status.value == 'concluida' %}badge-success{% elif os.status.value == 'cancelada' %}badge-danger{% else %}badge-warning{% endif %}">{{ os.status.value }}</span>
   {% if os.requer_aprovacao %}<span class="badge badge-danger">Requer aprovação</span>{% endif %}

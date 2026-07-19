@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "macros/forms.html" import field_label, form_legend %}
+{% from "macros/form_instructions.html" import form_page_header %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
 {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
@@ -31,7 +32,7 @@
 
 {% if current_user.is_superuser or 'fiscal.impostos.criar' in current_user.permissions %}
 <div class="card erp-form-card">
-  <h2 class="card-title">Nova Configuração</h2>
+  {{ form_page_header("Nova Configuração", "fiscal.impostos") }}
   <form method="post" action="/fiscal/impostos/novo" class="erp-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <fieldset class="form-fieldset">
