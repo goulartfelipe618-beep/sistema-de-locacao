@@ -49,6 +49,15 @@ class ClienteStatus(str, enum.Enum):
     BLOCKED = "blocked"
 
 
+class ClienteDocumentoTipo(str, enum.Enum):
+    """Documentos anexados ao cadastro do cliente."""
+
+    CNH = "cnh"
+    COMPROVANTE_RESIDENCIA = "comprovante_residencia"
+    HOLERITE = "holerite"
+    IDENTIDADE = "identidade"
+
+
 class CadastroStatus(str, enum.Enum):
     """Situação genérica ativo/inativo para cadastros mestre."""
 

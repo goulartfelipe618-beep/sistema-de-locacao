@@ -7,8 +7,8 @@ from datetime import date
 from decimal import Decimal, InvalidOperation
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db_session
@@ -16,12 +16,16 @@ from app.core.deps import require_web_permission, require_web_user
 from app.core.exceptions import AppError
 from app.core.pagination import PageParams
 from app.core.templating import render
+from app.modules.cadastros.cliente_documentos import (
+    CLIENTE_DOCUMENTO_CAMPOS,
+    ClienteDocumentoService,
+)
 from app.modules.cadastros.dossier import build_cliente_dossier
 from app.modules.cadastros.schemas import ClienteCreate, ClienteUpdate, TabelaAuxiliarCreate
 from app.modules.cadastros.service import ClienteService, TabelaAuxiliarService
 from app.modules.cadastros.web_extra import router as cadastros_extra_router
 from app.modules.identity.service import AuthenticatedUser
-from app.shared.enums import ClienteStatus, MotoristaCnhStatus, PersonType
+from app.shared.enums import ClienteDocumentoTipo, ClienteStatus, MotoristaCnhStatus, PersonType
 
 router = APIRouter()
 router.include_router(cadastros_extra_router)
@@ -158,6 +162,17 @@ async def _motivos_bloqueio(session: AsyncSession, tenant_id: uuid.UUID):
             "motivo_bloqueio", PageParams(page=1, size=50), apenas_ativos=True
         )
     ).items
+
+
+async def _cliente_documentos_context(session: AsyncSession, cliente_id: uuid.UUID) -> dict:
+    documentos = await ClienteDocumentoService(session).map_by_tipo(cliente_id)
+    return {"documentos": documentos, "documento_campos": CLIENTE_DOCUMENTO_CAMPOS}
+
+
+_UPLOAD_FIELD_TO_TIPO: dict[str, ClienteDocumentoTipo] = {
+    field_name: ClienteDocumentoTipo(tipo_value)
+    for tipo_value, field_name, _label, _required in CLIENTE_DOCUMENTO_CAMPOS
+}
 
 
 # ============================================================== Clientes
@@ -325,6 +340,7 @@ async def cliente_dossie(
             "dossier": dossier,
             "cliente": dossier.cliente,
             "motivos_bloqueio": await _motivos_bloqueio(session, current_user.tenant_id),
+            "documento_campos": CLIENTE_DOCUMENTO_CAMPOS,
             "title": f"Dossiê — {dossier.cliente.nome}",
             "msg": msg,
         },
@@ -339,6 +355,7 @@ async def cliente_edit_form(
     current_user: Annotated[
         AuthenticatedUser, Depends(require_web_permission("cadastros.cliente.editar"))
     ],
+    msg: str = "",
 ) -> HTMLResponse:
     """Formulário de edição de cliente."""
     await TabelaAuxiliarService(session).ensure_defaults(current_user.tenant_id)
@@ -352,10 +369,12 @@ async def cliente_edit_form(
         {
             "cliente": cliente,
             "error": None,
+            "msg": msg,
             "categorias": categorias.items,
             "cnh_cats": await _cnh_categorias(session, current_user.tenant_id),
             "title": "Editar Cliente",
             "action": f"/cadastros/clientes/{cliente_id}/editar",
+            **await _cliente_documentos_context(session, cliente_id),
         },
     )
 
@@ -447,10 +466,97 @@ async def cliente_update(
                 "cnh_cats": cnh_cats,
                 "title": "Editar Cliente",
                 "action": f"/cadastros/clientes/{cliente_id}/editar",
+                **await _cliente_documentos_context(session, cliente_id),
             },
             status_code=400,
         )
     return RedirectResponse(url=f"/cadastros/clientes/{cliente_id}", status_code=303)
+
+
+@router.post("/cadastros/clientes/{cliente_id}/documentos", response_class=HTMLResponse)
+async def cliente_upload_documentos(
+    session: SessionDep,
+    cliente_id: uuid.UUID,
+    current_user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("cadastros.cliente.editar"))
+    ],
+    doc_cnh: UploadFile | None = File(None),
+    doc_comprovante_residencia: UploadFile | None = File(None),
+    doc_holerite: UploadFile | None = File(None),
+    doc_identidade: UploadFile | None = File(None),
+) -> RedirectResponse:
+    """Envia documentos anexados ao cliente."""
+    uploads = {
+        "doc_cnh": doc_cnh,
+        "doc_comprovante_residencia": doc_comprovante_residencia,
+        "doc_holerite": doc_holerite,
+        "doc_identidade": doc_identidade,
+    }
+    svc = ClienteDocumentoService(session)
+    enviados = 0
+    erros: list[str] = []
+    for field_name, upload in uploads.items():
+        if upload is None or not upload.filename:
+            continue
+        tipo = _UPLOAD_FIELD_TO_TIPO[field_name]
+        try:
+            data = await upload.read()
+            await svc.upload(
+                current_user.tenant_id,
+                cliente_id,
+                tipo,
+                file_bytes=data,
+                filename=upload.filename,
+                content_type=upload.content_type or "application/octet-stream",
+            )
+            enviados += 1
+        except AppError as exc:
+            await session.rollback()
+            erros.append(exc.message)
+
+    if erros and not enviados:
+        msg = erros[0].replace(" ", "+")
+    elif erros:
+        msg = f"{enviados}+documento(s)+enviado(s).+Erros:+" + "+".join(erros).replace(" ", "+")
+    elif enviados:
+        msg = f"{enviados}+documento(s)+anexado(s)+com+sucesso"
+    else:
+        msg = "Nenhum+arquivo+selecionado"
+    return RedirectResponse(
+        url=f"/cadastros/clientes/{cliente_id}/editar?msg={msg}",
+        status_code=303,
+    )
+
+
+@router.get(
+    "/cadastros/clientes/{cliente_id}/documentos/{tipo}/download",
+    response_model=None,
+)
+async def cliente_documento_download(
+    session: SessionDep,
+    cliente_id: uuid.UUID,
+    tipo: str,
+    _user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("cadastros.cliente.visualizar"))
+    ],
+) -> Response:
+    """Download de documento anexado ao cliente."""
+    try:
+        tipo_enum = ClienteDocumentoTipo(tipo)
+    except ValueError as exc:
+        from app.core.exceptions import ValidationError
+
+        raise ValidationError("Tipo de documento inválido.") from exc
+
+    dl = await ClienteDocumentoService(session).resolve_download(cliente_id, tipo_enum)
+    if dl.redirect_url:
+        return RedirectResponse(url=dl.redirect_url, status_code=302)
+    assert dl.data is not None
+    return Response(
+        content=dl.data,
+        media_type=dl.content_type,
+        headers={"Content-Disposition": f'inline; filename="{dl.filename}"'},
+    )
 
 
 @router.post("/cadastros/clientes/{cliente_id}/bloquear", response_class=HTMLResponse)

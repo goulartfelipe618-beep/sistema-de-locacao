@@ -901,4 +901,20 @@ a:hover { text-decoration: underline; }
 @media (max-width: 960px) {
   .dossier-grid, .dossier-grid--history { grid-template-columns: 1fr; }
   .dossier-pdf-grid { grid-template-columns: 1fr; }
+  .doc-upload-grid { grid-template-columns: 1fr; }
 }
+
+.doc-upload-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 16px;
+}
+.doc-upload-grid--readonly .doc-upload-item {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-alt);
+}
+.doc-upload-item .form-label { margin-bottom: 6px; }
+.doc-upload-current { margin: 4px 0 8px; font-size: 12.5px; color: var(--text); }
+.doc-upload-empty { margin: 4px 0 8px; }

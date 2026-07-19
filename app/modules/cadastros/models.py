@@ -29,7 +29,7 @@ from app.modules.cadastros.models_extra import (  # noqa: F401
     Vendedor,
 )
 from app.shared.base_model import TenantBaseModel
-from app.shared.enums import ClienteStatus, MotoristaCnhStatus, PersonType
+from app.shared.enums import ClienteDocumentoTipo, ClienteStatus, MotoristaCnhStatus, PersonType
 
 
 class TabelaAuxiliar(TenantBaseModel):
@@ -159,3 +159,41 @@ class Cliente(TenantBaseModel):
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<Cliente nome={self.nome!r} tipo={self.person_type.value}>"
+
+
+class ClienteDocumento(TenantBaseModel):
+    """Arquivo anexado ao cadastro do cliente (CNH, comprovantes, etc.)."""
+
+    __tablename__ = "cliente_documentos"
+    __table_args__ = (
+        Index(
+            "uq_cliente_documentos_tenant_cliente_tipo_active",
+            "tenant_id",
+            "cliente_id",
+            "tipo",
+            unique=True,
+            postgresql_where=text("deleted_at IS NULL"),
+        ),
+        Index("ix_cliente_documentos_cliente_id", "cliente_id"),
+    )
+
+    cliente_id: Mapped[uuid.UUID] = mapped_column(
+        PgUUID(as_uuid=True),
+        ForeignKey("clientes.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    tipo: Mapped[ClienteDocumentoTipo] = mapped_column(
+        SAEnum(
+            ClienteDocumentoTipo,
+            name="cliente_documento_tipo",
+            native_enum=False,
+            length=30,
+            values_callable=lambda enum_cls: [item.value for item in enum_cls],
+        ),
+        nullable=False,
+    )
+    filename: Mapped[str] = mapped_column(String(255), nullable=False)
+    content_type: Mapped[str] = mapped_column(String(120), nullable=False)
+    size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    storage_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    inline_data: Mapped[str | None] = mapped_column(Text, nullable=True)

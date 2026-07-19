@@ -12,7 +12,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundError
 from app.modules.cadastros.condutor import cliente_tem_cnh_valida, refresh_cnh_status
-from app.modules.cadastros.models import Cliente
+from app.modules.cadastros.cliente_documentos import ClienteDocumentoService
+from app.modules.cadastros.models import Cliente, ClienteDocumento
 from app.modules.cadastros.repository import TabelaAuxiliarRepository
 from app.modules.cadastros.service import ClienteService
 from app.modules.financeiro.models import FinContaReceber
@@ -35,6 +36,7 @@ class ClienteDossier:
     contratos_recentes: list[LocContrato] = field(default_factory=list)
     reservas_recentes: list[ResReserva] = field(default_factory=list)
     titulos_recentes: list[FinContaReceber] = field(default_factory=list)
+    documentos: dict[str, ClienteDocumento] = field(default_factory=dict)
     impacto: dict = field(default_factory=dict)
 
 
@@ -171,5 +173,6 @@ async def build_cliente_dossier(session: AsyncSession, cliente_id: uuid.UUID) ->
         contratos_recentes=contratos_recentes,
         reservas_recentes=reservas_recentes,
         titulos_recentes=titulos_recentes,
+        documentos=await ClienteDocumentoService(session).map_by_tipo(cliente_id),
         impacto=await cliente_impact(session, cliente_id),
     )

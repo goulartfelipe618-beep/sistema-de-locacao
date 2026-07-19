@@ -127,6 +127,31 @@
     {% endif %}
   </div>
 
+  <div class="card dossier-section dossier-section--wide">
+    <h3 class="dossier-section-title">Documentos anexados</h3>
+    <div class="doc-upload-grid doc-upload-grid--readonly">
+      {% for tipo, field_name, label, required in documento_campos %}
+      {% set doc = dossier.documentos.get(tipo) %}
+      <div class="doc-upload-item">
+        <strong>{{ label }}</strong>
+        {% if doc %}
+        <p class="doc-upload-current">
+          <a href="/cadastros/clientes/{{ c.id }}/documentos/{{ tipo }}/download" target="_blank" rel="noopener">{{ doc.filename }}</a>
+          <span class="form-help"> — {{ doc.created_at|datetime }}</span>
+        </p>
+        {% else %}
+        <p class="form-help doc-upload-empty">Não enviado{% if not required %} (opcional){% endif %}</p>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% if current_user.is_superuser or 'cadastros.cliente.editar' in current_user.permissions %}
+    <div class="form-actions" style="margin-top:12px">
+      <a class="btn btn-primary" href="/cadastros/clientes/{{ c.id }}/editar">Enviar / atualizar documentos</a>
+    </div>
+    {% endif %}
+  </div>
+
   {% if current_user.is_superuser or 'cadastros.cliente.visualizar' in current_user.permissions %}
   <div class="card dossier-section dossier-section--wide">
     <h3 class="dossier-section-title">Documentos PDF</h3>
