@@ -312,11 +312,32 @@ a:hover { text-decoration: underline; }
 .form-input.is-invalid, .form-select.is-invalid { border-color: var(--danger); box-shadow: 0 0 0 2px rgba(179,38,30,.12); }
 .form-input.is-loading { background-image: linear-gradient(90deg, transparent, rgba(30,90,168,.08), transparent); background-size: 200% 100%; animation: erp-shimmer 1s infinite; }
 .form-fieldset {
-  border: 1px solid var(--border); border-radius: 6px; padding: 14px 16px 4px;
-  margin: 0 0 16px; background: linear-gradient(180deg, var(--bg) 0%, var(--surface) 100%);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 18px 16px 8px;
+  margin: 0 0 16px;
+  background: var(--surface);
+  min-inline-size: 0;
 }
 .form-fieldset legend {
-  font-weight: 600; font-size: 13px; padding: 0 8px; color: var(--primary);
+  display: block;
+  width: 100%;
+  float: none;
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 1.3;
+  padding: 0 0 10px;
+  margin: 0 0 4px;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+}
+.form-fieldset::after {
+  content: "";
+  display: block;
+  clear: both;
 }
 .form-range { width: 100%; accent-color: var(--primary); }
 .erp-form-card {
@@ -619,6 +640,14 @@ a:hover { text-decoration: underline; }
 }
 [data-theme="dark"] .table thead th { background: #121820; }
 [data-theme="dark"] .table tbody tr:hover { background: rgba(255,255,255,.04); }
+[data-theme="dark"] .form-fieldset {
+  background: var(--surface);
+  border-color: var(--border);
+}
+[data-theme="dark"] .form-fieldset legend {
+  color: var(--text);
+  border-bottom-color: var(--border);
+}
 [data-theme="dark"] .badge-success { background: rgba(27, 122, 67, 0.2); color: #7dcea0; }
 [data-theme="dark"] .badge-info { background: rgba(30, 90, 168, 0.22); color: #8eb8e8; }
 [data-theme="dark"] .badge-muted { background: rgba(255,255,255,.08); color: var(--text-muted); }
@@ -808,11 +837,11 @@ a:hover { text-decoration: underline; }
   margin: 0 0 12px;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--border);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: .04em;
-  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  color: var(--text);
 }
 .dossier-dl {
   display: grid;
