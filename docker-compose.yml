@@ -5,6 +5,7 @@
 #   git pull
 #   docker compose up -d --build
 #
+# IMPORTANTE: --build é obrigatório após git pull — o código fica dentro da imagem.
 # Ordem: db + redis → migrate → seed → web / worker / beat → nginx
 # ==========================================================================
 

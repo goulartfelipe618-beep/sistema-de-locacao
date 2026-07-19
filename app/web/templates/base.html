@@ -7,24 +7,24 @@
   <meta name="csrf-token" content="{{ csrf_token }}">
   <title>{% block title %}{{ title|default('Painel') }}{% endblock %} · {{ app_name }}</title>
   {% include "partials/theme_boot.html" %}
-  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/static/css/app.css">
-  <link rel="stylesheet" href="/static/css/responsive.css">
+  <link rel="icon" href="/static/favicon.svg?v={{ static_version }}" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/css/app.css?v={{ static_version }}">
+  <link rel="stylesheet" href="/static/css/responsive.css?v={{ static_version }}">
   {% if tenant_branding and tenant_branding.brand_primary_color %}
   <style>:root { --primary: {{ tenant_branding.brand_primary_color }}; --primary-hover: color-mix(in srgb, {{ tenant_branding.brand_primary_color }} 78%, #ffffff); }</style>
   {% endif %}
-  <script src="/static/js/theme.js" defer></script>
-  <script src="/static/js/htmx.min.js" defer></script>
-  <script src="/static/js/alpine.min.js" defer></script>
-  <script src="/static/js/app.js" defer></script>
-  <script src="/static/js/spa-nav.js" defer></script>
-  <script src="/static/js/form-engine.js" defer></script>
-  <script src="/static/js/form-repeater.js" defer></script>
-  <script src="/static/js/form-upload.js" defer></script>
-  <script src="/static/js/form-automation.js" defer></script>
-  <script src="/static/js/form-integracao.js" defer></script>
-  <script src="/static/js/form-impact.js" defer></script>
-  <script src="/static/js/form-instructions.js" defer></script>
+  <script src="/static/js/theme.js?v={{ static_version }}" defer></script>
+  <script src="/static/js/htmx.min.js?v={{ static_version }}" defer></script>
+  <script src="/static/js/alpine.min.js?v={{ static_version }}" defer></script>
+  <script src="/static/js/app.js?v={{ static_version }}" defer></script>
+  <script src="/static/js/spa-nav.js?v={{ static_version }}" defer></script>
+  <script src="/static/js/form-engine.js?v={{ static_version }}" defer></script>
+  <script src="/static/js/form-repeater.js?v={{ static_version }}" defer></script>
+  <script src="/static/js/form-upload.js?v={{ static_version }}" defer></script>
+  <script src="/static/js/form-automation.js?v={{ static_version }}" defer></script>
+  <script src="/static/js/form-integracao.js?v={{ static_version }}" defer></script>
+  <script src="/static/js/form-impact.js?v={{ static_version }}" defer></script>
+  <script src="/static/js/form-instructions.js?v={{ static_version }}" defer></script>
 </head>
 <body>
   <button type="button" class="sidebar-backdrop" id="sidebar-backdrop" aria-label="Fechar menu" aria-hidden="true"></button>
@@ -47,7 +47,7 @@
         {% block content %}{% endblock %}
       </main>
       <footer class="app-footer">
-        <span>{{ app_name }} · Ambiente: {{ environment }}</span>
+        <span>{{ app_name }} · v{{ static_version }} · {{ environment }}</span>
         {% if current_user %}<span>Usuário: {{ current_user.full_name }}</span>{% endif %}
       </footer>
     </div>

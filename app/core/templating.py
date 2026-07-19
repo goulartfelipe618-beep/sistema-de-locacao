@@ -96,6 +96,9 @@ def render(
     from app.web.navigation import build_menu
 
     ctx: dict[str, Any] = dict(context or {})
+    from app import __version__
+
+    ctx.setdefault("static_version", __version__)
     current_user = getattr(request.state, "current_user", None)
     ctx.setdefault("current_user", current_user)
     ctx.setdefault("current_path", request.url.path)
