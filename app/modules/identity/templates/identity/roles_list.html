@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros/form_instructions.html" import list_create_actions %}
 {% block title %}Papéis e Permissões{% endblock %}
 {% block content %}
 <div class="card">
@@ -7,7 +8,7 @@
     <div class="actions-group">
       <a class="btn" href="/configuracoes/usuarios">Usuários</a>
       {% if can_create %}
-      <a class="btn btn-primary" href="/configuracoes/papeis/novo">+ Novo Papel</a>
+      {{ list_create_actions("identity.role", "+ Novo Papel", "/configuracoes/papeis/novo") }}
       {% endif %}
     </div>
   </div>

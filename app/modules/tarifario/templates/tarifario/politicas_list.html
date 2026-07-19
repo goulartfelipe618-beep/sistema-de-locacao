@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros/form_instructions.html" import list_create_actions %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
 <div class="card">
@@ -8,7 +9,7 @@
       <button class="btn btn-sm" type="submit">Buscar</button>
     </form>
     {% if current_user.is_superuser or 'tarifario.politica.criar' in current_user.permissions %}
-    <a class="btn btn-primary" href="/tarifario/cancelamento/novo">+ Nova Política</a>
+    {{ list_create_actions("tarifario.politica", "+ Nova Política", "/tarifario/cancelamento/novo") }}
     {% endif %}
   </div>
   {% if page_result.items %}

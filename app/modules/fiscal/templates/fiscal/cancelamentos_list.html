@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros/form_instructions.html" import list_create_actions %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
 {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
@@ -6,7 +7,7 @@
   <div class="toolbar">
     <h2 class="card-title" style="margin:0">Eventos Fiscais</h2>
     {% if current_user.is_superuser or 'fiscal.cancelamentos.criar' in current_user.permissions %}
-    <a class="btn btn-primary" href="/fiscal/cancelamentos/novo">+ Novo Evento</a>
+    {{ list_create_actions("fiscal.cancelamentos", "+ Novo Evento", "/fiscal/cancelamentos/novo") }}
     {% endif %}
   </div>
   {% if page_result.items %}

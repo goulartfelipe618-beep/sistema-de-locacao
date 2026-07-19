@@ -1,11 +1,12 @@
 {% extends "base.html" %}
+{% from "macros/form_instructions.html" import list_create_actions %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
 <div class="card">
   <div class="toolbar">
     <h2 class="card-title" style="margin:0">{{ title }}</h2>
     {% if current_user.is_superuser or 'intermediacao.contrato.criar' in current_user.permissions %}
-    <a class="btn btn-primary" href="/intermediacao/contratos-fornecedor/novo">+ Novo contrato</a>
+    {{ list_create_actions("intermediacao.contrato_fornecedor", "+ Novo contrato", "/intermediacao/contratos-fornecedor/novo") }}
     {% endif %}
   </div>
   {% if contratos %}

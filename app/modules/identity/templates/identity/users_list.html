@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros/form_instructions.html" import list_create_actions %}
 {% block title %}Usuários{% endblock %}
 {% block content %}
 <div class="card">
@@ -18,7 +19,7 @@
       <a class="btn" href="/configuracoes/papeis">Papéis e Permissões</a>
       {% endif %}
       {% if current_user.is_superuser or 'identidade.usuario.criar' in current_user.permissions %}
-      <a class="btn btn-primary" href="/configuracoes/usuarios/novo">+ Novo Usuário</a>
+      {{ list_create_actions("identity.user", "+ Novo Usuário", "/configuracoes/usuarios/novo") }}
       {% endif %}
     </div>
   </div>

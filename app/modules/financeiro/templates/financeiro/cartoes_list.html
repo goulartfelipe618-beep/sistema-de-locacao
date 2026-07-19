@@ -1,11 +1,12 @@
 {% extends "base.html" %}
+{% from "macros/form_instructions.html" import list_create_actions %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
 <div class="card">
   <div class="toolbar">
     <h2 class="card-title" style="margin:0">Transações de Cartão</h2>
     {% if current_user.is_superuser or 'financeiro.cartoes.criar' in current_user.permissions %}
-    <a class="btn btn-primary" href="/financeiro/cartoes/novo">+ Nova Transação</a>
+    {{ list_create_actions("financeiro.cartao", "+ Nova Transação", "/financeiro/cartoes/novo") }}
     {% endif %}
   </div>
   {% if page_result.items %}

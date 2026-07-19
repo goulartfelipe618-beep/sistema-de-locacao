@@ -1,11 +1,12 @@
 {% extends "base.html" %}
+{% from "macros/form_instructions.html" import list_create_actions %}
 {% block title %}Filiais / Unidades{% endblock %}
 {% block content %}
 <div class="card">
   <div class="toolbar">
     <span class="form-help">{{ page_result.total }} filial(is) cadastrada(s)</span>
     {% if current_user.is_superuser or 'configuracoes.filial.criar' in current_user.permissions %}
-    <a class="btn btn-primary" href="/configuracoes/filiais/nova">+ Nova Filial</a>
+    {{ list_create_actions("tenants.filial", "+ Nova Filial", "/configuracoes/filiais/nova") }}
     {% endif %}
   </div>
 

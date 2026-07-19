@@ -8,7 +8,7 @@
       <button class="btn btn-sm" type="submit">Buscar</button>
     </form>
     {% if current_user.is_superuser or 'cadastros.motorista.criar' in current_user.permissions %}
-    <a class="btn btn-primary" href="/cadastros/motoristas/novo">+ Novo Motorista</a>
+    {{ list_create_actions("cadastros.motorista", "+ Novo Motorista", "/cadastros/motoristas/novo") }}
     {% endif %}
   </div>
   {% if page_result.items %}

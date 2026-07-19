@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros/form_instructions.html" import list_create_actions %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
 <div class="card" style="margin-bottom:16px">
@@ -19,7 +20,7 @@
       <button class="btn btn-sm" type="submit">Filtrar</button>
     </form>
     {% if current_user.is_superuser or 'financeiro.receber.criar' in current_user.permissions %}
-    <a class="btn btn-primary" href="/financeiro/receber/novo">+ Novo Título</a>
+    {{ list_create_actions("financeiro.receber", "+ Novo Título", "/financeiro/receber/novo") }}
     {% endif %}
   </div>
   {% if page_result.items %}

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros/form_instructions.html" import list_create_actions %}
 {% block title %}Documentação{% endblock %}
 {% block content %}
 <div class="card">
@@ -23,7 +24,7 @@
       <button class="btn btn-sm" type="submit">Filtrar</button>
     </form>
     {% if current_user.is_superuser or 'frota.documentacao.criar' in current_user.permissions %}
-    <a class="btn btn-primary" href="/frota/documentacao/novo">+ Novo Documento</a>
+    {{ list_create_actions("frota.documento", "+ Novo Documento", "/frota/documentacao/novo") }}
     {% endif %}
     {% if current_user.is_superuser or 'frota.documentacao.visualizar' in current_user.permissions %}
     <form method="post" action="/documentos/emitir/doc_vencimentos/{{ current_user.tenant_id }}" style="margin:0;display:inline">

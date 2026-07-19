@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros/form_instructions.html" import list_create_actions %}
 {% block title %}Telemetria{% endblock %}
 {% block content %}
 <div class="card">
@@ -6,7 +7,7 @@
     <span>Dispositivos de rastreamento</span>
     <a class="btn btn-sm" href="/frota/telemetria/mapa">Mapa da Frota</a>
     {% if current_user.is_superuser or 'frota.telemetria.criar' in current_user.permissions %}
-    <a class="btn btn-primary" href="/frota/telemetria/novo">+ Novo Dispositivo</a>
+    {{ list_create_actions("frota.telemetria", "+ Novo Dispositivo", "/frota/telemetria/novo") }}
     {% endif %}
   </div>
   {% if page_result.items %}

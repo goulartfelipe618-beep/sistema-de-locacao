@@ -218,6 +218,7 @@ a:hover { text-decoration: underline; }
 .toolbar {
   display: flex; align-items: center; justify-content: space-between;
   gap: 12px; margin-bottom: 12px; flex-wrap: wrap;
+  overflow: visible;
 }
 
 /* -------------------------------------------------------------- KPIs ----- */
@@ -953,7 +954,14 @@ a:hover { text-decoration: underline; }
 .doc-upload-empty { margin: 4px 0 8px; }
 
 /* Instruções de formulário */
-.form-page-header {
+.list-create-actions {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.toolbar .list-create-actions { margin-left: auto; }
+
   display: flex;
   align-items: flex-start;
   justify-content: space-between;

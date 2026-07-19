@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros/form_instructions.html" import list_create_actions %}
 {% block title %}Manutenção Corretiva{% endblock %}
 {% block content %}
 <div class="card">
@@ -14,7 +15,7 @@
       <button class="btn btn-sm" type="submit">Buscar</button>
     </form>
     {% if current_user.is_superuser or 'manutencao.corretiva.criar' in current_user.permissions %}
-    <a class="btn btn-primary" href="/manutencao/corretiva/novo">+ Nova Corretiva</a>
+    {{ list_create_actions("manutencao.os", "+ Nova Corretiva", "/manutencao/corretiva/novo") }}
     {% endif %}
   </div>
   {% if page_result.items %}

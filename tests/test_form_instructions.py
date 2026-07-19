@@ -15,6 +15,16 @@ def test_all_instructions_have_required_sections() -> None:
             assert len(section["items"]) >= 3, key
 
 
+def test_form_instructions_macro_renders_sections() -> None:
+    from app.web.form_instructions import get_form_instruction
+
+    data = get_form_instruction("cadastros.cliente")
+    assert data is not None
+    section = data["sections"][0]
+    assert isinstance(section["items"], list)
+    assert len(section["items"]) >= 3
+
+
 def test_get_form_instruction_known_key() -> None:
     data = get_form_instruction("cadastros.cliente")
     assert data is not None
