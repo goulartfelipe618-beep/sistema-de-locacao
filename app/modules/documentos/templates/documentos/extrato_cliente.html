@@ -1,8 +1,14 @@
 {% extends "documentos/base_pdf.html" %}
 {% block doc_body %}
 <h2>Extrato de Relacionamento</h2>
-<p><strong>Cliente:</strong> {{ cliente.nome }}</p>
-<p><strong>Documento:</strong> {{ cliente.cpf or cliente.cnpj or '—' }}</p>
+<table class="doc-table">
+  <tbody>
+    <tr><th>Cliente</th><td>{{ cliente.nome }}</td></tr>
+    <tr><th>Documento</th><td>{{ cliente.cpf or cliente.cnpj or '—' }}</td></tr>
+    <tr><th>Situação</th><td>{{ cliente.status.value }}{% if cliente.blacklist %} (blacklist){% endif %}</td></tr>
+    <tr><th>CNH</th><td>{% if cliente.cnh_numero %}{{ cliente.cnh_numero }} — {{ cliente.cnh_categoria or '—' }} (validade {{ cliente.cnh_validade|date if cliente.cnh_validade else '—' }}){% else %}Não cadastrada{% endif %}</td></tr>
+  </tbody>
+</table>
 
 <h3>Últimos contratos</h3>
 {% if contratos %}

@@ -1,15 +1,45 @@
 {% extends "documentos/base_pdf.html" %}
 {% block doc_body %}
 <h2>Ficha Cadastral do Cliente</h2>
-<p><strong>Nome:</strong> {{ cliente.nome }}</p>
-<p><strong>Tipo:</strong> {{ 'Pessoa Física' if cliente.person_type.value == 'pf' else 'Pessoa Jurídica' }}</p>
-<p><strong>Documento:</strong> {{ cliente.cpf or cliente.cnpj or '—' }}</p>
-<p><strong>Status:</strong> {{ cliente.status.value }}{% if cliente.blacklist %} (blacklist){% endif %}</p>
-<p><strong>E-mail:</strong> {{ cliente.email or '—' }}</p>
-<p><strong>Telefone:</strong> {{ cliente.telefone or cliente.celular or '—' }}</p>
-<p><strong>Endereço:</strong> {{ cliente.endereco or '—' }}{% if cliente.numero %}, {{ cliente.numero }}{% endif %} — {{ cliente.cidade or '' }}/{{ cliente.uf or '' }}</p>
-<p><strong>Filial:</strong> {{ filial_nome }}</p>
-<p><strong>Limite de crédito:</strong> {{ cliente.limite_credito|currency }}</p>
-{% if cliente.motivo_bloqueio %}<p><strong>Motivo bloqueio:</strong> {{ cliente.motivo_bloqueio }}</p>{% endif %}
-{% if cliente.observacoes %}<p><strong>Observações:</strong> {{ cliente.observacoes }}</p>{% endif %}
+
+<table class="doc-table">
+  <tbody>
+    <tr><th>Nome / Razão social</th><td>{{ cliente.nome }}</td></tr>
+    {% if cliente.nome_fantasia %}<tr><th>Nome fantasia</th><td>{{ cliente.nome_fantasia }}</td></tr>{% endif %}
+    <tr><th>Tipo</th><td>{{ 'Pessoa Física' if cliente.person_type.value == 'pf' else 'Pessoa Jurídica' }}</td></tr>
+    <tr><th>Documento</th><td>{{ cliente.cpf or cliente.cnpj or '—' }}</td></tr>
+    <tr><th>Situação</th><td>{{ cliente.status.value }}{% if cliente.blacklist %} (blacklist){% endif %}</td></tr>
+    {% if cliente.motivo_bloqueio %}<tr><th>Motivo bloqueio</th><td>{{ cliente.motivo_bloqueio }}</td></tr>{% endif %}
+    <tr><th>E-mail</th><td>{{ cliente.email or '—' }}</td></tr>
+    <tr><th>Telefone / Celular</th><td>{{ cliente.telefone or '—' }} / {{ cliente.celular or '—' }}</td></tr>
+    <tr><th>Endereço</th><td>{{ cliente.endereco or '—' }}{% if cliente.numero %}, {{ cliente.numero }}{% endif %}{% if cliente.complemento %} — {{ cliente.complemento }}{% endif %}</td></tr>
+    <tr><th>Bairro / Cidade / UF</th><td>{{ cliente.bairro or '—' }} — {{ cliente.cidade or '—' }}/{{ cliente.uf or '—' }}</td></tr>
+    <tr><th>CEP</th><td>{{ cliente.cep or '—' }}</td></tr>
+    <tr><th>Filial</th><td>{{ filial_nome }}</td></tr>
+    <tr><th>Categoria</th><td>{{ cliente.categoria_codigo or '—' }}</td></tr>
+    <tr><th>Limite de crédito</th><td>{{ cliente.limite_credito|currency }}</td></tr>
+  </tbody>
+</table>
+
+<h3>CNH — Condutor</h3>
+{% if cliente.cnh_numero %}
+<table class="doc-table">
+  <tbody>
+    <tr><th>Número</th><td>{{ cliente.cnh_numero }}</td></tr>
+    <tr><th>Categoria</th><td>{{ cliente.cnh_categoria or '—' }}</td></tr>
+    <tr><th>Validade</th><td>{{ cliente.cnh_validade|date if cliente.cnh_validade else '—' }}</td></tr>
+    <tr><th>Situação</th><td>{{ cliente.cnh_status.value }}</td></tr>
+    <tr><th>Emissão</th><td>{{ cliente.cnh_emissao|date if cliente.cnh_emissao else '—' }}</td></tr>
+    <tr><th>Órgão emissor</th><td>{{ cliente.cnh_orgao or '—' }}</td></tr>
+    <tr><th>Pontuação</th><td>{{ cliente.cnh_pontuacao if cliente.cnh_pontuacao is not none else '—' }}</td></tr>
+  </tbody>
+</table>
+{% else %}
+<p>CNH não cadastrada.</p>
+{% endif %}
+
+{% if cliente.observacoes %}
+<h3>Observações</h3>
+<p>{{ cliente.observacoes }}</p>
+{% endif %}
 {% endblock %}

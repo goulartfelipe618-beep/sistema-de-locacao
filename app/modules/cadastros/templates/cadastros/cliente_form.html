@@ -27,11 +27,16 @@
 
         <div class="form-group">
           {{ field_label('Situação', true, 'status') }}
+          {% if cliente and cliente.status.value == 'blocked' %}
+          <input class="form-input" value="Bloqueado — gerencie no Dossiê" disabled>
+          <p class="form-help"><a href="/cadastros/clientes/{{ cliente.id }}">Abrir Dossiê</a> para desbloquear ou ver detalhes.</p>
+          {% else %}
           <select class="form-input" id="status" name="status" required>
             <option value="active" {% if not cliente or cliente.status.value == 'active' %}selected{% endif %}>Ativo</option>
             <option value="inactive" {% if cliente and cliente.status.value == 'inactive' %}selected{% endif %}>Inativo</option>
-            <option value="blocked" {% if cliente and cliente.status.value == 'blocked' %}selected{% endif %}>Bloqueado</option>
           </select>
+          <p class="form-help">Bloqueio (blacklist) é feito exclusivamente no Dossiê do cliente.</p>
+          {% endif %}
         </div>
 
         <div class="form-group">
@@ -209,41 +214,12 @@
 
     <div class="form-actions">
       <button type="submit" class="btn btn-primary">Salvar</button>
+      {% if cliente %}
+      <a class="btn" href="/cadastros/clientes/{{ cliente.id }}">Dossiê</a>
+      {% endif %}
       <a class="btn" href="/cadastros/clientes">Cancelar</a>
     </div>
     {{ form_legend() }}
   </form>
-
-  {% if cliente and (current_user.is_superuser or 'cadastros.cliente.visualizar' in current_user.permissions) %}
-  <div class="form-actions" style="margin-top:8px;gap:8px">
-    <form method="post" action="/documentos/emitir/ficha_cliente/{{ cliente.id }}" style="display:inline;margin:0">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn" type="submit">PDF Ficha</button>
-    </form>
-    <form method="post" action="/documentos/emitir/extrato_cliente/{{ cliente.id }}" style="display:inline;margin:0">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn" type="submit">PDF Extrato</button>
-    </form>
-    <form method="post" action="/documentos/emitir/declaracao_quitacao/{{ cliente.id }}" style="display:inline;margin:0">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn" type="submit">PDF Declaração Quitação</button>
-    </form>
-  </div>
-  {% endif %}
-
-  {% if cliente and (current_user.is_superuser or 'cadastros.cliente.bloquear' in current_user.permissions) %}
-  <hr style="margin:24px 0;border:0;border-top:1px solid var(--border)">
-  <form method="post" action="/cadastros/clientes/{{ cliente.id }}/bloquear" class="erp-form form-grid"
-        data-impact-url="/cadastros/clientes/{{ cliente.id }}/impacto"
-        data-impact-mode="warn"
-        data-impact-title="Bloquear cliente">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <div class="form-group" style="grid-column:1 / -1">
-      {{ field_label('Bloquear cliente (blacklist)', true, 'motivo') }}
-      <input class="form-input" id="motivo" name="motivo" placeholder="Motivo do bloqueio — impacta novas reservas" required>
-      <p class="form-help">Clientes bloqueados não podem ser usados em novas reservas sem permissão especial.</p>
-    </div>
-    <div class="form-actions">
-      <button type="submit" class="btn btn-danger">Bloquear</button>
-    </div>
-  </form>
-  {% endif %}
 </div>
 {% endblock %}

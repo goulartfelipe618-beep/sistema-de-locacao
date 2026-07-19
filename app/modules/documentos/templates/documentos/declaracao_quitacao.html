@@ -1,9 +1,14 @@
 {% extends "documentos/base_pdf.html" %}
 {% block doc_body %}
 <h2>Declaração de Quitação</h2>
-<p><strong>Cliente:</strong> {{ cliente.nome }}</p>
-<p><strong>Documento:</strong> {{ cliente.cpf_cnpj or '—' }}</p>
-<p><strong>Filial de referência:</strong> {{ filial_nome }}</p>
+<table class="doc-table">
+  <tbody>
+    <tr><th>Cliente</th><td>{{ cliente.nome }}</td></tr>
+    <tr><th>Documento</th><td>{{ cliente.cpf or cliente.cnpj or cliente.cpf_cnpj or '—' }}</td></tr>
+    <tr><th>Filial de referência</th><td>{{ filial_nome }}</td></tr>
+    <tr><th>Situação cadastral</th><td>{{ cliente.status.value }}{% if cliente.blacklist %} — bloqueado{% endif %}</td></tr>
+  </tbody>
+</table>
 {% if quitado %}
 <p class="legal">Declaramos, para os devidos fins, que o cliente acima identificado encontra-se <strong>quite</strong> perante esta locadora quanto a débitos de locação, multas repassadas, avarias e demais títulos registrados em nosso sistema até a presente data.</p>
 {% else %}

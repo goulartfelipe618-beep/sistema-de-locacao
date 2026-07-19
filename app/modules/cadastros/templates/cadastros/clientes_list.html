@@ -29,7 +29,7 @@
       {% for c in page_result.items %}
       <tr>
         <td>
-          <strong>{{ c.nome }}</strong>
+          <a href="/cadastros/clientes/{{ c.id }}"><strong>{{ c.nome }}</strong></a>
           {% if c.nome_fantasia %}<div class="form-help">{{ c.nome_fantasia }}</div>{% endif %}
         </td>
         <td>{{ 'PF' if c.person_type.value == 'pf' else 'PJ' }}</td>
@@ -49,7 +49,8 @@
           {% endif %}
           {% if c.blacklist %}<span class="badge badge-warning">Blacklist</span>{% endif %}
         </td>
-        <td class="num">
+        <td class="num" style="white-space:nowrap">
+          <a class="btn btn-sm btn-primary" href="/cadastros/clientes/{{ c.id }}">Dossiê</a>
           {% if current_user.is_superuser or 'cadastros.cliente.editar' in current_user.permissions %}
           <a class="btn btn-sm" href="/cadastros/clientes/{{ c.id }}/editar">Editar</a>
           {% endif %}

@@ -238,11 +238,19 @@ class ClienteService:
             description=f"Cliente excluído: {cliente.nome}",
         )
 
-    async def bloquear(self, cliente_id: uuid.UUID, motivo: str) -> Cliente:
+    async def bloquear(
+        self,
+        cliente_id: uuid.UUID,
+        motivo: str,
+        *,
+        motivo_codigo: str | None = None,
+    ) -> Cliente:
         """Bloqueia cliente impedindo novas locações."""
         if not motivo.strip():
             raise ValidationError("Motivo do bloqueio é obrigatório.")
         cliente = await self.get(cliente_id)
+        if cliente.status == ClienteStatus.BLOCKED:
+            raise ValidationError("Cliente já está bloqueado.")
         cliente.status = ClienteStatus.BLOCKED
         cliente.blacklist = True
         cliente.motivo_bloqueio = motivo.strip()
@@ -252,7 +260,29 @@ class ClienteService:
             entity="cliente",
             entity_id=cliente.id,
             description=f"Cliente bloqueado: {cliente.nome}",
-            changes={"status": ClienteStatus.BLOCKED.value, "motivo": motivo.strip()},
+            changes={
+                "status": ClienteStatus.BLOCKED.value,
+                "motivo": motivo.strip(),
+                "motivo_codigo": motivo_codigo,
+            },
+        )
+        return cliente
+
+    async def desbloquear(self, cliente_id: uuid.UUID, observacao: str = "") -> Cliente:
+        """Remove bloqueio e reativa o cliente."""
+        cliente = await self.get(cliente_id)
+        if cliente.status != ClienteStatus.BLOCKED and not cliente.blacklist:
+            raise ValidationError("Cliente não está bloqueado.")
+        cliente.status = ClienteStatus.ACTIVE
+        cliente.blacklist = False
+        cliente.motivo_bloqueio = None
+        await self.repo.flush()
+        await audit_service.record(
+            AuditAction.UPDATE,
+            entity="cliente",
+            entity_id=cliente.id,
+            description=f"Cliente desbloqueado: {cliente.nome}",
+            changes={"status": ClienteStatus.ACTIVE.value, "observacao": observacao.strip() or None},
         )
         return cliente
 

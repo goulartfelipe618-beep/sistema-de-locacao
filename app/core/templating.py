@@ -62,6 +62,10 @@ def _build_environment() -> Environment:
     env.filters["datetime"] = _format_datetime
     env.filters["date"] = _format_date
     env.filters["currency"] = _format_currency
+    from app.shared.value_objects import format_cnpj, format_cpf
+
+    env.filters["cpf"] = format_cpf
+    env.filters["cnpj"] = format_cnpj
     env.globals["app_name"] = settings.app_name
     env.globals["environment"] = settings.environment
     return env

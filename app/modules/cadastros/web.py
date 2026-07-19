@@ -16,6 +16,7 @@ from app.core.deps import require_web_permission, require_web_user
 from app.core.exceptions import AppError
 from app.core.pagination import PageParams
 from app.core.templating import render
+from app.modules.cadastros.dossier import build_cliente_dossier
 from app.modules.cadastros.schemas import ClienteCreate, ClienteUpdate, TabelaAuxiliarCreate
 from app.modules.cadastros.service import ClienteService, TabelaAuxiliarService
 from app.modules.cadastros.web_extra import router as cadastros_extra_router
@@ -150,6 +151,15 @@ def _cliente_cnh_fields(
     }
 
 
+async def _motivos_bloqueio(session: AsyncSession, tenant_id: uuid.UUID):
+    await TabelaAuxiliarService(session).ensure_defaults(tenant_id)
+    return (
+        await TabelaAuxiliarService(session).list_by_grupo(
+            "motivo_bloqueio", PageParams(page=1, size=50), apenas_ativos=True
+        )
+    ).items
+
+
 # ============================================================== Clientes
 @router.get("/cadastros/clientes", response_class=HTMLResponse)
 async def clientes_list(
@@ -268,7 +278,7 @@ async def cliente_create(
                 cnh_pontuacao=cnh_pontuacao,
             ),
         )
-        await ClienteService(session).create(current_user.tenant_id, data)
+        cliente = await ClienteService(session).create(current_user.tenant_id, data)
     except (AppError, ValueError) as exc:
         await session.rollback()
         message = exc.message if isinstance(exc, AppError) else str(exc)
@@ -292,7 +302,33 @@ async def cliente_create(
             },
             status_code=400,
         )
-    return RedirectResponse(url="/cadastros/clientes", status_code=303)
+    return RedirectResponse(url=f"/cadastros/clientes/{cliente.id}", status_code=303)
+
+
+@router.get("/cadastros/clientes/{cliente_id}", response_class=HTMLResponse)
+async def cliente_dossie(
+    request: Request,
+    session: SessionDep,
+    cliente_id: uuid.UUID,
+    current_user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("cadastros.cliente.visualizar"))
+    ],
+    msg: str = "",
+) -> HTMLResponse:
+    """Dossiê completo do cliente."""
+    await TabelaAuxiliarService(session).ensure_defaults(current_user.tenant_id)
+    dossier = await build_cliente_dossier(session, cliente_id)
+    return render(
+        request,
+        "cadastros/cliente_dossie.html",
+        {
+            "dossier": dossier,
+            "cliente": dossier.cliente,
+            "motivos_bloqueio": await _motivos_bloqueio(session, current_user.tenant_id),
+            "title": f"Dossiê — {dossier.cliente.nome}",
+            "msg": msg,
+        },
+    )
 
 
 @router.get("/cadastros/clientes/{cliente_id}/editar", response_class=HTMLResponse)
@@ -361,9 +397,16 @@ async def cliente_update(
         "categoria_cliente", PageParams(page=1, size=100), apenas_ativos=True
     )
     cnh_cats = await _cnh_categorias(session, current_user.tenant_id)
+    existing = await ClienteService(session).get(cliente_id)
     try:
+        if existing.status == ClienteStatus.BLOCKED:
+            status_value = ClienteStatus.BLOCKED
+        else:
+            status_value = ClienteStatus(status)
+            if status_value == ClienteStatus.BLOCKED:
+                raise ValueError("Use o Dossiê para bloquear o cliente.")
         data = ClienteUpdate(
-            status=ClienteStatus(status),
+            status=status_value,
             nome=nome,
             nome_fantasia=nome_fantasia or None,
             email=email or None,
@@ -407,7 +450,7 @@ async def cliente_update(
             },
             status_code=400,
         )
-    return RedirectResponse(url="/cadastros/clientes", status_code=303)
+    return RedirectResponse(url=f"/cadastros/clientes/{cliente_id}", status_code=303)
 
 
 @router.post("/cadastros/clientes/{cliente_id}/bloquear", response_class=HTMLResponse)
@@ -417,11 +460,47 @@ async def cliente_bloquear(
     _user: Annotated[
         AuthenticatedUser, Depends(require_web_permission("cadastros.cliente.bloquear"))
     ],
-    motivo: Annotated[str, Form()] = "",
+    motivo_codigo: Annotated[str, Form()] = "",
+    motivo_detalhe: Annotated[str, Form()] = "",
 ) -> RedirectResponse:
-    """Bloqueia cliente."""
-    await ClienteService(session).bloquear(cliente_id, motivo)
-    return RedirectResponse(url="/cadastros/clientes", status_code=303)
+    """Bloqueia cliente via dossiê."""
+    motivos = {m.codigo: m.descricao for m in await _motivos_bloqueio(session, _user.tenant_id)}
+    codigo = motivo_codigo.strip().lower()
+    if not codigo or codigo not in motivos:
+        return RedirectResponse(
+            url=f"/cadastros/clientes/{cliente_id}?msg=Selecione+um+motivo+de+bloqueio",
+            status_code=303,
+        )
+    detalhe = motivo_detalhe.strip()
+    if codigo == "outros" and not detalhe:
+        return RedirectResponse(
+            url=f"/cadastros/clientes/{cliente_id}?msg=Descreva+o+motivo+ao+selecionar+Outros",
+            status_code=303,
+        )
+    rotulo = motivos[codigo]
+    motivo = f"{rotulo}: {detalhe}" if detalhe else rotulo
+    await ClienteService(session).bloquear(cliente_id, motivo, motivo_codigo=codigo)
+    return RedirectResponse(
+        url=f"/cadastros/clientes/{cliente_id}?msg=Cliente+bloqueado+com+sucesso",
+        status_code=303,
+    )
+
+
+@router.post("/cadastros/clientes/{cliente_id}/desbloquear", response_class=HTMLResponse)
+async def cliente_desbloquear(
+    session: SessionDep,
+    cliente_id: uuid.UUID,
+    _user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("cadastros.cliente.bloquear"))
+    ],
+    observacao: Annotated[str, Form()] = "",
+) -> RedirectResponse:
+    """Remove bloqueio do cliente."""
+    await ClienteService(session).desbloquear(cliente_id, observacao)
+    return RedirectResponse(
+        url=f"/cadastros/clientes/{cliente_id}?msg=Cliente+desbloqueado+com+sucesso",
+        status_code=303,
+    )
 
 
 # ======================================================= Tabelas Auxiliares

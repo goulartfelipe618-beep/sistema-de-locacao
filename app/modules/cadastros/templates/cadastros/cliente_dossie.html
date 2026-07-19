@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% set c = dossier.cliente %}
+
+<div class="dossier-page">
+  <div class="card dossier-header-card">
+    <div class="toolbar" style="align-items:flex-start;gap:16px">
+      <div style="flex:1;min-width:0">
+        <p class="dossier-kicker">Dossiê do cliente</p>
+        <h2 class="card-title" style="margin:0 0 8px">{{ c.nome }}</h2>
+        {% if c.nome_fantasia %}<p class="form-help" style="margin:0 0 8px">{{ c.nome_fantasia }}</p>{% endif %}
+        <div class="dossier-badges">
+          {% if c.status.value == 'active' %}
+            <span class="badge badge-success">Ativo</span>
+          {% elif c.status.value == 'blocked' %}
+            <span class="badge badge-danger">Bloqueado</span>
+          {% else %}
+            <span class="badge badge-muted">Inativo</span>
+          {% endif %}
+          {% if c.blacklist %}<span class="badge badge-warning">Blacklist</span>{% endif %}
+          {% if c.person_type.value == 'pf' %}<span class="badge badge-info">Pessoa Física</span>{% else %}<span class="badge badge-info">Pessoa Jurídica</span>{% endif %}
+          {% if dossier.cnh_valida %}<span class="badge badge-success">CNH válida</span>
+          {% elif c.cnh_numero %}<span class="badge badge-danger">CNH irregular</span>
+          {% else %}<span class="badge badge-muted">Sem CNH</span>{% endif %}
+          {% if dossier.cnh_vencendo %}<span class="badge badge-warning">CNH vence em 30 dias</span>{% endif %}
+        </div>
+      </div>
+      <div class="form-actions" style="margin:0;flex-wrap:wrap">
+        <a class="btn" href="/cadastros/clientes">← Lista</a>
+        {% if current_user.is_superuser or 'cadastros.cliente.editar' in current_user.permissions %}
+        <a class="btn btn-primary" href="/cadastros/clientes/{{ c.id }}/editar">Editar cadastro</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% if msg %}<div class="alert alert-success">{{ msg|replace('+', ' ') }}</div>{% endif %}
+
+  <div class="dossier-stats">
+    <div class="dossier-stat-card">
+      <span class="dossier-stat-label">Contratos</span>
+      <strong class="dossier-stat-value">{{ dossier.stats.contratos }}</strong>
+    </div>
+    <div class="dossier-stat-card">
+      <span class="dossier-stat-label">Reservas abertas</span>
+      <strong class="dossier-stat-value">{{ dossier.stats.reservas_abertas }}</strong>
+    </div>
+    <div class="dossier-stat-card">
+      <span class="dossier-stat-label">Títulos pendentes</span>
+      <strong class="dossier-stat-value">{{ dossier.stats.titulos_pendentes }}</strong>
+    </div>
+    <div class="dossier-stat-card">
+      <span class="dossier-stat-label">Saldo em aberto</span>
+      <strong class="dossier-stat-value">{{ dossier.stats.saldo_aberto|currency }}</strong>
+    </div>
+  </div>
+
+  <div class="dossier-grid">
+    <div class="card dossier-section">
+      <h3 class="dossier-section-title">Identificação</h3>
+      <dl class="dossier-dl">
+        <dt>Documento</dt>
+        <dd>{% if c.cpf %}<code>{{ c.cpf|cpf }}</code>{% elif c.cnpj %}<code>{{ c.cnpj|cnpj }}</code>{% else %}—{% endif %}</dd>
+        {% if c.rg %}<dt>RG</dt><dd>{{ c.rg }}</dd>{% endif %}
+        {% if c.ie %}<dt>Inscrição Estadual</dt><dd>{{ c.ie }}</dd>{% endif %}
+        {% if c.data_nascimento %}<dt>Nascimento</dt><dd>{{ c.data_nascimento|date }}</dd>{% endif %}
+        {% if c.estado_civil %}<dt>Estado civil</dt><dd>{{ c.estado_civil }}</dd>{% endif %}
+        {% if c.profissao %}<dt>Profissão</dt><dd>{{ c.profissao }}</dd>{% endif %}
+        {% if c.representante_legal %}<dt>Representante legal</dt><dd>{{ c.representante_legal }}</dd>{% endif %}
+        <dt>Cadastro em</dt><dd>{{ c.created_at|datetime }}</dd>
+        <dt>Atualizado em</dt><dd>{{ c.updated_at|datetime }}</dd>
+      </dl>
+    </div>
+
+    <div class="card dossier-section">
+      <h3 class="dossier-section-title">Contato</h3>
+      <dl class="dossier-dl">
+        <dt>E-mail</dt><dd>{% if c.email %}<a href="mailto:{{ c.email }}">{{ c.email }}</a>{% else %}—{% endif %}</dd>
+        <dt>Telefone</dt><dd>{{ c.telefone or '—' }}</dd>
+        <dt>Celular</dt><dd>{{ c.celular or '—' }}</dd>
+        <dt>Filial</dt><dd>{{ dossier.filial_nome or '—' }}</dd>
+      </dl>
+    </div>
+
+    <div class="card dossier-section">
+      <h3 class="dossier-section-title">Endereço</h3>
+      <dl class="dossier-dl">
+        <dt>CEP</dt><dd>{{ c.cep or '—' }}</dd>
+        <dt>Logradouro</dt><dd>{{ c.endereco or '—' }}{% if c.numero %}, {{ c.numero }}{% endif %}</dd>
+        <dt>Complemento</dt><dd>{{ c.complemento or '—' }}</dd>
+        <dt>Bairro</dt><dd>{{ c.bairro or '—' }}</dd>
+        <dt>Cidade/UF</dt><dd>{{ c.cidade or '—' }}{% if c.uf %}/{{ c.uf }}{% endif %}</dd>
+      </dl>
+    </div>
+
+    <div class="card dossier-section">
+      <h3 class="dossier-section-title">Comercial</h3>
+      <dl class="dossier-dl">
+        <dt>Categoria</dt><dd>{{ dossier.categoria_label or '—' }}</dd>
+        <dt>Limite de crédito</dt><dd>{{ c.limite_credito|currency }}</dd>
+      </dl>
+    </div>
+
+    <div class="card dossier-section">
+      <h3 class="dossier-section-title">CNH — Condutor</h3>
+      {% if c.cnh_numero %}
+      <dl class="dossier-dl">
+        <dt>Número</dt><dd><code>{{ c.cnh_numero }}</code></dd>
+        <dt>Categoria</dt><dd>{{ dossier.cnh_categoria_label or c.cnh_categoria or '—' }}</dd>
+        <dt>Validade</dt><dd>{{ c.cnh_validade|date if c.cnh_validade else '—' }}</dd>
+        <dt>Situação</dt><dd>{{ c.cnh_status.value|capitalize }}</dd>
+        <dt>Emissão</dt><dd>{{ c.cnh_emissao|date if c.cnh_emissao else '—' }}</dd>
+        <dt>Órgão emissor</dt><dd>{{ c.cnh_orgao or '—' }}</dd>
+        <dt>Pontuação</dt><dd>{{ c.cnh_pontuacao if c.cnh_pontuacao is not none else '—' }}</dd>
+      </dl>
+      {% else %}
+      <div class="empty-state" style="padding:16px 0">CNH não cadastrada. Informe no cadastro para liberar locações.</div>
+      {% endif %}
+    </div>
+
+    {% if c.observacoes %}
+    <div class="card dossier-section dossier-section--wide">
+      <h3 class="dossier-section-title">Observações</h3>
+      <p class="dossier-text-block">{{ c.observacoes }}</p>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if current_user.is_superuser or 'cadastros.cliente.visualizar' in current_user.permissions %}
+  <div class="card dossier-section dossier-section--wide">
+    <h3 class="dossier-section-title">Documentos PDF</h3>
+    <p class="form-help" style="margin-top:0">Downloads disponíveis exclusivamente neste dossiê.</p>
+    <div class="dossier-pdf-grid">
+      <div class="dossier-pdf-card">
+        <h4>Ficha cadastral</h4>
+        <p>Resumo completo dos dados cadastrais, contato, endereço, CNH e situação comercial.</p>
+        <form method="post" action="/documentos/emitir/ficha_cliente/{{ c.id }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button class="btn btn-primary" type="submit">Baixar PDF Ficha</button>
+        </form>
+      </div>
+      <div class="dossier-pdf-card">
+        <h4>Extrato de relacionamento</h4>
+        <p>Últimos contratos e títulos financeiros vinculados ao cliente.</p>
+        <form method="post" action="/documentos/emitir/extrato_cliente/{{ c.id }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button class="btn btn-primary" type="submit">Baixar PDF Extrato</button>
+        </form>
+      </div>
+      <div class="dossier-pdf-card">
+        <h4>Declaração de quitação</h4>
+        <p>Certifica situação financeira; indica pendências quando houver títulos em aberto.</p>
+        <form method="post" action="/documentos/emitir/declaracao_quitacao/{{ c.id }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button class="btn btn-primary" type="submit">Baixar PDF Declaração</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="card dossier-section dossier-section--wide dossier-block-card">
+    <h3 class="dossier-section-title">Situação e bloqueio</h3>
+
+    {% if c.status.value == 'blocked' or c.blacklist %}
+    <div class="alert alert-danger">
+      <strong>Cliente bloqueado.</strong>
+      {% if c.motivo_bloqueio %}<br>Motivo registrado: {{ c.motivo_bloqueio }}{% endif %}
+      <p class="form-help" style="margin:8px 0 0">Novas reservas ficam restritas enquanto o bloqueio estiver ativo.</p>
+    </div>
+    {% if current_user.is_superuser or 'cadastros.cliente.bloquear' in current_user.permissions %}
+    <form method="post" action="/cadastros/clientes/{{ c.id }}/desbloquear" class="erp-form" style="margin-top:16px"
+          onsubmit="return confirm('Confirmar desbloqueio deste cliente?')">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="form-group">
+        <label class="form-label">Observação do desbloqueio (opcional)</label>
+        <input class="form-input" name="observacao" placeholder="Ex.: regularização financeira concluída">
+      </div>
+      <div class="form-actions"><button class="btn btn-primary" type="submit">Desbloquear cliente</button></div>
+    </form>
+    {% endif %}
+    {% else %}
+    <p class="form-help" style="margin-top:0">O bloqueio impede novas reservas e registra o motivo no histórico do cliente.</p>
+    {% if dossier.impacto.details %}
+    <ul class="dossier-impact-list">
+      {% for item in dossier.impacto.details %}
+      <li><strong>{{ item.count }}</strong> {{ item.label|lower }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    {% if current_user.is_superuser or 'cadastros.cliente.bloquear' in current_user.permissions %}
+    <form method="post" action="/cadastros/clientes/{{ c.id }}/bloquear" class="erp-form dossier-block-form"
+          data-impact-url="/cadastros/clientes/{{ c.id }}/impacto"
+          data-impact-mode="warn"
+          data-impact-title="Bloquear cliente">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label form-label--required">Motivo do bloqueio</label>
+          <select class="form-input" name="motivo_codigo" id="motivo_codigo" required>
+            <option value="">Selecionar motivo...</option>
+            {% for m in motivos_bloqueio %}
+            <option value="{{ m.codigo }}">{{ m.descricao }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group" style="grid-column:1 / -1">
+          <label class="form-label">Detalhes (obrigatório para &quot;Outros&quot;)</label>
+          <textarea class="form-input" name="motivo_detalhe" id="motivo_detalhe" rows="3"
+                    placeholder="Descreva o contexto: inadimplência, sinistro, fraude, etc."></textarea>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-danger" type="submit">Bloquear cliente</button>
+      </div>
+    </form>
+    {% endif %}
+    {% endif %}
+  </div>
+
+  {% if dossier.contratos_recentes or dossier.reservas_recentes or dossier.titulos_recentes %}
+  <div class="dossier-grid dossier-grid--history">
+    {% if dossier.contratos_recentes %}
+    <div class="card dossier-section">
+      <h3 class="dossier-section-title">Contratos recentes</h3>
+      <table class="table table-compact">
+        <thead><tr><th>Nº</th><th>Status</th><th>Total</th></tr></thead>
+        <tbody>
+        {% for ct in dossier.contratos_recentes %}
+        <tr>
+          <td><a href="/locacoes/contratos/{{ ct.id }}">{{ ct.numero }}</a></td>
+          <td>{{ ct.status.value }}</td>
+          <td class="num">{{ ct.valor_total|currency }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+    {% if dossier.reservas_recentes %}
+    <div class="card dossier-section">
+      <h3 class="dossier-section-title">Reservas recentes</h3>
+      <table class="table table-compact">
+        <thead><tr><th>Nº</th><th>Status</th><th>Retirada</th></tr></thead>
+        <tbody>
+        {% for r in dossier.reservas_recentes %}
+        <tr>
+          <td><a href="/reservas/{{ r.id }}">{{ r.numero }}</a></td>
+          <td>{{ r.status.value }}</td>
+          <td>{{ r.retirada_em|datetime }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+    {% if dossier.titulos_recentes %}
+    <div class="card dossier-section">
+      <h3 class="dossier-section-title">Financeiro recente</h3>
+      <table class="table table-compact">
+        <thead><tr><th>Nº</th><th>Vencimento</th><th>Saldo</th></tr></thead>
+        <tbody>
+        {% for t in dossier.titulos_recentes %}
+        <tr>
+          <td><a href="/financeiro/receber/{{ t.id }}">{{ t.numero }}</a></td>
+          <td>{{ t.vencimento|date }}</td>
+          <td class="num">{{ t.valor_saldo|currency }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

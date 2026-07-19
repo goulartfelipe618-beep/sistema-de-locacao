@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+import uuid
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
 from pydantic import ValidationError
 
+from app.core.exceptions import ValidationError as AppValidationError
 from app.modules.cadastros.schemas import ClienteCreate
 from app.modules.cadastros.schemas_extra import MotoristaCreate, ParceiroCreate, VendedorCreate
-from app.shared.enums import MotoristaVinculo, PersonType
+from app.modules.cadastros.service import ClienteService
+from app.shared.enums import ClienteStatus, MotoristaVinculo, PersonType
 from app.web.navigation import build_menu
 from tests.test_navigation import _make_user
 
@@ -54,6 +59,20 @@ def test_menu_clientes_enabled_with_permission() -> None:
     clientes = next(i for i in cadastros["children"] if i["label"] == "Clientes")
     assert clientes["enabled"] is True
     assert clientes["url"] == "/cadastros/clientes"
+
+
+def test_cliente_desbloquear_rejects_active() -> None:
+    cliente = MagicMock()
+    cliente.status = ClienteStatus.ACTIVE
+    cliente.blacklist = False
+
+    svc = ClienteService(MagicMock())
+    svc.get = AsyncMock(return_value=cliente)
+
+    import asyncio
+
+    with pytest.raises(AppValidationError, match="não está bloqueado"):
+        asyncio.run(svc.desbloquear(uuid.uuid4()))
 
 
 def test_menu_cadastros_extras_enabled() -> None:
