@@ -6,6 +6,7 @@
 :root {
   --bg: #eef1f4;
   --surface: #ffffff;
+  --surface-alt: #f4f6f8;
   --sidebar-bg: #1f2a37;
   --sidebar-bg-hover: #2b3947;
   --sidebar-fg: #c7d0da;
@@ -272,6 +273,7 @@ a:hover { text-decoration: underline; }
 /* -------------------------------------------------------------- Badges --- */
 .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
 .badge-success { background: #e4f3ea; color: var(--success); }
+.badge-info { background: #e8f0fa; color: var(--primary); }
 .badge-muted { background: #eceff2; color: var(--text-muted); }
 .badge-danger { background: var(--danger-bg); color: var(--danger); }
 .badge-warning { background: #fbf1d9; color: var(--warning); }
@@ -563,6 +565,7 @@ a:hover { text-decoration: underline; }
   color-scheme: light;
   --bg: #eef1f4;
   --surface: #ffffff;
+  --surface-alt: #f4f6f8;
   --navbar-bg: #ffffff;
   --sidebar-bg: #ffffff;
   --sidebar-bg-hover: #eef1f4;
@@ -594,6 +597,7 @@ a:hover { text-decoration: underline; }
   color-scheme: dark;
   --bg: #0f1419;
   --surface: #1a2330;
+  --surface-alt: #232f3f;
   --navbar-bg: #1a2330;
   --sidebar-bg: #0c1016;
   --sidebar-bg-hover: #232f3f;
@@ -616,6 +620,7 @@ a:hover { text-decoration: underline; }
 [data-theme="dark"] .table thead th { background: #121820; }
 [data-theme="dark"] .table tbody tr:hover { background: rgba(255,255,255,.04); }
 [data-theme="dark"] .badge-success { background: rgba(27, 122, 67, 0.2); color: #7dcea0; }
+[data-theme="dark"] .badge-info { background: rgba(30, 90, 168, 0.22); color: #8eb8e8; }
 [data-theme="dark"] .badge-muted { background: rgba(255,255,255,.08); color: var(--text-muted); }
 [data-theme="dark"] .badge-danger { background: rgba(179, 38, 30, 0.25); color: #f5a8a5; }
 [data-theme="dark"] .badge-warning { background: rgba(154, 103, 0, 0.25); color: #f0c96e; }
@@ -782,21 +787,15 @@ a:hover { text-decoration: underline; }
 /* ----------------------------------------------------- Cliente Dossiê */
 .dossier-page { display: flex; flex-direction: column; gap: 16px; max-width: 1200px; }
 .dossier-header-card { margin-bottom: 0; }
-.dossier-kicker { margin: 0 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
+.dossier-kicker {
+  margin: 0 0 4px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text-muted);
+}
 .dossier-badges { display: flex; flex-wrap: wrap; gap: 6px; }
-.dossier-stats {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-}
-.dossier-stat-card {
-  background: var(--surface-alt, #f6f8fa);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 14px 16px;
-}
-.dossier-stat-label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
-.dossier-stat-value { font-size: 1.35rem; line-height: 1.2; }
+.dossier-stats { margin-bottom: 0; }
 .dossier-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -805,16 +804,49 @@ a:hover { text-decoration: underline; }
 .dossier-grid--history { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .dossier-section { margin: 0; }
 .dossier-section--wide { grid-column: 1 / -1; }
-.dossier-section-title { margin: 0 0 12px; font-size: 1rem; }
+.dossier-section-title {
+  margin: 0 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--text-muted);
+}
 .dossier-dl {
   display: grid;
   grid-template-columns: 140px 1fr;
   gap: 8px 16px;
   margin: 0;
 }
-.dossier-dl dt { margin: 0; color: var(--text-muted); font-size: 12.5px; }
-.dossier-dl dd { margin: 0; word-break: break-word; }
-.dossier-text-block { margin: 0; white-space: pre-wrap; line-height: 1.5; }
+.dossier-dl dt {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+.dossier-dl dd {
+  margin: 0;
+  color: var(--text);
+  word-break: break-word;
+}
+.dossier-dl dd a { color: var(--primary); text-decoration: none; }
+.dossier-dl dd a:hover { text-decoration: underline; }
+.dossier-dl dd code {
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 12px;
+}
+.dossier-text-block {
+  margin: 0;
+  white-space: pre-wrap;
+  line-height: 1.5;
+  color: var(--text);
+}
 .dossier-pdf-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -822,21 +854,51 @@ a:hover { text-decoration: underline; }
 }
 .dossier-pdf-card {
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 16px;
-  background: var(--surface-alt, #fafbfc);
+  background: var(--surface-alt);
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
-.dossier-pdf-card h4 { margin: 0; font-size: 14px; }
-.dossier-pdf-card p { margin: 0; flex: 1; font-size: 12.5px; color: var(--text-muted); line-height: 1.45; }
-.dossier-impact-list { margin: 12px 0; padding-left: 18px; color: var(--text-muted); font-size: 13px; }
+.dossier-pdf-card h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.dossier-pdf-card p {
+  margin: 0;
+  flex: 1;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+.dossier-impact-list {
+  margin: 12px 0;
+  padding-left: 18px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
 .dossier-block-card .dossier-block-form { margin-top: 12px; }
+.dossier-header-card .card-title { color: var(--text); }
+[data-theme="dark"] .kpi-value { color: var(--text); }
+[data-theme="dark"] .alert-success {
+  background: rgba(27, 122, 67, 0.18);
+  color: #7dcea0;
+  border: 1px solid rgba(125, 206, 160, 0.35);
+}
+.alert-success {
+  background: #e4f3ea;
+  color: var(--success);
+  border: 1px solid #b8dfc8;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+}
 .table-compact th, .table-compact td { padding: 6px 8px; font-size: 12.5px; }
 
 @media (max-width: 960px) {
-  .dossier-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .dossier-grid, .dossier-grid--history { grid-template-columns: 1fr; }
   .dossier-pdf-grid { grid-template-columns: 1fr; }
 }

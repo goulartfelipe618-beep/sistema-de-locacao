@@ -37,22 +37,22 @@
 
   {% if msg %}<div class="alert alert-success">{{ msg|replace('+', ' ') }}</div>{% endif %}
 
-  <div class="dossier-stats">
-    <div class="dossier-stat-card">
-      <span class="dossier-stat-label">Contratos</span>
-      <strong class="dossier-stat-value">{{ dossier.stats.contratos }}</strong>
+  <div class="kpi-grid dossier-stats">
+    <div class="kpi">
+      <div class="kpi-label">Contratos</div>
+      <div class="kpi-value">{{ dossier.stats.contratos }}</div>
     </div>
-    <div class="dossier-stat-card">
-      <span class="dossier-stat-label">Reservas abertas</span>
-      <strong class="dossier-stat-value">{{ dossier.stats.reservas_abertas }}</strong>
+    <div class="kpi">
+      <div class="kpi-label">Reservas abertas</div>
+      <div class="kpi-value">{{ dossier.stats.reservas_abertas }}</div>
     </div>
-    <div class="dossier-stat-card">
-      <span class="dossier-stat-label">Títulos pendentes</span>
-      <strong class="dossier-stat-value">{{ dossier.stats.titulos_pendentes }}</strong>
+    <div class="kpi">
+      <div class="kpi-label">Títulos pendentes</div>
+      <div class="kpi-value">{{ dossier.stats.titulos_pendentes }}</div>
     </div>
-    <div class="dossier-stat-card">
-      <span class="dossier-stat-label">Saldo em aberto</span>
-      <strong class="dossier-stat-value">{{ dossier.stats.saldo_aberto|currency }}</strong>
+    <div class="kpi">
+      <div class="kpi-label">Saldo em aberto</div>
+      <div class="kpi-value">{{ dossier.stats.saldo_aberto|currency }}</div>
     </div>
   </div>
 
