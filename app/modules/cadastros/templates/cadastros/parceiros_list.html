@@ -18,11 +18,16 @@
   {% for p in page_result.items %}
   <tr>
     <td><strong>{{ p.nome }}</strong>{% if p.nome_fantasia %}<div class="form-help">{{ p.nome_fantasia }}</div>{% endif %}</td>
-    <td>{{ p.tipo.value }}</td>
-    <td>{{ p.cpf or p.cnpj or '-' }}</td>
+    <td>{{ p.tipo.value|replace('_',' ')|title }}</td>
+    <td>{% if p.cpf %}{{ p.cpf|cpf }}{% elif p.cnpj %}{{ p.cnpj|cnpj }}{% else %}-{% endif %}</td>
     <td class="num">{{ p.comissao_percentual }}%</td>
     <td><span class="badge {% if p.status.value == 'active' %}badge-success{% else %}badge-muted{% endif %}">{{ p.status.value }}</span></td>
-    <td class="num">{% if current_user.is_superuser or 'cadastros.parceiro.editar' in current_user.permissions %}<a class="btn btn-sm" href="/cadastros/parceiros/{{ p.id }}/editar">Editar</a>{% endif %}</td>
+    <td class="num" style="white-space:nowrap">
+      <a class="btn btn-sm btn-primary" href="/cadastros/parceiros/{{ p.id }}">Dossiê</a>
+      {% if current_user.is_superuser or 'cadastros.parceiro.editar' in current_user.permissions %}
+      <a class="btn btn-sm" href="/cadastros/parceiros/{{ p.id }}/editar">Editar</a>
+      {% endif %}
+    </td>
   </tr>
   {% endfor %}
   </tbody></table>

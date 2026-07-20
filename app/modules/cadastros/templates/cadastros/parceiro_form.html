@@ -90,6 +90,9 @@
 
     <div class="form-actions">
       <button class="btn btn-primary" type="submit">Salvar</button>
+      {% if item %}
+      <a class="btn" href="/cadastros/parceiros/{{ item.id }}">Dossiê</a>
+      {% endif %}
       <a class="btn" href="/cadastros/parceiros">Cancelar</a>
     </div>
     {{ form_legend() }}

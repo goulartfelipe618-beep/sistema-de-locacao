@@ -16,6 +16,7 @@ from app.core.deps import require_web_permission
 from app.core.exceptions import AppError
 from app.core.pagination import PageParams
 from app.core.templating import render
+from app.modules.frota.dossier_veiculo import build_veiculo_dossier
 from app.modules.frota.schemas import (
     AcessorioCreate,
     AcessorioUpdate,
@@ -82,7 +83,19 @@ async def modelos_json(
     page = await ModelosService(session).list_items(
         PageParams(page=1, size=500), marca_id=mid
     )
-    return JSONResponse(content=[{"id": str(m.id), "nome": m.nome} for m in page.items])
+    cats = await CategoriasService(session).list_items(PageParams(page=1, size=500))
+    cat_names = {c.id: c.nome for c in cats.items}
+    return JSONResponse(
+        content=[
+            {
+                "id": str(m.id),
+                "nome": m.nome,
+                "categoria_padrao_id": str(m.categoria_padrao_id) if m.categoria_padrao_id else None,
+                "categoria_nome": cat_names.get(m.categoria_padrao_id) if m.categoria_padrao_id else None,
+            }
+            for m in page.items
+        ]
+    )
 
 
 @router.get("/frota/veiculos/json")
@@ -245,7 +258,6 @@ async def veiculo_create(
     placa: Annotated[str, Form()],
     ano_fabricacao: Annotated[int, Form()],
     ano_modelo: Annotated[int, Form()],
-    categoria_id: Annotated[str, Form()],
     marca_id: Annotated[str, Form()],
     modelo_id: Annotated[str, Form()],
     combustivel_id: Annotated[str, Form()],
@@ -284,7 +296,6 @@ async def veiculo_create(
             ano_fabricacao=ano_fabricacao,
             ano_modelo=ano_modelo,
             cor=cor or None,
-            categoria_id=uuid.UUID(categoria_id),
             marca_id=uuid.UUID(marca_id),
             modelo_id=uuid.UUID(modelo_id),
             combustivel_id=uuid.UUID(combustivel_id),
@@ -326,6 +337,28 @@ async def _veiculo_extras(session: AsyncSession, veiculo_id: uuid.UUID) -> dict[
     }
 
 
+@router.get("/frota/veiculos/{veiculo_id}", response_class=HTMLResponse)
+async def veiculo_dossie(
+    request: Request,
+    session: SessionDep,
+    veiculo_id: uuid.UUID,
+    current_user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("frota.veiculo.visualizar"))
+    ],
+) -> HTMLResponse:
+    """Dossiê completo do veículo."""
+    dossier = await build_veiculo_dossier(session, veiculo_id)
+    return render(
+        request,
+        "frota/veiculo_dossie.html",
+        {
+            "dossier": dossier,
+            "veiculo": dossier.veiculo,
+            "title": f"Dossiê — {dossier.veiculo.placa}",
+        },
+    )
+
+
 @router.get("/frota/veiculos/{veiculo_id}/editar", response_class=HTMLResponse)
 async def veiculo_edit_form(
     request: Request,
@@ -363,7 +396,6 @@ async def veiculo_update(
     placa: Annotated[str, Form()],
     ano_fabricacao: Annotated[int, Form()],
     ano_modelo: Annotated[int, Form()],
-    categoria_id: Annotated[str, Form()],
     marca_id: Annotated[str, Form()],
     modelo_id: Annotated[str, Form()],
     combustivel_id: Annotated[str, Form()],
@@ -396,7 +428,6 @@ async def veiculo_update(
             ano_fabricacao=ano_fabricacao,
             ano_modelo=ano_modelo,
             cor=cor or None,
-            categoria_id=uuid.UUID(categoria_id),
             marca_id=uuid.UUID(marca_id),
             modelo_id=uuid.UUID(modelo_id),
             combustivel_id=uuid.UUID(combustivel_id),

@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% set f = dossier.fornecedor %}
+
+<div class="dossier-page">
+  <div class="card dossier-header-card">
+    <div class="toolbar" style="align-items:flex-start;gap:16px">
+      <div style="flex:1;min-width:0">
+        <p class="dossier-kicker">Dossiê do fornecedor</p>
+        <h2 class="card-title" style="margin:0 0 8px">{{ f.nome }}</h2>
+        {% if f.nome_fantasia %}<p class="form-help" style="margin:0 0 8px">{{ f.nome_fantasia }}</p>{% endif %}
+        <div class="dossier-badges">
+          {% if f.bloqueado %}
+            <span class="badge badge-danger">Bloqueado</span>
+          {% elif f.status.value == 'active' %}
+            <span class="badge badge-success">Ativo</span>
+          {% else %}
+            <span class="badge badge-muted">Inativo</span>
+          {% endif %}
+          {% if f.locadora_parceira %}<span class="badge badge-info">Intermediação / frota terceirizada</span>{% endif %}
+          {% if f.rating %}<span class="badge badge-info">Avaliação {{ f.rating }}/5</span>{% endif %}
+          {% if dossier.categoria_label %}<span class="badge badge-muted">{{ dossier.categoria_label }}</span>{% endif %}
+        </div>
+        <p class="form-help" style="margin:12px 0 0;max-width:720px">
+          Prestador de serviços, materiais ou locadora parceira em outsourcing. Diferente do parceiro comercial de captação de clientes.
+        </p>
+      </div>
+      <div class="form-actions" style="margin:0;flex-wrap:wrap">
+        <a class="btn" href="/cadastros/fornecedores">← Lista</a>
+        {% if current_user.is_superuser or 'cadastros.fornecedor.editar' in current_user.permissions %}
+        <a class="btn btn-primary" href="/cadastros/fornecedores/{{ f.id }}/editar">Editar cadastro</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="kpi-grid dossier-stats">
+    <div class="kpi">
+      <div class="kpi-label">Ordens de serviço</div>
+      <div class="kpi-value">{{ dossier.stats.ordens_servico }}</div>
+      <div class="kpi-sub">{{ dossier.stats.os_abertas }} em aberto</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Custo manutenção (OS)</div>
+      <div class="kpi-value">{{ dossier.stats.custo_manutencao|currency }}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Contratos intermediação</div>
+      <div class="kpi-value">{{ dossier.stats.contratos_intermediacao }}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Títulos a pagar</div>
+      <div class="kpi-value">{{ dossier.stats.titulos_pendentes }}</div>
+      <div class="kpi-sub">{{ dossier.stats.saldo_pagar|currency }} em aberto</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Veículos vinculados</div>
+      <div class="kpi-value">{{ dossier.stats.veiculos_terceiros }}</div>
+      <div class="kpi-sub">frota terceirizada</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Repasse pendente</div>
+      <div class="kpi-value">{{ dossier.stats.repasse_pendente|currency }}</div>
+    </div>
+  </div>
+
+  <div class="dossier-grid">
+    <div class="card dossier-section">
+      <h3 class="dossier-section-title">Identificação fiscal</h3>
+      <dl class="dossier-dl">
+        <dt>CNPJ</dt><dd>{% if f.cnpj %}<code>{{ f.cnpj|cnpj }}</code>{% else %}—{% endif %}</dd>
+        <dt>Inscrição estadual</dt><dd>{{ f.ie or '—' }}</dd>
+        <dt>Categoria</dt><dd>{{ dossier.categoria_label or f.categoria_codigo or '—' }}</dd>
+        <dt>Cadastro em</dt><dd>{{ f.created_at|datetime }}</dd>
+        <dt>Atualizado em</dt><dd>{{ f.updated_at|datetime }}</dd>
+      </dl>
+    </div>
+
+    <div class="card dossier-section">
+      <h3 class="dossier-section-title">Contato</h3>
+      <dl class="dossier-dl">
+        <dt>E-mail</dt><dd>{% if f.email %}<a href="mailto:{{ f.email }}">{{ f.email }}</a>{% else %}—{% endif %}</dd>
+        <dt>Telefone</dt><dd>{{ f.telefone or '—' }}</dd>
+        <dt>Celular</dt><dd>{{ f.celular or '—' }}</dd>
+      </dl>
+      {% if f.locadora_parceira and (f.contato_operacional_nome or f.contato_operacional_telefone or f.contato_operacional_email) %}
+      <h4 class="form-help" style="margin:12px 0 6px;font-weight:600">Contato operacional (intermediação)</h4>
+      <dl class="dossier-dl">
+        <dt>Nome</dt><dd>{{ f.contato_operacional_nome or '—' }}</dd>
+        <dt>Telefone</dt><dd>{{ f.contato_operacional_telefone or '—' }}</dd>
+        <dt>E-mail</dt><dd>{{ f.contato_operacional_email or '—' }}</dd>
+      </dl>
+      {% endif %}
+    </div>
+
+    <div class="card dossier-section">
+      <h3 class="dossier-section-title">Endereço</h3>
+      <dl class="dossier-dl">
+        <dt>CEP</dt><dd>{{ f.cep or '—' }}</dd>
+        <dt>Logradouro</dt><dd>{{ f.endereco or '—' }}{% if f.numero %}, {{ f.numero }}{% endif %}</dd>
+        <dt>Complemento</dt><dd>{{ f.complemento or '—' }}</dd>
+        <dt>Bairro</dt><dd>{{ f.bairro or '—' }}</dd>
+        <dt>Cidade/UF</dt><dd>{{ f.cidade or '—' }}{% if f.uf %}/{{ f.uf }}{% endif %}</dd>
+      </dl>
+    </div>
+
+    <div class="card dossier-section">
+      <h3 class="dossier-section-title">Pagamento e condições</h3>
+      <dl class="dossier-dl">
+        <dt>Prazo padrão (dias)</dt><dd>{{ f.prazo_pagamento_dias }}</dd>
+        <dt>Desconto negociado</dt><dd class="num">{{ f.desconto_percentual }}%</dd>
+        <dt>Banco</dt><dd>{{ f.banco or '—' }}</dd>
+        <dt>Agência / Conta</dt><dd>{{ f.agencia or '—' }} / {{ f.conta or '—' }}</dd>
+        <dt>PIX</dt><dd>{{ f.pix_chave or '—' }}</dd>
+        <dt>Novos lançamentos</dt>
+        <dd>{% if f.bloqueado %}Bloqueado{% elif f.status.value == 'active' %}Permitido{% else %}Inativo{% endif %}</dd>
+      </dl>
+    </div>
+
+    {% if f.locadora_parceira %}
+    <div class="card dossier-section">
+      <h3 class="dossier-section-title">Intermediação de frota</h3>
+      <dl class="dossier-dl">
+        <dt>Locadora parceira</dt><dd>Sim</dd>
+        <dt>Modelo padrão</dt><dd>{{ f.modelo_negocio_padrao.value if f.modelo_negocio_padrao else '—' }}</dd>
+        <dt>Margem padrão</dt><dd>{% if f.margem_padrao_percentual is not none %}{{ f.margem_padrao_percentual }}%{% else %}—{% endif %}</dd>
+      </dl>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if f.bloqueado and f.motivo_bloqueio %}
+  <div class="card dossier-section dossier-section--wide dossier-block-card">
+    <h3 class="dossier-section-title">Bloqueio</h3>
+    <p class="dossier-text-block">{{ f.motivo_bloqueio }}</p>
+    <p class="form-help">Fornecedor bloqueado: novos lançamentos são impedidos; histórico preservado. Desbloqueie na edição do cadastro.</p>
+  </div>
+  {% endif %}
+
+  {% if f.observacoes %}
+  <div class="card dossier-section dossier-section--wide">
+    <h3 class="dossier-section-title">Observações</h3>
+    <p class="dossier-text-block">{{ f.observacoes }}</p>
+  </div>
+  {% endif %}
+
+  <div class="card dossier-section dossier-section--wide">
+    <h3 class="dossier-section-title">Integração no ERP</h3>
+    <ul class="dossier-impact-list">
+      <li><strong>Manutenção</strong> — ordens de serviço e custos de peças/serviços.</li>
+      <li><strong>Intermediação</strong> — contratos com locadoras parceiras e repasses de locação.</li>
+      <li><strong>Financeiro a pagar</strong> — títulos por NF, OS ou contrato.</li>
+      <li><strong>Fiscal</strong> — importação de XML de entrada conciliada pelo CNPJ.</li>
+      <li><strong>Frota</strong> — veículos de terceiros vinculados ao fornecedor.</li>
+    </ul>
+  </div>
+
+  {% if dossier.contratos_intermediacao %}
+  <div class="card dossier-section dossier-section--wide">
+    <h3 class="dossier-section-title">Contratos de intermediação</h3>
+    <table class="table table-compact">
+      <thead><tr><th>Nº</th><th>Título</th><th>Modelo</th><th>Vigência</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+      {% for c in dossier.contratos_intermediacao %}
+      <tr>
+        <td><code>{{ c.numero }}</code></td>
+        <td>{{ c.titulo }}</td>
+        <td>{{ c.modelo_negocio.value }}</td>
+        <td>{{ c.vigencia_inicio|date }}{% if c.vigencia_fim %} — {{ c.vigencia_fim|date }}{% endif %}</td>
+        <td>{{ c.status.value }}</td>
+        <td class="num"><a class="btn btn-sm" href="/intermediacao/contratos-fornecedor/{{ c.id }}/editar">Abrir</a></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <p class="form-help"><a href="/intermediacao/contratos-fornecedor">Todos os contratos de fornecedor</a></p>
+  </div>
+  {% endif %}
+
+  {% if dossier.veiculos_terceiros %}
+  <div class="card dossier-section dossier-section--wide">
+    <h3 class="dossier-section-title">Veículos vinculados (terceiros)</h3>
+    <table class="table table-compact">
+      <thead><tr><th>Placa</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+      {% for v in dossier.veiculos_terceiros %}
+      <tr>
+        <td><strong>{{ v.placa }}</strong></td>
+        <td>{{ v.status.value }}</td>
+        <td class="num"><a class="btn btn-sm" href="/frota/veiculos/{{ v.id }}/editar">Abrir</a></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  {% if dossier.ordens_recentes or dossier.titulos_recentes or dossier.repasses_recentes or dossier.xml_recentes %}
+  <div class="dossier-grid dossier-grid--history">
+    {% if dossier.ordens_recentes %}
+    <div class="card dossier-section">
+      <h3 class="dossier-section-title">Ordens de serviço recentes</h3>
+      <table class="table table-compact">
+        <thead><tr><th>Nº</th><th>Status</th><th>Custo</th></tr></thead>
+        <tbody>
+        {% for o in dossier.ordens_recentes %}
+        <tr>
+          <td><a href="/manutencao/os/{{ o.id }}/editar">{{ o.numero }}</a></td>
+          <td>{{ o.status.value }}</td>
+          <td class="num">{{ o.custo_total|currency }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+    {% if dossier.titulos_recentes %}
+    <div class="card dossier-section">
+      <h3 class="dossier-section-title">Contas a pagar recentes</h3>
+      <table class="table table-compact">
+        <thead><tr><th>Nº</th><th>Vencimento</th><th>Saldo</th></tr></thead>
+        <tbody>
+        {% for t in dossier.titulos_recentes %}
+        <tr>
+          <td><a href="/financeiro/pagar/{{ t.id }}">{{ t.numero }}</a></td>
+          <td>{{ t.vencimento|date }}</td>
+          <td class="num">{{ t.valor_saldo|currency }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+    {% if dossier.repasses_recentes %}
+    <div class="card dossier-section">
+      <h3 class="dossier-section-title">Repasses recentes</h3>
+      <table class="table table-compact">
+        <thead><tr><th>Repasse</th><th>Margem</th><th>Status</th></tr></thead>
+        <tbody>
+        {% for r in dossier.repasses_recentes %}
+        <tr>
+          <td class="num">{{ r.valor_repasse|currency }}</td>
+          <td class="num">{{ r.valor_margem|currency }}</td>
+          <td>{{ r.status.value }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+    {% if dossier.xml_recentes %}
+    <div class="card dossier-section">
+      <h3 class="dossier-section-title">XML fiscal recebido (CNPJ)</h3>
+      <table class="table table-compact">
+        <thead><tr><th>Arquivo</th><th>Chave</th><th>Importado</th></tr></thead>
+        <tbody>
+        {% for x in dossier.xml_recentes %}
+        <tr>
+          <td>{{ x.filename }}</td>
+          <td><span class="form-help">{{ x.chave_acesso or '—' }}</span></td>
+          <td>{{ x.created_at|datetime }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      <p class="form-help"><a href="/fiscal/xml">Central de XML</a></p>
+    </div>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="card dossier-section dossier-section--wide">
+    <div class="empty-state">Nenhuma OS, título, repasse ou XML vinculado a este fornecedor ainda.</div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% set v = dossier.veiculo %}
+
+<div class="dossier-page">
+  <div class="card dossier-header-card">
+    <div class="toolbar" style="align-items:flex-start;gap:16px">
+      <div style="flex:1;min-width:0">
+        <p class="dossier-kicker">Dossiê do veículo</p>
+        <h2 class="card-title" style="margin:0 0 8px"><code>{{ v.placa }}</code></h2>
+        <p class="form-help" style="margin:0 0 8px">
+          {{ dossier.marca_nome or '—' }} {{ dossier.modelo_nome or '' }}
+          {% if v.cor %} · {{ v.cor }}{% endif %}
+          · {{ v.ano_modelo }}
+        </p>
+        <div class="dossier-badges">
+          <span class="badge {% if v.status.value == 'disponivel' %}badge-success{% elif v.status.value in ['bloqueado','baixado'] %}badge-danger{% else %}badge-warning{% endif %}">{{ v.status.value }}</span>
+          {% if v.propriedade.value == 'terceirizada' %}<span class="badge badge-info">Frota terceirizada</span>{% else %}<span class="badge badge-muted">Própria</span>{% endif %}
+          {% if v.motivo_bloqueio %}<span class="badge badge-danger">Bloqueado</span>{% endif %}
+          {% if v.data_baixa %}<span class="badge badge-muted">Baixado</span>{% endif %}
+          {% if dossier.stats.documentos_vencidos %}<span class="badge badge-warning">{{ dossier.stats.documentos_vencidos }} doc. vencido(s)</span>{% endif %}
+        </div>
+      </div>
+      <div class="form-actions" style="margin:0;flex-wrap:wrap">
+        <a class="btn" href="/frota/veiculos">← Lista</a>
+        {% if current_user.is_superuser or 'frota.veiculo.editar' in current_user.permissions %}
+        <a class="btn btn-primary" href="/frota/veiculos/{{ v.id }}/editar">Editar cadastro</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="kpi-grid dossier-stats">
+    <div class="kpi">
+      <div class="kpi-label">Reservas</div>
+      <div class="kpi-value">{{ dossier.stats.reservas }}</div>
+      <div class="kpi-sub">{{ dossier.stats.reservas_abertas }} em andamento</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Contratos</div>
+      <div class="kpi-value">{{ dossier.stats.contratos }}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Ordens de serviço</div>
+      <div class="kpi-value">{{ dossier.stats.ordens_servico }}</div>
+      <div class="kpi-sub">{{ dossier.stats.os_abertas }} abertas</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Acessórios</div>
+      <div class="kpi-value">{{ dossier.stats.acessorios }}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">KM atual</div>
+      <div class="kpi-value">{{ v.km_atual or '—' }}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Combustível</div>
+      <div class="kpi-value">{{ v.nivel_combustivel_atual }}/8</div>
+    </div>
+  </div>
+
+  <div class="dossier-grid">
+    <div class="card dossier-section">
+      <h3 class="dossier-section-title">Identificação</h3>
+      <dl class="dossier-dl">
+        <dt>Placa</dt><dd><code>{{ v.placa }}</code></dd>
+        <dt>RENAVAM</dt><dd>{{ v.renavam or '—' }}</dd>
+        <dt>Chassi</dt><dd><span class="form-help">{{ v.chassi or '—' }}</span></dd>
+        <dt>Ano fab. / modelo</dt><dd>{{ v.ano_fabricacao }} / {{ v.ano_modelo }}</dd>
+        <dt>Categoria</dt><dd>{{ dossier.categoria_nome or '—' }}</dd>
+        <dt>Combustível</dt><dd>{{ dossier.combustivel_nome or '—' }}</dd>
+      </dl>
+    </div>
+
+    <div class="card dossier-section">
+      <h3 class="dossier-section-title">Operação</h3>
+      <dl class="dossier-dl">
+        <dt>Filial</dt><dd>{{ dossier.filial_nome or '—' }}</dd>
+        <dt>KM inicial / atual</dt><dd>{{ v.km_inicial or '—' }} / {{ v.km_atual or '—' }}</dd>
+        <dt>Publicar no site</dt><dd>{% if v.publicar_site %}Sim{% else %}Não{% endif %}</dd>
+        <dt>Cadastro em</dt><dd>{{ v.created_at|datetime }}</dd>
+      </dl>
+    </div>
+
+    <div class="card dossier-section">
+      <h3 class="dossier-section-title">Valores</h3>
+      <dl class="dossier-dl">
+        <dt>Data aquisição</dt><dd>{{ v.data_compra|date if v.data_compra else '—' }}</dd>
+        <dt>Valor aquisição</dt><dd class="num">{% if v.valor_aquisicao %}{{ v.valor_aquisicao|currency }}{% else %}—{% endif %}</dd>
+        <dt>FIPE</dt><dd class="num">{% if v.valor_fipe %}{{ v.valor_fipe|currency }}{% else %}—{% endif %}</dd>
+        <dt>Valor mercado</dt><dd class="num">{% if v.valor_mercado %}{{ v.valor_mercado|currency }}{% else %}—{% endif %}</dd>
+        <dt>Proprietário real</dt><dd>{{ v.proprietario_nome or '—' }}</dd>
+      </dl>
+    </div>
+
+    {% if v.propriedade.value == 'terceirizada' or dossier.fornecedor_nome %}
+    <div class="card dossier-section">
+      <h3 class="dossier-section-title">Terceirização / fornecedor</h3>
+      <dl class="dossier-dl">
+        <dt>Fornecedor</dt>
+        <dd>{% if v.fornecedor_id %}<a href="/cadastros/fornecedores/{{ v.fornecedor_id }}">{{ dossier.fornecedor_nome or 'Abrir' }}</a>{% else %}—{% endif %}</dd>
+        <dt>Contrato intermediação</dt><dd>{{ dossier.contrato_fornecedor_numero or '—' }}</dd>
+        <dt>Aprovação fornecedor</dt><dd>{% if v.exige_aprovacao_fornecedor %}Exigida{% else %}Não exigida{% endif %}</dd>
+      </dl>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if dossier.telemetria %}
+  <div class="card dossier-section dossier-section--wide">
+    <h3 class="dossier-section-title">Telemetria</h3>
+    <dl class="dossier-dl">
+      <dt>Provedor</dt><dd>{{ dossier.telemetria.provedor }}</dd>
+      <dt>Equipamento</dt><dd><code>{{ dossier.telemetria.equipamento_id }}</code></dd>
+      <dt>Status conexão</dt><dd>{{ dossier.telemetria.conn_status.value }}</dd>
+      <dt>Última posição</dt><dd>{{ dossier.telemetria.ultima_posicao_em|datetime if dossier.telemetria.ultima_posicao_em else '—' }}</dd>
+      <dt>KM telemetria</dt><dd>{{ dossier.telemetria.km_telemetria or '—' }}</dd>
+    </dl>
+    <p class="form-help"><a href="/frota/telemetria">Central de telemetria</a></p>
+  </div>
+  {% endif %}
+
+  {% if v.motivo_bloqueio or v.motivo_baixa %}
+  <div class="card dossier-section dossier-section--wide dossier-block-card">
+    <h3 class="dossier-section-title">Restrições</h3>
+    {% if v.motivo_bloqueio %}<p><strong>Bloqueio:</strong> {{ v.motivo_bloqueio }}</p>{% endif %}
+    {% if v.motivo_baixa %}<p><strong>Baixa{% if v.data_baixa %} ({{ v.data_baixa|date }}){% endif %}:</strong> {{ v.motivo_baixa }}</p>{% endif %}
+  </div>
+  {% endif %}
+
+  {% if v.observacoes %}
+  <div class="card dossier-section dossier-section--wide">
+    <h3 class="dossier-section-title">Observações</h3>
+    <p class="dossier-text-block">{{ v.observacoes }}</p>
+  </div>
+  {% endif %}
+
+  <div class="card dossier-section dossier-section--wide">
+    <h3 class="dossier-section-title">Integração no ERP</h3>
+    <ul class="dossier-impact-list">
+      <li><strong>Reservas e locações</strong> — alocação e histórico operacional do ativo.</li>
+      <li><strong>Manutenção</strong> — ordens de serviço, custos e planos preventivos.</li>
+      <li><strong>Documentação</strong> — CRLV, seguro, vistorias e vigências.</li>
+      <li><strong>Intermediação</strong> — veículos de locadoras parceiras e repasses.</li>
+      <li><strong>Telemetria</strong> — rastreamento, KM e eventos de condução.</li>
+    </ul>
+  </div>
+
+  {% if dossier.documentos %}
+  <div class="card dossier-section dossier-section--wide">
+    <h3 class="dossier-section-title">Documentação do veículo</h3>
+    <table class="table table-compact">
+      <thead><tr><th>Tipo</th><th>Número</th><th>Validade</th><th>Status</th></tr></thead>
+      <tbody>
+      {% for d in dossier.documentos %}
+      <tr>
+        <td>{{ d.tipo.value }}</td>
+        <td>{{ d.numero or '—' }}</td>
+        <td>{{ d.data_validade|date if d.data_validade else '—' }}</td>
+        <td>{{ d.status.value }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <p class="form-help"><a href="/frota/documentacao?veiculo_id={{ v.id }}">Gerenciar documentos</a></p>
+  </div>
+  {% endif %}
+
+  {% if dossier.reservas_recentes or dossier.contratos_recentes or dossier.ordens_recentes %}
+  <div class="dossier-grid dossier-grid--history">
+    {% if dossier.reservas_recentes %}
+    <div class="card dossier-section">
+      <h3 class="dossier-section-title">Reservas recentes</h3>
+      <table class="table table-compact">
+        <thead><tr><th>Nº</th><th>Status</th><th>Retirada</th></tr></thead>
+        <tbody>
+        {% for r in dossier.reservas_recentes %}
+        <tr>
+          <td><a href="/reservas/{{ r.id }}">{{ r.numero }}</a></td>
+          <td>{{ r.status.value }}</td>
+          <td>{{ r.retirada_em|datetime }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+    {% if dossier.contratos_recentes %}
+    <div class="card dossier-section">
+      <h3 class="dossier-section-title">Contratos recentes</h3>
+      <table class="table table-compact">
+        <thead><tr><th>Nº</th><th>Status</th><th>Total</th></tr></thead>
+        <tbody>
+        {% for c in dossier.contratos_recentes %}
+        <tr>
+          <td><a href="/locacoes/contratos/{{ c.id }}">{{ c.numero }}</a></td>
+          <td>{{ c.status.value }}</td>
+          <td class="num">{{ c.valor_total|currency }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+    {% if dossier.ordens_recentes %}
+    <div class="card dossier-section">
+      <h3 class="dossier-section-title">Manutenção recente</h3>
+      <table class="table table-compact">
+        <thead><tr><th>OS</th><th>Status</th><th>Custo</th></tr></thead>
+        <tbody>
+        {% for o in dossier.ordens_recentes %}
+        <tr>
+          <td><a href="/manutencao/os/{{ o.id }}/editar">{{ o.numero }}</a></td>
+          <td>{{ o.status.value }}</td>
+          <td class="num">{{ o.custo_total|currency }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="card dossier-section dossier-section--wide">
+    <div class="empty-state">Nenhuma reserva, contrato ou OS registrada para este veículo ainda.</div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

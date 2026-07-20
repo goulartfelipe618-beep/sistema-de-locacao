@@ -23,11 +23,18 @@ from app.shared.enums import (
 from app.shared.value_objects import only_digits
 
 _PLACA_CLEAN = re.compile(r"[\s\-]+")
+_PLACA_VALID = re.compile(r"^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$|^[A-Z]{3}[0-9]{4}$")
 
 
 def _normalize_placa(value: str) -> str:
     cleaned = _PLACA_CLEAN.sub("", value.strip().upper())
     return cleaned[:8]
+
+
+def _validate_placa_format(cleaned: str) -> None:
+    core = cleaned[:7]
+    if len(core) < 7 or not _PLACA_VALID.match(core):
+        raise ValueError("Placa inválida. Use Mercosul (ABC1D23) ou antigo (ABC1234).")
 
 
 # ------------------------------------------------------------------ Categoria
@@ -208,7 +215,7 @@ class VeiculoCreate(BaseModel):
     ano_fabricacao: int = Field(ge=1980, le=2100)
     ano_modelo: int = Field(ge=1980, le=2100)
     cor: str | None = None
-    categoria_id: uuid.UUID
+    categoria_id: uuid.UUID | None = None
     marca_id: uuid.UUID
     modelo_id: uuid.UUID
     combustivel_id: uuid.UUID
@@ -232,9 +239,8 @@ class VeiculoCreate(BaseModel):
     @classmethod
     def _placa(cls, value: str) -> str:
         normalized = _normalize_placa(value)
-        if len(normalized) < 7:
-            raise ValueError("Placa inválida.")
-        return normalized
+        _validate_placa_format(normalized)
+        return normalized[:7]
 
     @field_validator("renavam")
     @classmethod
@@ -290,9 +296,8 @@ class VeiculoUpdate(BaseModel):
         if not value:
             return None
         normalized = _normalize_placa(value)
-        if len(normalized) < 7:
-            raise ValueError("Placa inválida.")
-        return normalized
+        _validate_placa_format(normalized)
+        return normalized[:7]
 
     @field_validator("renavam")
     @classmethod

@@ -30,6 +30,10 @@
     return (value || "").replace(/\D/g, "");
   }
 
+  function alphanumeric(value) {
+    return (value || "").replace(/[^a-zA-Z0-9]/g, "");
+  }
+
   function applyPattern(raw, pattern, upper) {
     var d = digits(raw);
     var out = "";
@@ -105,6 +109,15 @@
 
     var rule = MASK_RULES[type];
     if (!rule) return;
+
+    if (type === "placa") {
+      input.inputMode = "text";
+      input.placeholder = input.placeholder || "ABC1D23";
+      input.addEventListener("input", function () {
+        input.value = alphanumeric(input.value).toUpperCase().slice(0, 7);
+      });
+      return;
+    }
 
     input.placeholder = input.placeholder || rule.pattern.replace(/#/g, "0").replace(/A/g, "A");
     input.addEventListener("input", function () {
@@ -479,13 +492,26 @@
   function setupMarcaModelo(form) {
     var marca = form.querySelector("#marca_id, [name=marca_id]");
     var modelo = form.querySelector("#modelo_id, [name=modelo_id]");
+    var categoriaDisplay = document.getElementById("categoria_display");
     if (!marca || !modelo) return;
+
+    function syncCategoriaFromModelo() {
+      if (!categoriaDisplay) return;
+      var opt = modelo.selectedOptions && modelo.selectedOptions[0];
+      if (!opt || !opt.value) {
+        categoriaDisplay.textContent = "— Selecione marca e modelo —";
+        return;
+      }
+      var nome = opt.getAttribute("data-categoria-nome");
+      categoriaDisplay.textContent = nome || "— Modelo sem categoria padrão (cadastre em Modelos) —";
+    }
 
     async function loadModelos() {
       var mid = marca.value;
       var selected = modelo.value;
       modelo.disabled = true;
       modelo.innerHTML = '<option value="">Carregando...</option>';
+      if (categoriaDisplay) categoriaDisplay.textContent = "— Selecione marca e modelo —";
       if (!mid) {
         modelo.innerHTML = '<option value="">Selecione a marca primeiro</option>';
         return;
@@ -497,16 +523,19 @@
           var opt = document.createElement("option");
           opt.value = m.id;
           opt.textContent = m.nome;
+          if (m.categoria_nome) opt.setAttribute("data-categoria-nome", m.categoria_nome);
           if (m.id === selected) opt.selected = true;
           modelo.appendChild(opt);
         });
         modelo.disabled = false;
+        syncCategoriaFromModelo();
       } catch (_) {
         modelo.innerHTML = '<option value="">Erro ao carregar modelos</option>';
       }
     }
 
     marca.addEventListener("change", loadModelos);
+    modelo.addEventListener("change", syncCategoriaFromModelo);
     if (marca.value) loadModelos();
     else {
       modelo.disabled = true;
@@ -657,7 +686,7 @@
     motorista_id: "Condutor principal vinculado à reserva ou contrato.",
     categoria_id: "Grupo tarifário do veículo (ex.: Compacto, SUV).",
     marca_id: "Selecione a marca para filtrar os modelos disponíveis.",
-    modelo_id: "Modelos dependem da marca selecionada.",
+    modelo_id: "Modelos dependem da marca; a categoria do veículo vem da categoria padrão do modelo.",
     combustivel_id: "Tipo de combustível cadastrado na frota.",
     tabela_id: "Tabela de preços vigente para o período.",
     vendedor_id: "Comissionado responsável pela venda ou proposta.",

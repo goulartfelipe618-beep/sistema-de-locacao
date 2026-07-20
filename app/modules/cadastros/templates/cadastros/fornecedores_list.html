@@ -25,7 +25,12 @@
       {% if f.bloqueado %}<span class="badge badge-danger">bloqueado</span>
       {% else %}<span class="badge {% if f.status.value == 'active' %}badge-success{% else %}badge-muted{% endif %}">{{ f.status.value }}</span>{% endif %}
     </td>
-    <td class="num">{% if current_user.is_superuser or 'cadastros.fornecedor.editar' in current_user.permissions %}<a class="btn btn-sm" href="/cadastros/fornecedores/{{ f.id }}/editar">Editar</a>{% endif %}</td>
+    <td class="num" style="white-space:nowrap">
+      <a class="btn btn-sm btn-primary" href="/cadastros/fornecedores/{{ f.id }}">Dossiê</a>
+      {% if current_user.is_superuser or 'cadastros.fornecedor.editar' in current_user.permissions %}
+      <a class="btn btn-sm" href="/cadastros/fornecedores/{{ f.id }}/editar">Editar</a>
+      {% endif %}
+    </td>
   </tr>
   {% endfor %}
   </tbody></table>

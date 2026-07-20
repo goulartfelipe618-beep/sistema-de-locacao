@@ -16,6 +16,8 @@ from app.core.deps import require_web_permission
 from app.core.exceptions import AppError
 from app.core.pagination import PageParams
 from app.core.templating import render
+from app.modules.cadastros.dossier_fornecedor import build_fornecedor_dossier
+from app.modules.cadastros.dossier_parceiro import build_parceiro_dossier
 from app.modules.cadastros.schemas_extra import (
     FornecedorCreate,
     FornecedorUpdate,
@@ -224,6 +226,26 @@ async def parceiro_create(
     return RedirectResponse("/cadastros/parceiros", status_code=303)
 
 
+@router.get("/cadastros/parceiros/{item_id}", response_class=HTMLResponse)
+async def parceiro_dossie(
+    request: Request,
+    session: SessionDep,
+    item_id: uuid.UUID,
+    _user: Annotated[AuthenticatedUser, Depends(require_web_permission("cadastros.parceiro.visualizar"))],
+) -> HTMLResponse:
+    """Dossiê completo do parceiro comercial."""
+    dossier = await build_parceiro_dossier(session, item_id)
+    return render(
+        request,
+        "cadastros/parceiro_dossie.html",
+        {
+            "dossier": dossier,
+            "parceiro": dossier.parceiro,
+            "title": f"Dossiê — {dossier.parceiro.nome}",
+        },
+    )
+
+
 @router.get("/cadastros/parceiros/{item_id}/editar", response_class=HTMLResponse)
 async def parceiro_edit(
     request: Request,
@@ -385,6 +407,28 @@ async def fornecedor_create(
             status_code=400,
         )
     return RedirectResponse("/cadastros/fornecedores", status_code=303)
+
+
+@router.get("/cadastros/fornecedores/{item_id}", response_class=HTMLResponse)
+async def fornecedor_dossie(
+    request: Request,
+    session: SessionDep,
+    item_id: uuid.UUID,
+    _user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("cadastros.fornecedor.visualizar"))
+    ],
+) -> HTMLResponse:
+    """Dossiê completo do fornecedor."""
+    dossier = await build_fornecedor_dossier(session, item_id)
+    return render(
+        request,
+        "cadastros/fornecedor_dossie.html",
+        {
+            "dossier": dossier,
+            "fornecedor": dossier.fornecedor,
+            "title": f"Dossiê — {dossier.fornecedor.nome}",
+        },
+    )
 
 
 @router.get("/cadastros/fornecedores/{item_id}/editar", response_class=HTMLResponse)

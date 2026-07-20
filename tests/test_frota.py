@@ -19,12 +19,12 @@ def test_placa_normalizada() -> None:
         placa="abc1d23",
         ano_fabricacao=2022,
         ano_modelo=2023,
-        categoria_id="00000000-0000-0000-0000-000000000001",
         marca_id="00000000-0000-0000-0000-000000000002",
         modelo_id="00000000-0000-0000-0000-000000000003",
         combustivel_id="00000000-0000-0000-0000-000000000004",
     )
     assert data.placa == "ABC1D23"
+    assert data.categoria_id is None
 
 
 def test_placa_invalida() -> None:
@@ -33,11 +33,36 @@ def test_placa_invalida() -> None:
             placa="XX",
             ano_fabricacao=2022,
             ano_modelo=2023,
-            categoria_id="00000000-0000-0000-0000-000000000001",
             marca_id="00000000-0000-0000-0000-000000000002",
             modelo_id="00000000-0000-0000-0000-000000000003",
             combustivel_id="00000000-0000-0000-0000-000000000004",
         )
+
+
+def test_placa_formato_antigo_com_letras() -> None:
+    data = VeiculoCreate(
+        placa="abc-1234",
+        ano_fabricacao=2020,
+        ano_modelo=2020,
+        marca_id="00000000-0000-0000-0000-000000000002",
+        modelo_id="00000000-0000-0000-0000-000000000003",
+        combustivel_id="00000000-0000-0000-0000-000000000004",
+    )
+    assert data.placa == "ABC1234"
+
+
+def test_veiculo_dossie_route_registered() -> None:
+    from app.main import app
+
+    paths = {getattr(r, "path", "") for r in app.routes}
+    assert "/frota/veiculos/{veiculo_id}" in paths
+
+
+def test_veiculo_dossier_module_exports_builder() -> None:
+    from app.modules.frota.dossier_veiculo import VeiculoDossier, build_veiculo_dossier
+
+    assert callable(build_veiculo_dossier)
+    assert VeiculoDossier.__dataclass_fields__["veiculo"]
 
 
 def test_documento_requer_validade() -> None:

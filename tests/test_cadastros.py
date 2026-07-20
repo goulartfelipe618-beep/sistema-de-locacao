@@ -75,6 +75,34 @@ def test_cliente_desbloquear_rejects_active() -> None:
         asyncio.run(svc.desbloquear(uuid.uuid4()))
 
 
+def test_parceiro_dossier_module_exports_builder() -> None:
+    from app.modules.cadastros.dossier_parceiro import ParceiroDossier, build_parceiro_dossier
+
+    assert callable(build_parceiro_dossier)
+    assert ParceiroDossier.__dataclass_fields__["parceiro"]
+
+
+def test_fornecedor_dossie_route_registered() -> None:
+    from app.main import app
+
+    paths = {getattr(r, "path", "") for r in app.routes}
+    assert "/cadastros/fornecedores/{item_id}" in paths
+
+
+def test_fornecedor_dossier_module_exports_builder() -> None:
+    from app.modules.cadastros.dossier_fornecedor import FornecedorDossier, build_fornecedor_dossier
+
+    assert callable(build_fornecedor_dossier)
+    assert FornecedorDossier.__dataclass_fields__["fornecedor"]
+
+
+def test_parceiro_dossie_route_registered() -> None:
+    from app.main import app
+
+    paths = {getattr(r, "path", "") for r in app.routes}
+    assert "/cadastros/parceiros/{item_id}" in paths
+
+
 def test_menu_cadastros_extras_enabled() -> None:
     perms = {
         "cadastros.parceiro.visualizar",

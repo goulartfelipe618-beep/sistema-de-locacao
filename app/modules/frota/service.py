@@ -769,6 +769,8 @@ class VeiculoService:
         return item
 
     async def create(self, tenant_id: uuid.UUID, data: VeiculoCreate) -> FrotaVeiculo:
+        categoria_id = await self._categoria_id_from_modelo(data.modelo_id)
+        data = data.model_copy(update={"categoria_id": categoria_id})
         await self._assert_unique(data.placa, data.renavam, data.chassi)
         await self._assert_refs(data.categoria_id, data.marca_id, data.modelo_id, data.combustivel_id)
         await self._assert_modelo_marca(data.modelo_id, data.marca_id)
@@ -795,10 +797,11 @@ class VeiculoService:
         renavam = payload.get("renavam", item.renavam)
         chassi = payload.get("chassi", item.chassi)
         await self._assert_unique(placa, renavam, chassi, exclude_id=item.id)
-        categoria_id = payload.get("categoria_id", item.categoria_id)
         marca_id = payload.get("marca_id", item.marca_id)
         modelo_id = payload.get("modelo_id", item.modelo_id)
         combustivel_id = payload.get("combustivel_id", item.combustivel_id)
+        categoria_id = await self._categoria_id_from_modelo(modelo_id)
+        payload["categoria_id"] = categoria_id
         await self._assert_refs(categoria_id, marca_id, modelo_id, combustivel_id)
         await self._assert_modelo_marca(modelo_id, marca_id)
         for k, v in payload.items():
@@ -1006,6 +1009,17 @@ class VeiculoService:
             raise ValidationError("Modelo inválido.")
         if modelo.marca_id != marca_id:
             raise ValidationError("Modelo não pertence à marca informada.")
+
+    async def _categoria_id_from_modelo(self, modelo_id: uuid.UUID) -> uuid.UUID:
+        modelo = await self.modelos.get(modelo_id)
+        if modelo is None:
+            raise ValidationError("Modelo inválido.")
+        if modelo.categoria_padrao_id is None:
+            raise ValidationError(
+                "O modelo selecionado não possui categoria padrão. "
+                "Cadastre em Frota → Modelos antes de incluir o veículo."
+            )
+        return modelo.categoria_padrao_id
 
 
 class FotoService:

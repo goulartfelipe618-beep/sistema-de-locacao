@@ -29,7 +29,12 @@
     <td class="num">{{ v.km_atual or '-' }}</td>
     <td class="num">{{ v.nivel_combustivel_atual }}/8</td>
     <td><span class="badge {% if v.status.value == 'disponivel' %}badge-success{% elif v.status.value == 'bloqueado' or v.status.value == 'baixado' %}badge-danger{% else %}badge-warning{% endif %}">{{ v.status.value }}</span></td>
-    <td class="num">{% if current_user.is_superuser or 'frota.veiculo.editar' in current_user.permissions %}<a class="btn btn-sm" href="/frota/veiculos/{{ v.id }}/editar">Editar</a>{% endif %}</td>
+    <td class="num" style="white-space:nowrap">
+      <a class="btn btn-sm btn-primary" href="/frota/veiculos/{{ v.id }}">Dossiê</a>
+      {% if current_user.is_superuser or 'frota.veiculo.editar' in current_user.permissions %}
+      <a class="btn btn-sm" href="/frota/veiculos/{{ v.id }}/editar">Editar</a>
+      {% endif %}
+    </td>
   </tr>
   {% endfor %}
   </tbody></table>

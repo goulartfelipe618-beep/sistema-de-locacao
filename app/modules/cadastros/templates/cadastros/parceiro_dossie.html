@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% set p = dossier.parceiro %}
+
+<div class="dossier-page">
+  <div class="card dossier-header-card">
+    <div class="toolbar" style="align-items:flex-start;gap:16px">
+      <div style="flex:1;min-width:0">
+        <p class="dossier-kicker">Dossiê do parceiro comercial</p>
+        <h2 class="card-title" style="margin:0 0 8px">{{ p.nome }}</h2>
+        {% if p.nome_fantasia %}<p class="form-help" style="margin:0 0 8px">{{ p.nome_fantasia }}</p>{% endif %}
+        <div class="dossier-badges">
+          {% if p.status.value == 'active' %}
+            <span class="badge badge-success">Ativo</span>
+          {% else %}
+            <span class="badge badge-muted">Inativo</span>
+          {% endif %}
+          {% if not dossier.vigencia_vigente %}<span class="badge badge-warning">Fora da vigência</span>{% endif %}
+          {% if p.person_type.value == 'pf' %}<span class="badge badge-info">Pessoa Física</span>{% else %}<span class="badge badge-info">Pessoa Jurídica</span>{% endif %}
+          <span class="badge badge-info">{{ p.tipo.value|replace('_',' ')|title }}</span>
+        </div>
+        <p class="form-help" style="margin:12px 0 0;max-width:720px">
+          Canal de captação de demanda (agências, hotéis, corretores, turismo). Não confundir com fornecedor de frota.
+        </p>
+      </div>
+      <div class="form-actions" style="margin:0;flex-wrap:wrap">
+        <a class="btn" href="/cadastros/parceiros">← Lista</a>
+        {% if current_user.is_superuser or 'cadastros.parceiro.editar' in current_user.permissions %}
+        <a class="btn btn-primary" href="/cadastros/parceiros/{{ p.id }}/editar">Editar cadastro</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="kpi-grid dossier-stats">
+    <div class="kpi">
+      <div class="kpi-label">Reservas</div>
+      <div class="kpi-value">{{ dossier.stats.reservas }}</div>
+      <div class="kpi-sub">{{ dossier.stats.reservas_abertas }} em andamento</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Cotações</div>
+      <div class="kpi-value">{{ dossier.stats.cotacoes }}</div>
+      <div class="kpi-sub">{{ dossier.stats.cotacoes_abertas }} abertas</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Contratos</div>
+      <div class="kpi-value">{{ dossier.stats.contratos }}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Comissão registrada</div>
+      <div class="kpi-value">{{ dossier.stats.comissao_total|currency }}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Tabelas tarifárias</div>
+      <div class="kpi-value">{{ dossier.stats.tabelas_ativas }}</div>
+      <div class="kpi-sub">ativas vinculadas</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Cupons do canal</div>
+      <div class="kpi-value">{{ dossier.stats.cupons_ativos }}</div>
+      <div class="kpi-sub">ativos</div>
+    </div>
+  </div>
+
+  <div class="dossier-grid">
+    <div class="card dossier-section">
+      <h3 class="dossier-section-title">Identificação</h3>
+      <dl class="dossier-dl">
+        <dt>Documento</dt>
+        <dd>{% if p.cpf %}<code>{{ p.cpf|cpf }}</code>{% elif p.cnpj %}<code>{{ p.cnpj|cnpj }}</code>{% else %}—{% endif %}</dd>
+        <dt>Tipo de parceria</dt><dd>{{ p.tipo.value|replace('_',' ')|title }}</dd>
+        <dt>Cadastro em</dt><dd>{{ p.created_at|datetime }}</dd>
+        <dt>Atualizado em</dt><dd>{{ p.updated_at|datetime }}</dd>
+      </dl>
+    </div>
+
+    <div class="card dossier-section">
+      <h3 class="dossier-section-title">Contato comercial</h3>
+      <dl class="dossier-dl">
+        <dt>E-mail</dt><dd>{% if p.email %}<a href="mailto:{{ p.email }}">{{ p.email }}</a>{% else %}—{% endif %}</dd>
+        <dt>Telefone</dt><dd>{{ p.telefone or '—' }}</dd>
+      </dl>
+    </div>
+
+    <div class="card dossier-section">
+      <h3 class="dossier-section-title">Comissões e condições</h3>
+      <dl class="dossier-dl">
+        <dt>Comissão padrão (%)</dt><dd class="num">{{ p.comissao_percentual }}%</dd>
+        <dt>Comissão fixa por locação</dt><dd class="num">{{ p.comissao_valor_fixo|currency }}</dd>
+        <dt>Vigência contratual</dt>
+        <dd>
+          {% if p.vigencia_inicio or p.vigencia_fim %}
+            {{ p.vigencia_inicio|date if p.vigencia_inicio else '—' }}
+            até {{ p.vigencia_fim|date if p.vigencia_fim else 'indeterminado' }}
+          {% else %}—{% endif %}
+        </dd>
+        <dt>Disponível para novas reservas</dt>
+        <dd>{% if p.status.value == 'active' and dossier.vigencia_vigente %}Sim{% else %}Não{% endif %}</dd>
+      </dl>
+      <p class="form-help">Percentual pode ser sobrescrito em contratos; comissão costuma incidir sobre diárias líquidas conforme política interna.</p>
+    </div>
+
+    <div class="card dossier-section">
+      <h3 class="dossier-section-title">Repasse e faturamento</h3>
+      <dl class="dossier-dl">
+        <dt>Banco</dt><dd>{{ p.banco or '—' }}</dd>
+        <dt>Agência</dt><dd>{{ p.agencia or '—' }}</dd>
+        <dt>Conta</dt><dd>{{ p.conta or '—' }}</dd>
+        <dt>Chave PIX</dt><dd>{{ p.pix_chave or '—' }}</dd>
+      </dl>
+      <p class="form-help">Dados usados para títulos a pagar de comissão e notas fiscais, quando aplicável.</p>
+    </div>
+  </div>
+
+  {% if p.observacoes %}
+  <div class="card dossier-section dossier-section--wide">
+    <h3 class="dossier-section-title">Observações</h3>
+    <p class="dossier-text-block">{{ p.observacoes }}</p>
+  </div>
+  {% endif %}
+
+  <div class="card dossier-section dossier-section--wide">
+    <h3 class="dossier-section-title">Integração no ERP</h3>
+    <ul class="dossier-impact-list">
+      <li><strong>Reservas e cotações</strong> — origem/indicação vinculada a este parceiro.</li>
+      <li><strong>Contratos</strong> — comissão calculada nas locações originadas via reserva do parceiro.</li>
+      <li><strong>Tarifário</strong> — tabelas de preço exclusivas do canal.</li>
+      <li><strong>Comercial</strong> — cupons promocionais restritos ao parceiro.</li>
+      <li><strong>Relatórios</strong> — produção, conversão e ticket médio por canal (em evolução).</li>
+    </ul>
+    {% if p.status.value != 'active' %}
+    <div class="alert alert-warning" style="margin-top:12px">Parceiro inativo: não aparece para novas reservas, mas permanece no histórico.</div>
+    {% endif %}
+  </div>
+
+  {% if dossier.tabelas_tarifarias %}
+  <div class="card dossier-section dossier-section--wide">
+    <h3 class="dossier-section-title">Tabelas tarifárias vinculadas</h3>
+    <table class="table table-compact">
+      <thead><tr><th>Nome</th><th>Vigência</th><th>Canal</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+      {% for t in dossier.tabelas_tarifarias %}
+      <tr>
+        <td><strong>{{ t.nome }}</strong></td>
+        <td>{{ t.vigencia_inicio|date }}{% if t.vigencia_fim %} — {{ t.vigencia_fim|date }}{% endif %}</td>
+        <td>{{ t.canal.value }}</td>
+        <td>{% if t.status.value == 'active' %}<span class="badge badge-success">ativa</span>{% else %}<span class="badge badge-muted">inativa</span>{% endif %}</td>
+        <td class="num"><a class="btn btn-sm" href="/tarifario/tabelas/{{ t.id }}/editar">Abrir</a></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  {% if dossier.cupons %}
+  <div class="card dossier-section dossier-section--wide">
+    <h3 class="dossier-section-title">Cupons promocionais do canal</h3>
+    <table class="table table-compact">
+      <thead><tr><th>Código</th><th>Desconto</th><th>Status</th><th>Usos</th></tr></thead>
+      <tbody>
+      {% for c in dossier.cupons %}
+      <tr>
+        <td><code>{{ c.codigo }}</code></td>
+        <td class="num">{% if c.tipo.value == 'percentual' %}{{ c.valor }}%{% else %}{{ c.valor|currency }}{% endif %}</td>
+        <td>{{ c.status.value }}</td>
+        <td class="num">{{ c.usos_totais }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <p class="form-help"><a href="/comercial/cupons">Ver todos os cupons</a></p>
+  </div>
+  {% endif %}
+
+  {% if dossier.reservas_recentes or dossier.cotacoes_recentes or dossier.contratos_recentes %}
+  <div class="dossier-grid dossier-grid--history">
+    {% if dossier.reservas_recentes %}
+    <div class="card dossier-section">
+      <h3 class="dossier-section-title">Reservas recentes</h3>
+      <table class="table table-compact">
+        <thead><tr><th>Nº</th><th>Status</th><th>Valor</th></tr></thead>
+        <tbody>
+        {% for r in dossier.reservas_recentes %}
+        <tr>
+          <td><a href="/reservas/{{ r.id }}">{{ r.numero }}</a></td>
+          <td>{{ r.status.value }}</td>
+          <td class="num">{{ r.valor_total|currency }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+    {% if dossier.cotacoes_recentes %}
+    <div class="card dossier-section">
+      <h3 class="dossier-section-title">Cotações recentes</h3>
+      <table class="table table-compact">
+        <thead><tr><th>Nº</th><th>Status</th><th>Validade</th></tr></thead>
+        <tbody>
+        {% for c in dossier.cotacoes_recentes %}
+        <tr>
+          <td>{{ c.numero }}</td>
+          <td>{{ c.status.value }}</td>
+          <td>{{ c.validade_em|datetime }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      <p class="form-help"><a href="/reservas/cotacoes">Lista de cotações</a></p>
+    </div>
+    {% endif %}
+    {% if dossier.contratos_recentes %}
+    <div class="card dossier-section">
+      <h3 class="dossier-section-title">Contratos originados</h3>
+      <table class="table table-compact">
+        <thead><tr><th>Nº</th><th>Status</th><th>Comissão</th></tr></thead>
+        <tbody>
+        {% for ct in dossier.contratos_recentes %}
+        <tr>
+          <td><a href="/locacoes/contratos/{{ ct.id }}">{{ ct.numero }}</a></td>
+          <td>{{ ct.status.value }}</td>
+          <td class="num">{% if ct.valor_comissao %}{{ ct.valor_comissao|currency }}{% else %}—{% endif %}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="card dossier-section dossier-section--wide">
+    <div class="empty-state">Nenhuma reserva, cotação ou contrato vinculado a este parceiro ainda.</div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

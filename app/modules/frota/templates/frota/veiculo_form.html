@@ -49,13 +49,6 @@
       <legend>Classificação</legend>
       <div class="form-grid">
         <div class="form-group">
-          {{ field_label('Categoria', true, 'categoria_id') }}
-          <select class="form-input" id="categoria_id" name="categoria_id" required>
-            <option value="">Selecionar</option>
-            {% for c in categorias %}<option value="{{ c.id }}" {% if veiculo and veiculo.categoria_id == c.id %}selected{% endif %}>{{ c.nome }}</option>{% endfor %}
-          </select>
-        </div>
-        <div class="form-group">
           {{ field_label('Marca', true, 'marca_id') }}
           <select class="form-input" id="marca_id" name="marca_id" required>
             <option value="">Selecionar</option>
@@ -69,6 +62,15 @@
             {% for m in modelos %}<option value="{{ m.id }}" {% if veiculo and veiculo.modelo_id == m.id %}selected{% endif %}>{{ m.nome }}</option>{% endfor %}
           </select>
           <p class="form-help">Modelos filtrados pela marca selecionada.</p>
+        </div>
+        <div class="form-group">
+          {{ field_label('Categoria', false, 'categoria_display') }}
+          <p class="form-input form-input--readonly" id="categoria_display" aria-live="polite" style="margin:0">
+            {% if veiculo %}
+              {% for c in categorias %}{% if c.id == veiculo.categoria_id %}{{ c.nome }}{% endif %}{% endfor %}
+            {% else %}— Selecione marca e modelo —{% endif %}
+          </p>
+          <p class="form-help">Preenchida automaticamente pela <strong>categoria padrão</strong> do modelo (Frota → Modelos).</p>
         </div>
         <div class="form-group">
           {{ field_label('Combustível', true, 'combustivel_id') }}
@@ -180,6 +182,9 @@
 
     <div class="form-actions">
       <button class="btn btn-primary" type="submit">Salvar</button>
+      {% if veiculo and (current_user.is_superuser or 'frota.veiculo.visualizar' in current_user.permissions) %}
+      <a class="btn" href="/frota/veiculos/{{ veiculo.id }}">Dossiê</a>
+      {% endif %}
       <a class="btn" href="/frota/veiculos">Cancelar</a>
     </div>
     {{ form_legend() }}
