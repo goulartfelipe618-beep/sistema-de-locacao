@@ -33,3 +33,24 @@ def test_get_form_instruction_known_key() -> None:
 
 def test_get_form_instruction_unknown_key() -> None:
     assert get_form_instruction("inexistente.xyz") is None
+
+
+def test_list_templates_import_list_create_actions() -> None:
+    from pathlib import Path
+
+    root = Path("app")
+    missing: list[str] = []
+    for path in root.rglob("*_list.html"):
+        text = path.read_text(encoding="utf-8")
+        if "list_create_actions(" not in text:
+            continue
+        if "macros/form_instructions.html" not in text:
+            missing.append(str(path))
+    assert not missing, "Import faltante em: " + ", ".join(missing)
+
+
+def test_instruction_macros_registered_as_globals() -> None:
+    from app.core.templating import templates
+
+    for name in ("list_create_actions", "form_instructions", "form_page_header"):
+        assert name in templates.env.globals, name

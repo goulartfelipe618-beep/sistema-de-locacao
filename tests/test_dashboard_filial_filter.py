@@ -26,7 +26,16 @@ def test_spa_nav_omits_empty_query_params() -> None:
     from pathlib import Path
 
     js = Path("app/web/static/js/spa-nav.js").read_text(encoding="utf-8")
-    assert "String(value).trim() !== \"\"" in js
+    assert 'String(value).trim() !== ""' in js
+
+
+def test_spa_nav_uses_longest_prefix_match() -> None:
+    from pathlib import Path
+
+    js = Path("app/web/static/js/spa-nav.js").read_text(encoding="utf-8")
+    assert "navPathMatches" in js
+    assert "bestLen" in js
+    assert "pendingSpaUrl" in js
 
 
 def test_dashboard_parses_filial_from_query_only() -> None:

@@ -46,11 +46,14 @@
     return true;
   }
 
+  var pendingSpaUrl = null;
+
   function spaNavigate(url) {
     if (!window.htmx) {
       window.location.href = url;
       return;
     }
+    pendingSpaUrl = url;
     showLoader();
     window.htmx.ajax("GET", url, {
       target: CONTENT,
@@ -73,16 +76,39 @@
     return qs ? action + "?" + qs : action;
   }
 
-  function updateActiveNav() {
-    var path = window.location.pathname;
-    document.querySelectorAll(".nav-sub-link, .nav-group-link").forEach(function (el) {
-      if (el.classList.contains("is-disabled")) return;
+  function navPathMatches(path, href) {
+    if (!href) return false;
+    if (path === href) return true;
+    if (href === "/") return false;
+    return path.indexOf(href + "/") === 0;
+  }
+
+  function updateActiveNav(optPath) {
+    var path = optPath || window.location.pathname;
+    var links = Array.prototype.slice.call(
+      document.querySelectorAll(".nav-sub-link, .nav-group-link")
+    ).filter(function (el) {
+      return !el.classList.contains("is-disabled");
+    });
+
+    var best = null;
+    var bestLen = -1;
+    links.forEach(function (el) {
+      var href = el.getAttribute("href");
+      if (!href || !navPathMatches(path, href)) return;
+      if (href.length > bestLen) {
+        best = el;
+        bestLen = href.length;
+      }
+    });
+
+    links.forEach(function (el) {
       var href = el.getAttribute("href");
       if (!href) {
         el.classList.remove("is-active");
         return;
       }
-      var active = path === href || (href !== "/" && path.indexOf(href + "/") === 0);
+      var active = el === best;
       el.classList.toggle("is-active", active);
       if (active) {
         var group = el.closest("[data-nav-group]");
@@ -113,10 +139,14 @@
     var link = event.target.closest("a");
     if (!shouldSpaNavigate(link)) return;
     event.preventDefault();
+    var href = link.getAttribute("href");
     if (window.erpLayout && window.erpLayout.closeSidebar) {
       window.erpLayout.closeSidebar();
     }
-    spaNavigate(link.getAttribute("href"));
+    try {
+      updateActiveNav(new URL(href, window.location.origin).pathname);
+    } catch (ignore) {}
+    spaNavigate(href);
   });
 
   document.addEventListener("submit", function (event) {
@@ -146,14 +176,23 @@
     }
   });
 
-  document.addEventListener("htmx:responseError", function () {
+  document.addEventListener("htmx:responseError", function (event) {
     hideLoader();
     var target = document.querySelector(CONTENT);
     if (target) target.classList.remove("is-loading");
+    var detail = event.detail;
+    if (!detail || !detail.target || detail.target.id !== "app-content") return;
+    var url =
+      pendingSpaUrl ||
+      (detail.pathInfo && (detail.pathInfo.requestPath || detail.pathInfo.path)) ||
+      null;
+    pendingSpaUrl = null;
+    if (url) window.location.href = url;
   });
 
   document.addEventListener("htmx:afterSwap", function (event) {
     if (event.detail.target && event.detail.target.id === "app-content") {
+      pendingSpaUrl = null;
       syncChrome();
       hideLoader();
       window.scrollTo(0, 0);
@@ -162,6 +201,7 @@
 
   document.addEventListener("htmx:afterRequest", function (event) {
     if (event.detail.successful && event.detail.target && event.detail.target.id === "app-content") {
+      pendingSpaUrl = null;
       syncChrome();
     }
   });

@@ -71,7 +71,20 @@ def _build_environment() -> Environment:
     from app.web.form_instructions import get_form_instruction
 
     env.globals["form_instruction"] = get_form_instruction
+    _register_instruction_macros(env)
     return env
+
+
+def _register_instruction_macros(env: Environment) -> None:
+    """Expõe macros de instruções globalmente (evita 500 se faltar {% from %})."""
+    try:
+        mod = env.get_template("macros/form_instructions.html").module
+    except Exception:
+        return
+    for name in ("form_instructions", "list_create_actions", "form_page_header"):
+        macro = getattr(mod, name, None)
+        if macro is not None:
+            env.globals[name] = macro
 
 
 # Objeto de templates compartilhado (Starlette gerencia o ``request`` no contexto).
