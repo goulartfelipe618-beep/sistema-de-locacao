@@ -1,4 +1,4 @@
-"""API pública autenticada por API Key (§12.5)."""
+"""API pública autenticada por API Key (§12.5) — site B2C consome somente estes endpoints."""
 
 from __future__ import annotations
 
@@ -8,13 +8,92 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
 
+from app import __version__
 from app.modules.integracoes.deps import PublicSessionDep, require_api_key_scope
 from app.modules.integracoes.models import IntApiKey
+from app.modules.integracoes.public_schemas import (
+    PublicCotacaoSiteCreate,
+    PublicCotacaoSiteRead,
+    PublicReservaSiteCreate,
+)
+from app.modules.integracoes.public_site_service import (
+    cotacao_site,
+    criar_reserva_site,
+    get_empresa_public,
+    list_filiais_public,
+    list_grupos_public,
+    list_veiculos_public,
+)
 from app.modules.locacoes.service import ContratoService
 from app.modules.reservas.schemas import ReservaCreate
 from app.modules.reservas.service import DisponibilidadeService, ReservaService
+from app.shared.enums import ReservaOrigem
 
 public_router = APIRouter(prefix="/public", tags=["API Pública"])
+
+
+@public_router.get("/ping")
+async def public_ping(
+    key: Annotated[IntApiKey, Depends(require_api_key_scope("catalogo:read"))],
+) -> dict:
+    """Health check para o site (indicador “API conectada”)."""
+    return {"ok": True, "tenant_id": str(key.tenant_id), "api_version": __version__}
+
+
+@public_router.get("/empresa")
+async def public_empresa(
+    session: PublicSessionDep,
+    key: Annotated[IntApiKey, Depends(require_api_key_scope("catalogo:read"))],
+) -> dict:
+    """Dados cadastrais e branding (logo, CNPJ, endereço) — editados no ERP."""
+    return await get_empresa_public(session, key.tenant_id)
+
+
+@public_router.get("/filiais")
+async def public_filiais(
+    session: PublicSessionDep,
+    key: Annotated[IntApiKey, Depends(require_api_key_scope("catalogo:read"))],
+) -> list[dict]:
+    """Lojas/pontos de retirada ativos."""
+    return await list_filiais_public(session, key.tenant_id)
+
+
+@public_router.get("/grupos")
+async def public_grupos(
+    session: PublicSessionDep,
+    key: Annotated[IntApiKey, Depends(require_api_key_scope("catalogo:read"))],
+    filial_id: uuid.UUID | None = Query(None),
+    retirada_em: datetime | None = Query(None),
+    devolucao_em: datetime | None = Query(None),
+) -> list[dict]:
+    """Grupos de veículos (categorias) com estoque elegível ao site no período."""
+    return await list_grupos_public(
+        session,
+        key.tenant_id,
+        filial_id=filial_id,
+        retirada_em=retirada_em,
+        devolucao_em=devolucao_em,
+    )
+
+
+@public_router.post("/cotacao", response_model=PublicCotacaoSiteRead)
+async def public_cotacao(
+    session: PublicSessionDep,
+    key: Annotated[IntApiKey, Depends(require_api_key_scope("pricing:read"))],
+    payload: PublicCotacaoSiteCreate,
+) -> PublicCotacaoSiteRead:
+    """Cotação com canal SITE (tarifário, taxas e proteções cadastrados no ERP)."""
+    return await cotacao_site(session, key.tenant_id, payload)
+
+
+@public_router.post("/reservas/site", status_code=201)
+async def public_criar_reserva_site(
+    session: PublicSessionDep,
+    key: Annotated[IntApiKey, Depends(require_api_key_scope("reservas:write"))],
+    payload: PublicReservaSiteCreate,
+) -> dict:
+    """Cria reserva + cliente (find-or-create) com origem website."""
+    return await criar_reserva_site(session, key.tenant_id, payload)
 
 
 @public_router.get("/disponibilidade")
@@ -46,7 +125,9 @@ async def public_criar_reserva(
     key: Annotated[IntApiKey, Depends(require_api_key_scope("reservas:write"))],
     payload: ReservaCreate,
 ) -> dict:
-    reserva = await ReservaService(session).create(key.tenant_id, payload)
+    """Legado: exige cliente_id. Origem forçada para website."""
+    data = payload.model_copy(update={"origem": ReservaOrigem.WEBSITE})
+    reserva = await ReservaService(session).create(key.tenant_id, data)
     return {"id": str(reserva.id), "numero": reserva.numero, "status": reserva.status.value}
 
 
@@ -59,25 +140,15 @@ async def public_veiculos(
     retirada_em: datetime | None = Query(None),
     devolucao_em: datetime | None = Query(None),
 ) -> list[dict]:
-    from app.modules.intermediacao.service import IntermediacaoService
-
-    svc = IntermediacaoService(session)
-    rows = await svc.list_veiculos_site(
-        key.tenant_id, filial_id=filial_id, categoria_id=categoria_id
+    """Veículos publicáveis (sem placa). Mesmas regras: publicar_site, disponível, modo operação."""
+    return await list_veiculos_public(
+        session,
+        key.tenant_id,
+        filial_id=filial_id,
+        categoria_id=categoria_id,
+        retirada_em=retirada_em,
+        devolucao_em=devolucao_em,
     )
-    if retirada_em and devolucao_em:
-        from app.modules.frota.models import FrotaVeiculo
-
-        filtered = []
-        for item in rows:
-            veiculo = await session.get(FrotaVeiculo, uuid.UUID(item["id"]))
-            if veiculo is None:
-                continue
-            ok, _ = await svc.veiculo_disponivel_periodo(veiculo, retirada_em, devolucao_em)
-            if ok:
-                filtered.append(item)
-        return filtered
-    return rows
 
 
 @public_router.get("/contratos/{contrato_id}")

@@ -59,8 +59,10 @@ _EDIT_PERMS: dict[str, str] = {
 }
 
 API_PUBLIC_SCOPES: list[tuple[str, str]] = [
+    ("catalogo:read", "Empresa, filiais e grupos de veículos"),
     ("disponibilidade:read", "Consultar disponibilidade"),
     ("veiculos:read", "Listar veículos publicados no site"),
+    ("pricing:read", "Cotação de preços (canal site)"),
     ("reservas:write", "Criar reservas"),
     ("contratos:read", "Consultar contratos"),
 ]
