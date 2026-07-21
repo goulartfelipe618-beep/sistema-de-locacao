@@ -36,6 +36,9 @@ def test_spa_nav_uses_longest_prefix_match() -> None:
     assert "navPathMatches" in js
     assert "bestLen" in js
     assert "pendingSpaUrl" in js
+    assert "outerHTML" in js
+    assert "pushSpaUrl" in js
+    assert "history.pushState" in js
 
 
 def test_dashboard_parses_filial_from_query_only() -> None:

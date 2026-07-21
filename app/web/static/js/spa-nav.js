@@ -1,6 +1,6 @@
 /**
  * Navegação SPA: troca o conteúdo principal sem recarregar a página inteira.
- * Sidebar permanece fixa; URL atualizada via History API (HTMX push-url).
+ * Sidebar permanece fixa; URL e título sincronizados via History API.
  */
 (function () {
   var CONTENT = "#app-content";
@@ -47,21 +47,54 @@
   }
 
   var pendingSpaUrl = null;
+  var skipNextHistoryPush = false;
 
-  function spaNavigate(url) {
-    if (!window.htmx) {
-      window.location.href = url;
-      return;
+  function pushSpaUrl(url) {
+    if (!url) return;
+    try {
+      var u = new URL(url, window.location.origin);
+      var next = u.pathname + u.search;
+      var cur = window.location.pathname + window.location.search;
+      if (next !== cur) {
+        history.pushState({ erpSpa: true }, "", next);
+      }
+    } catch (ignore) {}
+  }
+
+  function requestUrlFromDetail(detail) {
+    if (pendingSpaUrl) return pendingSpaUrl;
+    if (detail.pathInfo && detail.pathInfo.requestPath) {
+      return detail.pathInfo.requestPath;
     }
-    pendingSpaUrl = url;
+    if (detail.xhr && detail.xhr.responseURL) {
+      return detail.xhr.responseURL;
+    }
+    return null;
+  }
+
+  function spaAjax(url) {
     showLoader();
     window.htmx.ajax("GET", url, {
       target: CONTENT,
       select: CONTENT,
-      swap: "innerHTML",
-      pushUrl: true,
+      swap: "outerHTML",
       headers: { "X-CSRF-Token": csrfToken() },
     });
+  }
+
+  function spaNavigate(url, options) {
+    options = options || {};
+    if (!window.htmx) {
+      window.location.href = url;
+      return;
+    }
+    if (options.fromHistory) {
+      pendingSpaUrl = null;
+      skipNextHistoryPush = true;
+    } else {
+      pendingSpaUrl = url;
+    }
+    spaAjax(url);
   }
 
   function buildGetUrl(form) {
@@ -119,14 +152,35 @@
     });
   }
 
+  function pageTitleFromContent(main) {
+    if (!main) return null;
+    var fromAttr = main.getAttribute("data-page-title");
+    if (fromAttr && fromAttr.trim()) return fromAttr.trim();
+    var crumb = main.querySelector(".breadcrumb strong");
+    if (crumb && crumb.textContent) return crumb.textContent.trim();
+    return null;
+  }
+
   function syncChrome() {
     var main = document.querySelector(CONTENT);
     if (!main) return;
-    var title = main.getAttribute("data-page-title") || "Painel";
+    var title = pageTitleFromContent(main) || "Painel";
     var titleEl = document.querySelector(NAVBAR_TITLE);
     if (titleEl) titleEl.textContent = title;
     document.title = title + " · " + appName();
     updateActiveNav();
+  }
+
+  function finishContentSwap(detail) {
+    var url = requestUrlFromDetail(detail || {});
+    if (url && !skipNextHistoryPush) {
+      pushSpaUrl(url);
+    }
+    skipNextHistoryPush = false;
+    pendingSpaUrl = null;
+    syncChrome();
+    hideLoader();
+    window.scrollTo(0, 0);
   }
 
   function shouldSpaNavigate(link) {
@@ -160,6 +214,15 @@
     spaNavigate(buildGetUrl(form));
   });
 
+  document.body.addEventListener("htmx:beforeSwap", function (event) {
+    var target = event.detail.target;
+    if (!target || target.id !== "app-content") return;
+    var frag = event.detail.fragment;
+    if (frag && frag.nodeType === 1 && frag.id === "app-content") {
+      event.detail.swapStyle = "outerHTML";
+    }
+  });
+
   document.addEventListener("htmx:beforeRequest", function (event) {
     var target = event.detail.target;
     if (target && target.id === "app-content") {
@@ -187,27 +250,19 @@
       (detail.pathInfo && (detail.pathInfo.requestPath || detail.pathInfo.path)) ||
       null;
     pendingSpaUrl = null;
+    skipNextHistoryPush = false;
     if (url) window.location.href = url;
   });
 
   document.addEventListener("htmx:afterSwap", function (event) {
-    if (event.detail.target && event.detail.target.id === "app-content") {
-      pendingSpaUrl = null;
-      syncChrome();
-      hideLoader();
-      window.scrollTo(0, 0);
-    }
-  });
-
-  document.addEventListener("htmx:afterRequest", function (event) {
-    if (event.detail.successful && event.detail.target && event.detail.target.id === "app-content") {
-      pendingSpaUrl = null;
-      syncChrome();
+    var target = event.detail.target;
+    if (target && target.id === "app-content") {
+      finishContentSwap(event.detail);
     }
   });
 
   window.addEventListener("popstate", function () {
-    spaNavigate(window.location.pathname + window.location.search);
+    spaNavigate(window.location.pathname + window.location.search, { fromHistory: true });
   });
 
   document.body.addEventListener("htmx:configRequest", function (event) {
