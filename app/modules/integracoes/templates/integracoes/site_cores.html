@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% from "macros/forms.html" import field_label %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card erp-form-card">
+  <h2 class="card-title">{{ title }}</h2>
+  <p class="form-help">
+    Personalize a paleta do site público (botões, cabeçalho, textos e fundo).
+    O padrão é preto e branco. As alterações são aplicadas automaticamente via
+    <code>GET /api/v1/public/empresa</code> (campo <code>tema</code>).
+  </p>
+
+  {% if error %}
+  <div class="alert alert-error">{{ error }}</div>
+  {% endif %}
+
+  <div class="site-theme-preview" id="site-theme-preview" style="margin:20px 0;padding:16px;border-radius:8px;border:1px solid var(--border);">
+    <p style="margin:0 0 8px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;opacity:.7">Prévia</p>
+    <div class="site-theme-preview__header" style="padding:12px 16px;border-radius:6px;margin-bottom:8px;font-weight:700">Cabeçalho / botões</div>
+    <div class="site-theme-preview__body" style="padding:12px 16px;border-radius:6px">
+      <p style="margin:0 0 4px;font-weight:600">Texto principal</p>
+      <p style="margin:0;font-size:13px;opacity:.75">Texto secundário e fundo da página</p>
+    </div>
+  </div>
+
+  {% if can_edit %}
+  <form method="post" action="/integracoes/site/cores" class="erp-form" id="site-cores-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
+      <div class="form-group">
+        {{ field_label('Cor primária (header, botões, destaques)', true, 'site_primary_color') }}
+        <input class="form-input" type="color" id="site_primary_color" name="site_primary_color"
+               value="{{ colors.primary }}">
+        <p class="form-help">Padrão: #111111</p>
+      </div>
+      <div class="form-group">
+        {{ field_label('Cor de fundo da página', true, 'site_background_color') }}
+        <input class="form-input" type="color" id="site_background_color" name="site_background_color"
+               value="{{ colors.background }}">
+        <p class="form-help">Padrão: #ffffff</p>
+      </div>
+      <div class="form-group">
+        {{ field_label('Cor do texto', true, 'site_text_color') }}
+        <input class="form-input" type="color" id="site_text_color" name="site_text_color"
+               value="{{ colors.text }}">
+        <p class="form-help">Padrão: #111111</p>
+      </div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:16px">
+      <button class="btn btn-primary" type="submit">Salvar cores</button>
+      <button class="btn btn-secondary" type="submit" name="reset_defaults" value="on"
+              formaction="/integracoes/site/cores"
+              onclick="return confirm('Restaurar paleta preto e branco padrão do site?');">
+        Restaurar padrão
+      </button>
+    </div>
+  </form>
+  {% else %}
+  <p class="form-help">Você não tem permissão para editar as cores do site.</p>
+  {% endif %}
+</div>
+
+<script>
+(function () {
+  var preview = document.getElementById('site-theme-preview');
+  if (!preview) return;
+  var header = preview.querySelector('.site-theme-preview__header');
+  var body = preview.querySelector('.site-theme-preview__body');
+  var inputs = ['site_primary_color', 'site_background_color', 'site_text_color'].map(function (id) {
+    return document.getElementById(id);
+  }).filter(Boolean);
+
+  function luminance(hex) {
+    var h = hex.replace('#', '');
+    if (h.length === 3) h = h.split('').map(function (c) { return c + c; }).join('');
+    var r = parseInt(h.slice(0, 2), 16) / 255;
+    var g = parseInt(h.slice(2, 4), 16) / 255;
+    var b = parseInt(h.slice(4, 6), 16) / 255;
+    var a = [r, g, b].map(function (c) {
+      return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * a[0] + 0.7152 * a[1] + 0.0722 * a[2];
+  }
+
+  function onPrimary(bg) {
+    return luminance(bg) < 0.45 ? '#ffffff' : '#111111';
+  }
+
+  function paint() {
+    var primary = document.getElementById('site_primary_color').value;
+    var bg = document.getElementById('site_background_color').value;
+    var text = document.getElementById('site_text_color').value;
+    header.style.background = primary;
+    header.style.color = onPrimary(primary);
+    body.style.background = bg;
+    body.style.color = text;
+    preview.style.background = bg;
+  }
+
+  inputs.forEach(function (el) { el.addEventListener('input', paint); });
+  paint();
+})();
+</script>
+{% endblock %}

@@ -97,8 +97,21 @@
     return nome;
   }
 
+  function applySiteTheme(tema) {
+    if (!tema || !tema.css || typeof tema.css !== 'object') return;
+    var root = document.documentElement;
+    Object.keys(tema.css).forEach(function (key) {
+      var value = tema.css[key];
+      if (value != null && value !== '') {
+        root.style.setProperty(key, value);
+      }
+    });
+  }
+
   function applyEmpresa(empresa) {
     if (!empresa || typeof empresa !== 'object') return;
+
+    if (empresa.tema) applySiteTheme(empresa.tema);
 
     var img = $(SELECTORS.brandLogoImg);
     var mark = $('.logo__mark');

@@ -5,6 +5,7 @@ from __future__ import annotations
 import uuid
 from typing import Annotated, Any
 
+from pydantic import ValidationError
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -39,7 +40,9 @@ from app.modules.integracoes.service import (
     WebhookLogService,
 )
 from app.modules.integracoes.site_slides import SiteSlideService, resolve_slide_image_url
-from app.modules.tenants.service import FilialService
+from app.modules.tenants.schemas import SiteThemeUpdate
+from app.modules.tenants.service import FilialService, TenantService
+from app.modules.tenants.site_theme import resolved_site_colors, site_theme_payload
 from app.shared.enums import IntegracaoTipo
 
 router = APIRouter()
@@ -445,6 +448,79 @@ async def outbound_webhook_excluir(
     except AppError:
         await session.rollback()
     return RedirectResponse("/integracoes/api", status_code=303)
+
+
+@router.get("/integracoes/site/cores", response_class=HTMLResponse)
+async def site_cores_list(
+    request: Request,
+    session: SessionDep,
+    current_user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("integracoes.site.visualizar"))
+    ],
+) -> HTMLResponse:
+    tenant = await TenantService(session).get_tenant(current_user.tenant_id)
+    can_edit = has_permission(
+        current_user.permissions, "integracoes.site.editar", is_superuser=current_user.is_superuser
+    )
+    colors = resolved_site_colors(tenant)
+    return render(
+        request,
+        "integracoes/site_cores.html",
+        {
+            "title": "Site — Cores",
+            "tenant": tenant,
+            "colors": colors,
+            "tema": site_theme_payload(tenant),
+            "can_edit": can_edit,
+        },
+    )
+
+
+@router.post("/integracoes/site/cores", response_class=HTMLResponse)
+async def site_cores_salvar(
+    request: Request,
+    session: SessionDep,
+    current_user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("integracoes.site.editar"))
+    ],
+    site_primary_color: Annotated[str, Form()] = "",
+    site_background_color: Annotated[str, Form()] = "",
+    site_text_color: Annotated[str, Form()] = "",
+    reset_defaults: Annotated[str, Form()] = "",
+) -> HTMLResponse:
+    svc = TenantService(session)
+    try:
+        data = SiteThemeUpdate(
+            site_primary_color=site_primary_color.strip() or None,
+            site_background_color=site_background_color.strip() or None,
+            site_text_color=site_text_color.strip() or None,
+            reset_defaults=reset_defaults == "on",
+        )
+        await svc.update_site_theme(current_user.tenant_id, data)
+        await session.commit()
+        request.session["_flash"] = {
+            "type": "success",
+            "message": "Cores do site salvas. A alteração aparece no site em instantes.",
+        }
+        return RedirectResponse("/integracoes/site/cores", status_code=303)
+    except (AppError, ValidationError) as exc:
+        await session.rollback()
+        tenant = await svc.get_tenant(current_user.tenant_id)
+        colors = resolved_site_colors(tenant)
+        message = exc.message if isinstance(exc, AppError) else str(exc.errors()[0].get("msg", exc))
+        return render(
+            request,
+            "integracoes/site_cores.html",
+            {
+                "title": "Site — Cores",
+                "tenant": tenant,
+                "colors": colors,
+                "tema": site_theme_payload(tenant),
+                "can_edit": True,
+                "error": message,
+            },
+            status_code=400,
+        )
 
 
 @router.get("/integracoes/site/slides", response_class=HTMLResponse)

@@ -61,6 +61,10 @@ class Tenant(BaseModel):
     logo_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     brand_primary_color: Mapped[str | None] = mapped_column(String(7), nullable=True)
 
+    site_primary_color: Mapped[str | None] = mapped_column(String(7), nullable=True)
+    site_background_color: Mapped[str | None] = mapped_column(String(7), nullable=True)
+    site_text_color: Mapped[str | None] = mapped_column(String(7), nullable=True)
+
     zip_code: Mapped[str | None] = mapped_column(String(8), nullable=True)
     address: Mapped[str | None] = mapped_column(String(255), nullable=True)
     number: Mapped[str | None] = mapped_column(String(20), nullable=True)

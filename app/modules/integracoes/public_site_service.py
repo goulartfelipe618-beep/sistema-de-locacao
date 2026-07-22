@@ -24,6 +24,7 @@ from app.modules.intermediacao.service import IntermediacaoService
 from app.modules.reservas.schemas import ReservaCreate
 from app.modules.reservas.service import DisponibilidadeService, ReservaService
 from app.modules.tenants.branding import resolve_logo_url
+from app.modules.tenants.site_theme import site_theme_payload
 from app.modules.tenants.models import Tenant
 from app.modules.tenants.setup import format_tenant_address
 from app.modules.tenants.service import FilialService
@@ -57,6 +58,7 @@ async def get_empresa_public(session: AsyncSession, tenant_id: uuid.UUID) -> dic
         "cidade": tenant.city,
         "uf": tenant.state,
         "rodape_documentos": tenant.document_footer_text,
+        "tema": site_theme_payload(tenant),
     }
 
 

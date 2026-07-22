@@ -56,6 +56,9 @@ class TenantUpdate(BaseModel):
     logo_storage_key: str | None = Field(default=None, max_length=500)
     logo_url: str | None = Field(default=None)
     brand_primary_color: str | None = Field(default=None, max_length=7)
+    site_primary_color: str | None = Field(default=None, max_length=7)
+    site_background_color: str | None = Field(default=None, max_length=7)
+    site_text_color: str | None = Field(default=None, max_length=7)
 
     @field_validator("brand_primary_color")
     @classmethod
@@ -66,6 +69,32 @@ class TenantUpdate(BaseModel):
         if not color.startswith("#") or len(color) not in (4, 7):
             raise ValueError("Cor deve ser hexadecimal (#RGB ou #RRGGBB).")
         return color
+
+
+def _optional_hex_color(value: str | None) -> str | None:
+    if value is None:
+        return None
+    stripped = value.strip()
+    if not stripped:
+        return None
+    color = stripped
+    if not color.startswith("#") or len(color) not in (4, 7):
+        raise ValueError("Cor deve ser hexadecimal (#RGB ou #RRGGBB).")
+    return color
+
+
+class SiteThemeUpdate(BaseModel):
+    """Cores do site institucional público."""
+
+    site_primary_color: str | None = Field(default=None, max_length=7)
+    site_background_color: str | None = Field(default=None, max_length=7)
+    site_text_color: str | None = Field(default=None, max_length=7)
+    reset_defaults: bool = False
+
+    @field_validator("site_primary_color", "site_background_color", "site_text_color")
+    @classmethod
+    def _validate_optional_color(cls, value: str | None) -> str | None:
+        return _optional_hex_color(value)
 
 
 class TenantSystemUpdate(BaseModel):

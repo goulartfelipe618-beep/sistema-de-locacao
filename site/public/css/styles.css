@@ -208,25 +208,25 @@ a:hover {
   text-align: center;
   text-decoration: none;
   color: var(--color-text-muted);
-  background: #ececec;
+  background: color-mix(in srgb, var(--color-bg-muted) 82%, var(--color-text) 18%);
   border-right: 1px solid var(--color-bg);
   white-space: nowrap;
 }
 
 .topbar__tab:nth-child(2) {
-  background: #e0e0e0;
+  background: color-mix(in srgb, var(--color-bg-muted) 74%, var(--color-text) 26%);
 }
 
 .topbar__tab:nth-child(3) {
-  background: #d4d4d4;
+  background: color-mix(in srgb, var(--color-bg-muted) 66%, var(--color-text) 34%);
 }
 
 .topbar__tab:nth-child(4) {
-  background: #c9c9c9;
+  background: color-mix(in srgb, var(--color-bg-muted) 58%, var(--color-text) 42%);
 }
 
 .topbar__tab:nth-child(5) {
-  background: #bdbdbd;
+  background: color-mix(in srgb, var(--color-bg-muted) 50%, var(--color-text) 50%);
 }
 
 .topbar__tab.is-active {

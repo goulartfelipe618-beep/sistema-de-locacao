@@ -560,6 +560,12 @@ NAVIGATION: tuple[MenuSection, ...] = (
                 permission="integracoes.site.visualizar",
                 implemented=True,
             ),
+            MenuItem(
+                "Site — Cores",
+                url="/integracoes/site/cores",
+                permission="integracoes.site.visualizar",
+                implemented=True,
+            ),
         ),
     ),
     MenuSection(
