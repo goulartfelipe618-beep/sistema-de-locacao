@@ -227,6 +227,7 @@
       return heroSlideMarkup(s, i === 0);
     }).join('');
     slidesRoot.classList.remove('hero__slides--loading');
+    slidesRoot.classList.add('hero__slides--erp');
 
     if (dotsRoot) {
       dotsRoot.innerHTML = slides

@@ -554,6 +554,53 @@ a:hover {
 .hero__slides {
   position: relative;
   min-height: var(--hero-min-h);
+  overflow: hidden;
+}
+
+/* Slides ERP: largura total, altura proporcional, sem cortar a imagem */
+.hero__slides--erp {
+  min-height: 0;
+}
+
+.hero__slides--erp .hero__slide--erp {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: transparent;
+  filter: none;
+}
+
+.hero__slides--erp .hero__slide--erp.is-active {
+  position: relative;
+  height: auto;
+  min-height: 0;
+  opacity: 1;
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+.hero__slides--erp .hero__slide--erp::after {
+  content: none;
+}
+
+.hero__slides--erp .hero__slide-img {
+  position: static;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  margin: 0;
+  object-fit: contain;
+  object-position: center top;
 }
 
 .hero__slide {
@@ -608,6 +655,15 @@ a:hover {
   object-position: center center;
   display: block;
   pointer-events: none;
+}
+
+/* legado: slides sem --erp (fallback) */
+.hero__slide:not(.hero__slide--erp) .hero__slide-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .hero__slide--linked {
