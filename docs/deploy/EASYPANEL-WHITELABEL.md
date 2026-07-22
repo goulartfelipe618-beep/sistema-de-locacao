@@ -9,6 +9,28 @@ Um **projeto** por locadora: **ERP + Site + Postgres + Redis**, com **dois servi
 | `postgres` | Banco de dados | 5432 |
 | `redis` | Filas / cache | 6379 |
 
+## ⚠️ Git push NÃO atualiza produção sozinho
+
+O Easypanel **não redeploya automaticamente** (salvo webhook configurado).  
+Depois de cada `git push`, é obrigatório **Implantar / Rebuild** em **cada serviço** que mudou.
+
+**Como saber se atualizou:** abra  
+`https://SEU-ERP/api/v1/health` → campo `"version"` deve bater com o GitHub (ex.: `0.2.8`).  
+Se o rodapé ainda mostra `v0.2.6`, o container antigo ainda está rodando.
+
+## Easypanel — atualizar serviço ERP (`erp-locadora`)
+
+1. Abra o serviço **`erp-locadora`** (não o `site`).
+2. Aba **Fonte** — confira:
+   - Repositório: `goulartfelipe618-beep/sistema-de-locacao`
+   - Branch: `main`
+   - Caminho de Build: `/` (raiz)
+   - Dockerfile: **`docker/Dockerfile`**
+3. Clique **Implantar** (ou **Rebuild**) e aguarde ficar verde.
+4. Valide: `GET /api/v1/health` → `"version":"0.2.8"` (ou a versão atual da `main`).
+
+> O código fica **dentro da imagem Docker**. Só reiniciar o container **sem rebuild** mantém a versão antiga.
+
 ## Como o site fala com o ERP
 
 ```
