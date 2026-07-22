@@ -100,19 +100,16 @@
   function applyEmpresa(empresa) {
     if (!empresa || typeof empresa !== 'object') return;
 
-    if (empresa.logo_url) {
-      var mark = $('.logo__mark');
-      var img = $(SELECTORS.brandLogoImg);
-      if (img) {
-        img.src = empresa.logo_url;
-        img.alt = empresa.nome_exibicao || '';
-        img.hidden = false;
-        if (mark) mark.setAttribute('hidden', '');
-      } else if (mark) {
-        mark.style.backgroundImage = 'url(' + empresa.logo_url + ')';
-        mark.style.backgroundSize = 'cover';
-        mark.textContent = '';
-      }
+    var img = $(SELECTORS.brandLogoImg);
+    var mark = $('.logo__mark');
+    if (img) {
+      img.removeAttribute('src');
+      img.hidden = true;
+    }
+    if (mark) {
+      mark.removeAttribute('hidden');
+      mark.textContent = '';
+      mark.style.backgroundImage = '';
     }
 
     setText('.logo__text[data-erp="nome_exibicao"]', empresa.nome_exibicao);

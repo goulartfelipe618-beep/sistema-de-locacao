@@ -302,6 +302,12 @@ a:hover {
   opacity: 0.92;
 }
 
+/* Cabeçalho: só nome da locadora em texto, sem imagem de logo */
+.logo--brand .logo__img,
+.logo--brand .logo__mark {
+  display: none !important;
+}
+
 .logo__img {
   height: 38px;
   width: auto;
