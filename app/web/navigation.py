@@ -554,14 +554,21 @@ NAVIGATION: tuple[MenuSection, ...] = (
                 permission="integracoes.api_publica.visualizar",
                 implemented=True,
             ),
+        ),
+    ),
+    MenuSection(
+        label="Website",
+        icon="globe",
+        implemented=True,
+        items=(
             MenuItem(
-                "Site — Slides",
+                "Slides",
                 url="/integracoes/site/slides",
                 permission="integracoes.site.visualizar",
                 implemented=True,
             ),
             MenuItem(
-                "Site — Cores",
+                "Cores",
                 url="/integracoes/site/cores",
                 permission="integracoes.site.visualizar",
                 implemented=True,

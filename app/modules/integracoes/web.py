@@ -467,7 +467,7 @@ async def site_cores_list(
         request,
         "integracoes/site_cores.html",
         {
-            "title": "Site — Cores",
+            "title": "Website — Cores",
             "tenant": tenant,
             "colors": colors,
             "tema": site_theme_payload(tenant),
@@ -512,7 +512,7 @@ async def site_cores_salvar(
             request,
             "integracoes/site_cores.html",
             {
-                "title": "Site — Cores",
+                "title": "Website — Cores",
                 "tenant": tenant,
                 "colors": colors,
                 "tema": site_theme_payload(tenant),
@@ -548,7 +548,7 @@ async def site_slides_list(
         request,
         "integracoes/site_slides.html",
         {
-            "title": "Site — Slides",
+            "title": "Website — Slides",
             "slides": items,
             "can_edit": can_edit,
             "max_slides": 10,
@@ -593,7 +593,7 @@ async def site_slides_novo(
             request,
             "integracoes/site_slides.html",
             {
-                "title": "Site — Slides",
+                "title": "Website — Slides",
                 "slides": items,
                 "can_edit": True,
                 "max_slides": 10,
