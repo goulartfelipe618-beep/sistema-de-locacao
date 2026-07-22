@@ -184,14 +184,19 @@ async def api_publica_hub(
         AuthenticatedUser, Depends(require_web_permission("integracoes.api_publica.visualizar"))
     ],
 ) -> Any:
-    keys = await ApiKeyService(session).list_items(PageParams(page=1, size=50))
+    svc = ApiKeyService(session)
+    keys_page = await svc.list_items(PageParams(page=1, size=50))
+    key_rows = [
+        {"key": k, "scopes": sorted(svc.scopes(k))}
+        for k in keys_page.items
+    ]
     webhooks = await OutboundWebhookService(session).list_items(PageParams(page=1, size=50))
     return render(
         request,
         "integracoes/api_publica.html",
         {
             "title": "API Pública",
-            "keys": keys.items,
+            "key_rows": key_rows,
             "webhooks": webhooks.items,
             "outbound_eventos": OUTBOUND_EVENTOS,
             "api_scopes": API_PUBLIC_SCOPES,
@@ -360,6 +365,50 @@ async def api_key_novo(
         "integracoes/api_key_created.html",
         {"title": "API Key criada", "key": item, "raw_key": raw},
     )
+
+
+@router.get("/integracoes/api/keys/{key_id}/excluir", response_class=HTMLResponse)
+async def api_key_excluir_confirmar(
+    request: Request,
+    key_id: uuid.UUID,
+    session: SessionDep,
+    current_user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("integracoes.api_publica.editar"))
+    ],
+) -> Any:
+    svc = ApiKeyService(session)
+    key = await svc.get_for_tenant(current_user.tenant_id, key_id)
+    return render(
+        request,
+        "integracoes/api_key_excluir.html",
+        {
+            "title": "Excluir API Key",
+            "key": key,
+            "scopes": sorted(svc.scopes(key)),
+        },
+    )
+
+
+@router.post("/integracoes/api/keys/{key_id}/excluir", response_class=HTMLResponse)
+async def api_key_excluir(
+    request: Request,
+    key_id: uuid.UUID,
+    session: SessionDep,
+    current_user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("integracoes.api_publica.editar"))
+    ],
+) -> RedirectResponse:
+    try:
+        await ApiKeyService(session).delete(current_user.tenant_id, key_id)
+        await session.commit()
+        request.session["_flash"] = {
+            "type": "success",
+            "message": "API Key excluída. Integrações que usavam esta chave deixarão de funcionar.",
+        }
+    except AppError as exc:
+        await session.rollback()
+        request.session["_flash"] = {"type": "error", "message": exc.message}
+    return RedirectResponse("/integracoes/api", status_code=303)
 
 
 @router.post("/integracoes/api/webhooks/novo")

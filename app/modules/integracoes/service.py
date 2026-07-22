@@ -661,6 +661,12 @@ class ApiKeyService:
             raise NotFoundError("API Key não encontrada.")
         return item
 
+    async def get_for_tenant(self, tenant_id: uuid.UUID, key_id: uuid.UUID) -> IntApiKey:
+        item = await self.get(key_id)
+        if item.tenant_id != tenant_id:
+            raise NotFoundError("API Key não encontrada.")
+        return item
+
     async def create(
         self, tenant_id: uuid.UUID, data: ApiKeyCreate, *, user_id: uuid.UUID | None
     ) -> tuple[IntApiKey, str]:
@@ -691,6 +697,19 @@ class ApiKeyService:
         item.ativo = False
         await self.repo.flush()
         return item
+
+    async def delete(self, tenant_id: uuid.UUID, key_id: uuid.UUID) -> None:
+        """Remove a chave da listagem (soft delete) e invalida uso imediato."""
+        item = await self.get_for_tenant(tenant_id, key_id)
+        item.ativo = False
+        await self.repo.delete(item)
+        await self.repo.flush()
+        await audit_service.record(
+            AuditAction.DELETE,
+            entity="int_api_key",
+            entity_id=item.id,
+            description=f"API Key excluída: {item.nome}",
+        )
 
     async def authenticate(self, raw_key: str) -> IntApiKey:
         if not raw_key or len(raw_key) < 16:

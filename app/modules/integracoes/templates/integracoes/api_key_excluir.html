@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card erp-form-card">
+  <h2 class="card-title">Excluir API Key</h2>
+  <p class="alert alert-warning">
+    Tem certeza que deseja excluir esta chave? Esta ação não pode ser desfeita.
+    Site, apps e parceiros que usam esta chave perderão acesso imediatamente.
+  </p>
+
+  <dl class="detail-list" style="margin:16px 0">
+    <dt>Nome</dt>
+    <dd>{{ key.nome }}</dd>
+    <dt>Prefixo</dt>
+    <dd><code>{{ key.key_prefix }}…</code></dd>
+    <dt>Escopos</dt>
+    <dd>
+      {% if scopes %}
+      {% for scope in scopes %}<code>{{ scope }}</code>{% if not loop.last %}, {% endif %}{% endfor %}
+      {% else %}—{% endif %}
+    </dd>
+    <dt>Último uso</dt>
+    <dd>{{ key.ultimo_uso_em|datetime if key.ultimo_uso_em else 'Nunca' }}</dd>
+  </dl>
+
+  <div class="form-actions" style="display:flex;gap:12px;flex-wrap:wrap">
+    <a class="btn" href="/integracoes/api">Cancelar</a>
+    <form method="post" action="/integracoes/api/keys/{{ key.id }}/excluir" class="erp-form" style="margin:0">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button class="btn btn-danger" type="submit">Sim, excluir API Key</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

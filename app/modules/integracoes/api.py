@@ -200,11 +200,11 @@ async def create_api_key(
 async def revoke_api_key(
     key_id: uuid.UUID,
     session: ApiSessionDep,
-    _user: Annotated[
+    user: Annotated[
         AuthenticatedUser, Depends(require_api_permission("integracoes.api_publica.editar"))
     ],
 ) -> Response:
-    await ApiKeyService(session).revoke(key_id)
+    await ApiKeyService(session).delete(user.tenant_id, key_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 

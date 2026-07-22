@@ -34,9 +34,26 @@
   {% endif %}
 
   <h4>Chaves ativas</h4>
-  {% if keys %}
-  <table class="table"><thead><tr><th>Nome</th><th>Prefixo</th><th>Rate/min</th><th>Ativa</th><th>Último uso</th></tr></thead>
-  <tbody>{% for k in keys %}<tr><td>{{ k.nome }}</td><td><code>{{ k.key_prefix }}…</code></td><td>{{ k.rate_limit_por_minuto }}</td><td>{{ 'sim' if k.ativo else 'não' }}</td><td>{{ k.ultimo_uso_em|datetime if k.ultimo_uso_em else '-' }}</td></tr>{% endfor %}</tbody></table>
+  {% if key_rows %}
+  <table class="table"><thead><tr><th>Nome</th><th>Prefixo</th><th>Escopos</th><th>Rate/min</th><th>Ativa</th><th>Último uso</th><th></th></tr></thead>
+  <tbody>
+  {% for row in key_rows %}
+  {% set k = row.key %}
+  <tr>
+    <td>{{ k.nome }}</td>
+    <td><code>{{ k.key_prefix }}…</code></td>
+    <td>{% for scope in row.scopes %}<code>{{ scope }}</code>{% if not loop.last %} {% endif %}{% endfor %}</td>
+    <td>{{ k.rate_limit_por_minuto }}</td>
+    <td>{{ 'sim' if k.ativo else 'não' }}</td>
+    <td>{{ k.ultimo_uso_em|datetime if k.ultimo_uso_em else '-' }}</td>
+    <td>
+      {% if current_user.is_superuser or 'integracoes.api_publica.editar' in current_user.permissions %}
+      <a class="btn btn-sm btn-danger-outline" href="/integracoes/api/keys/{{ k.id }}/excluir">Excluir</a>
+      {% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+  </tbody></table>
   {% else %}<div class="empty-state">Nenhuma API Key cadastrada.</div>{% endif %}
 
   <fieldset class="form-fieldset" style="margin-top:24px">
