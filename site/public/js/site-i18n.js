@@ -35,7 +35,9 @@
       'nav.groups': 'Grupos de carros',
       'nav.agencies': 'Rede de ag\u00eancias',
       'nav.about': 'Sobre n\u00f3s',
+      'nav.offers': 'Ofertas',
       'nav.loyalty': 'Fidelidade',
+      'nav.business': 'Para empresas',
       'nav.faq': 'D\u00favidas',
       'nav.main': 'Menu principal',
       'hero.label': 'Destaques',
@@ -192,7 +194,9 @@
       'nav.groups': 'Car groups',
       'nav.agencies': 'Branch network',
       'nav.about': 'About us',
+      'nav.offers': 'Offers',
       'nav.loyalty': 'Loyalty',
+      'nav.business': 'For business',
       'nav.faq': 'Help',
       'nav.main': 'Main menu',
       'hero.label': 'Highlights',
@@ -347,7 +351,9 @@
       'nav.groups': 'Grupos de coches',
       'nav.agencies': 'Red de agencias',
       'nav.about': 'Sobre nosotros',
+      'nav.offers': 'Ofertas',
       'nav.loyalty': 'Fidelidad',
+      'nav.business': 'Para empresas',
       'nav.faq': 'Dudas',
       'nav.main': 'Men\u00fa principal',
       'hero.label': 'Destacados',
@@ -506,10 +512,15 @@
   }
 
   function t(key, vars) {
+    if (!key) return '';
     var lang = currentLang;
     var table = MESSAGES[lang] || MESSAGES[DEFAULT_LANG];
     var fallback = MESSAGES[DEFAULT_LANG];
-    var text = table[key] != null ? table[key] : fallback[key] != null ? fallback[key] : key;
+    var text = table[key] != null ? table[key] : fallback[key] != null ? fallback[key] : null;
+    if (text == null) {
+      console.warn('[SiteI18n] missing key:', key);
+      return '';
+    }
     return interpolate(text, vars);
   }
 
@@ -534,7 +545,11 @@
     document.documentElement.lang = currentLang;
 
     scope.querySelectorAll('[data-i18n]').forEach(function (el) {
-      el.textContent = t(el.getAttribute('data-i18n'));
+      if (!el.dataset.i18nDefault) {
+        el.dataset.i18nDefault = el.textContent.trim();
+      }
+      var translated = t(el.getAttribute('data-i18n'));
+      el.textContent = translated || el.dataset.i18nDefault || '';
     });
 
     scope.querySelectorAll('[data-i18n-html]').forEach(function (el) {
