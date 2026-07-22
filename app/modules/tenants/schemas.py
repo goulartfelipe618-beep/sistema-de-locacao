@@ -89,9 +89,43 @@ class SiteThemeUpdate(BaseModel):
     site_primary_color: str | None = Field(default=None, max_length=7)
     site_background_color: str | None = Field(default=None, max_length=7)
     site_text_color: str | None = Field(default=None, max_length=7)
+    site_header_bg_color: str | None = Field(default=None, max_length=7)
+    site_header_text_color: str | None = Field(default=None, max_length=7)
+    site_topbar_bg_color: str | None = Field(default=None, max_length=7)
+    site_topbar_tab_bg_color: str | None = Field(default=None, max_length=7)
+    site_topbar_tab_text_color: str | None = Field(default=None, max_length=7)
+    site_topbar_tab_active_bg_color: str | None = Field(default=None, max_length=7)
+    site_topbar_tab_active_text_color: str | None = Field(default=None, max_length=7)
+    site_button_bg_color: str | None = Field(default=None, max_length=7)
+    site_button_text_color: str | None = Field(default=None, max_length=7)
+    site_link_color: str | None = Field(default=None, max_length=7)
+    site_border_color: str | None = Field(default=None, max_length=7)
+    site_surface_color: str | None = Field(default=None, max_length=7)
+    site_text_muted_color: str | None = Field(default=None, max_length=7)
+    site_footer_bg_color: str | None = Field(default=None, max_length=7)
+    site_footer_text_color: str | None = Field(default=None, max_length=7)
     reset_defaults: bool = False
 
-    @field_validator("site_primary_color", "site_background_color", "site_text_color")
+    @field_validator(
+        "site_primary_color",
+        "site_background_color",
+        "site_text_color",
+        "site_header_bg_color",
+        "site_header_text_color",
+        "site_topbar_bg_color",
+        "site_topbar_tab_bg_color",
+        "site_topbar_tab_text_color",
+        "site_topbar_tab_active_bg_color",
+        "site_topbar_tab_active_text_color",
+        "site_button_bg_color",
+        "site_button_text_color",
+        "site_link_color",
+        "site_border_color",
+        "site_surface_color",
+        "site_text_muted_color",
+        "site_footer_bg_color",
+        "site_footer_text_color",
+    )
     @classmethod
     def _validate_optional_color(cls, value: str | None) -> str | None:
         return _optional_hex_color(value)

@@ -22,6 +22,7 @@ from app.modules.tenants.branding import (
 from app.modules.tenants.models import Filial, Tenant
 from app.modules.tenants.repository import FilialRepository, TenantRepository
 from app.modules.tenants.schemas import FilialCreate, FilialUpdate, SiteThemeUpdate, TenantSystemUpdate, TenantUpdate
+from app.modules.tenants.site_theme import SITE_THEME_COLOR_FIELDS
 from app.modules.tenants.setup import setup_missing_fields
 from app.shared.enums import AuditAction
 
@@ -121,13 +122,11 @@ class TenantService:
         """Atualiza paleta de cores do site público."""
         tenant = await self.get_tenant(tenant_id)
         if data.reset_defaults:
-            tenant.site_primary_color = None
-            tenant.site_background_color = None
-            tenant.site_text_color = None
+            for field in SITE_THEME_COLOR_FIELDS:
+                setattr(tenant, field, None)
         else:
-            tenant.site_primary_color = data.site_primary_color
-            tenant.site_background_color = data.site_background_color
-            tenant.site_text_color = data.site_text_color
+            for field in SITE_THEME_COLOR_FIELDS:
+                setattr(tenant, field, getattr(data, field))
         await audit_service.record(
             AuditAction.UPDATE,
             entity="tenant",

@@ -133,7 +133,7 @@
 
     if (empresa.nome_exibicao) {
       $$('.logo[aria-label]').forEach(function (el) {
-        el.setAttribute('aria-label', 'Página inicial ' + empresa.nome_exibicao);
+        el.setAttribute('aria-label', i18n('nav.home_page', { name: empresa.nome_exibicao }));
       });
       if (document.title.indexOf('|') >= 0) {
         var parts = document.title.split('|');
@@ -144,19 +144,28 @@
     }
   }
 
+  function i18n(key, vars) {
+    if (global.SiteI18n && global.SiteI18n.t) return global.SiteI18n.t(key, vars);
+    return key;
+  }
+
+  var lastFiliaisPayload = null;
+
   function populateFiliaisSelect(filiaisPayload, selectId) {
+    lastFiliaisPayload = filiaisPayload;
     var id = selectId || 'pickup-location';
     var select = document.getElementById(id);
     if (!select) return;
     var filiais = normalizeList(filiaisPayload);
     if (!filiais.length) {
-      select.innerHTML = '<option value="">Nenhuma filial disponível</option>';
+      select.innerHTML = '<option value="" data-i18n="branches.none"></option>';
       select.disabled = true;
+      if (global.SiteI18n) global.SiteI18n.apply(select);
       return;
     }
     select.disabled = false;
     select.innerHTML =
-      '<option value="">Onde você quer retirar o carro?</option>' +
+      '<option value="" data-i18n="search.pickup_prompt"></option>' +
       filiais
         .map(function (f) {
           var fid = f.id || f.filial_id;
@@ -164,6 +173,7 @@
           return '<option value="' + fid + '">' + filialLabel(f) + '</option>';
         })
         .join('');
+    if (global.SiteI18n) global.SiteI18n.apply(select);
   }
 
   function slideId(slide) {
@@ -178,7 +188,7 @@
     var useBff =
       !rawUrl || rawUrl.indexOf('/api/') === 0 || rawUrl.indexOf('/bff/') === 0;
     var imgUrl = useBff ? global.RodaviaAPI.slideImagemUrl(id) : rawUrl;
-    var label = escapeHtml(slide.titulo || 'Destaque promocional');
+    var label = escapeHtml(slide.titulo || i18n('hero.promo'));
     var activeClass = isActive ? ' is-active' : '';
     var erpClass = ' hero__slide--erp';
     var img =
@@ -344,10 +354,18 @@
   function setApiStatus(ok) {
     var statusEl = $(SELECTORS.bffStatus);
     if (!statusEl) return;
-    statusEl.textContent = ok ? 'API conectada' : 'API offline';
+    statusEl.textContent = ok ? i18n('bff.connected') : i18n('bff.offline');
     statusEl.classList.toggle('is-ok', ok);
     statusEl.classList.toggle('is-off', !ok);
   }
+
+  document.addEventListener('site:langchange', function () {
+    if (lastFiliaisPayload) populateFiliaisSelect(lastFiliaisPayload);
+    var statusEl = $(SELECTORS.bffStatus);
+    if (statusEl && (statusEl.classList.contains('is-ok') || statusEl.classList.contains('is-off'))) {
+      setApiStatus(statusEl.classList.contains('is-ok'));
+    }
+  });
 
   async function boot() {
     if (bootPromise) return bootPromise;

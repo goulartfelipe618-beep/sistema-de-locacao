@@ -22,8 +22,13 @@ const bind = () => {
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
+function i18n(key, vars) {
+  return window.SiteI18n?.t(key, vars) ?? key;
+}
+
 let lastSearch = null;
 let pendingCategoriaId = null;
+let lastGroups = [];
 
 function escapeHtml(str) {
   return String(str ?? '')
@@ -100,13 +105,13 @@ function initSearchWidget() {
     const params = readSearchForm();
     const statusEl = $('#search-status');
     if (!params.filial_id) {
-      statusEl.textContent = 'Selecione o local de retirada.';
+      statusEl.textContent = i18n('search.error.pickup');
       statusEl.classList.add('is-error');
       return;
     }
     const err = validateSearch(params.retirada_em, params.devolucao_em);
     if (err) {
-      statusEl.textContent = err;
+      statusEl.textContent = i18n(err);
       statusEl.classList.add('is-error');
       return;
     }
@@ -122,7 +127,7 @@ function featureRow(group) {
   const bg = group.malas_grandes ?? 1;
   const bp = group.malas_pequenas ?? 1;
   const cambio = group.cambio || '—';
-  const ar = group.ar_condicionado !== false ? 'Ar' : 'Sem ar';
+  const ar = group.ar_condicionado !== false ? i18n('feature.ac') : i18n('feature.no_ac');
   return `
     <li><span aria-hidden="true">👤</span> ${escapeHtml(p)}</li>
     <li><span aria-hidden="true">🧳</span> ${bg}G ${bp}P</li>
@@ -148,8 +153,8 @@ function groupCardHtml(group) {
       <p class="group-card__subtitle">${subtitle}</p>
       <div class="group-card__media">${media}</div>
       <ul class="group-card__features">${featureRow(group)}</ul>
-      <button type="button" class="group-card__cta" data-rent>Alugar agora</button>
-      <a href="#grupo-${escapeHtml(id)}" class="group-card__details">Ver detalhes</a>
+      <button type="button" class="group-card__cta" data-rent>${escapeHtml(i18n('groups.rent_now'))}</button>
+      <a href="#grupo-${escapeHtml(id)}" class="group-card__details">${escapeHtml(i18n('groups.view_details'))}</a>
     </article>
   `;
 }
@@ -208,25 +213,26 @@ function renderGroupsGrid(groups) {
 async function loadGroups(params) {
   const statusEl = $('#search-status');
   const loading = $('#groups-loading');
-  if (statusEl) statusEl.textContent = 'Carregando grupos…';
+  if (statusEl) statusEl.textContent = i18n('groups.loading_groups');
   if (loading) loading.hidden = false;
 
   try {
     const resp = await bind().grupos(params);
     const groups = bind().mapGruposToFleet(resp);
+    lastGroups = groups;
     renderGroupsGrid(groups);
     if (statusEl) {
       statusEl.textContent = groups.length
-        ? `${groups.length} grupo(s) disponível(is).`
-        : 'Nenhum veículo disponível neste período.';
+        ? i18n('search.status.groups_page', { count: groups.length })
+        : i18n('search.status.no_vehicles');
     }
   } catch (err) {
     renderGroupsGrid([]);
     const emptyText = $('#groups-empty .groups-empty__text');
-    if (emptyText) emptyText.textContent = err.message || 'Não foi possível carregar os grupos.';
+    if (emptyText) emptyText.textContent = err.message || i18n('search.error.load_groups');
     $('#groups-empty').hidden = false;
     if (statusEl) {
-      statusEl.textContent = err.message || 'Erro ao buscar.';
+      statusEl.textContent = err.message || i18n('search.error.generic');
       statusEl.classList.add('is-error');
     }
   } finally {
@@ -237,7 +243,7 @@ async function loadGroups(params) {
 async function loadCotacaoPreview(categoriaId) {
   const el = $('#reserve-cotacao');
   if (!el || !lastSearch) return;
-  el.textContent = 'Calculando cotação…';
+  el.textContent = i18n('quote.calculating');
   try {
     const data = await bind().cotacao({
       categoria_id: categoriaId,
@@ -267,7 +273,7 @@ async function submitReservation(e) {
   e.preventDefault();
   if (!lastSearch || !pendingCategoriaId) return;
   const msg = $('#reserve-message');
-  msg.textContent = 'Enviando…';
+  msg.textContent = i18n('reserve.sending_short');
   try {
     await bind().reservar({
       cliente: {
@@ -283,10 +289,10 @@ async function submitReservation(e) {
       devolucao_em: lastSearch.devolucao_em,
       observacoes: 'Site Rodavia',
     });
-    msg.textContent = 'Reserva enviada com sucesso!';
+    msg.textContent = i18n('reserve.success_short');
     msg.classList.add('is-success');
   } catch (err) {
-    msg.textContent = err.message || 'Erro ao reservar.';
+    msg.textContent = err.message || i18n('reserve.error_short');
     msg.classList.add('is-error');
   }
 }
@@ -313,4 +319,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     fillSearchFormFromParams(params);
     loadGroups(params);
   }
+
+  document.addEventListener('site:langchange', () => {
+    const emptyText = $('#groups-empty .groups-empty__text');
+    if (emptyText && $('#groups-empty') && !$('#groups-empty').hidden) {
+      emptyText.textContent = i18n('groups.empty');
+    }
+    if (lastGroups.length) renderGroupsGrid(lastGroups);
+  });
 });

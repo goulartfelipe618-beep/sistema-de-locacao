@@ -41,11 +41,12 @@ function initSkipLink() {
   });
 }
 
+function i18n(key, vars) {
+  return window.SiteI18n?.t(key, vars) ?? key;
+}
+
 function initTopBarCountry() {
-  const btn = $('#country-selector');
-  btn?.addEventListener('click', () => {
-    btn.setAttribute('aria-expanded', btn.getAttribute('aria-expanded') === 'true' ? 'false' : 'true');
-  });
+  /* Seletor de idioma em site-i18n.js */
 }
 
 function initMobileNav() {
@@ -196,7 +197,7 @@ function fleetCardHtml(group) {
   const imgUrl = group.imagem_url;
   const media = imgUrl
     ? `<img class="fleet-showcase__img" src="${escapeHtml(imgUrl)}" alt="" loading="lazy" />`
-    : `<div class="fleet-showcase__img fleet-showcase__img--placeholder" role="img" aria-label="Veículo ${title}"></div>`;
+    : `<div class="fleet-showcase__img fleet-showcase__img--placeholder" role="img" aria-label="${escapeHtml(i18n('fleet.vehicle_alt', { title }))}"></div>`;
 
   return `
     <article class="fleet-showcase__card" data-categoria-id="${escapeHtml(group.categoria_id)}" data-index-card>
@@ -265,7 +266,7 @@ function renderFleetEmpty(message) {
   if (empty) {
     empty.hidden = false;
     const textEl = empty.querySelector('.fleet-empty__text');
-    if (textEl) textEl.textContent = message || 'Nenhum veículo disponível neste período.';
+    if (textEl) textEl.textContent = message || i18n('search.status.no_vehicles');
   }
 }
 
@@ -283,7 +284,7 @@ function renderFleet(groups) {
 
 async function runFleetSearch(params) {
   const statusEl = $('#search-status');
-  if (statusEl) statusEl.textContent = 'Buscando grupos…';
+  if (statusEl) statusEl.textContent = i18n('search.status.searching');
   statusEl?.classList.remove('is-error');
 
   try {
@@ -291,11 +292,11 @@ async function runFleetSearch(params) {
     const groups = bind().mapGruposToFleet(resp);
     if (!groups.length) {
       renderFleetEmpty();
-      if (statusEl) statusEl.textContent = 'Nenhum veículo disponível neste período.';
+      if (statusEl) statusEl.textContent = i18n('search.status.no_vehicles');
     } else {
       renderFleet(groups);
       if (statusEl) {
-        statusEl.textContent = `${groups.length} grupo(s) disponível(is) no período.`;
+        statusEl.textContent = i18n('search.status.groups', { count: groups.length });
       }
     }
     try {
@@ -306,9 +307,9 @@ async function runFleetSearch(params) {
       /* ignore */
     }
   } catch (err) {
-    renderFleetEmpty('Não foi possível carregar a frota. Tente novamente.');
+    renderFleetEmpty(i18n('search.error.load_fleet'));
     if (statusEl) {
-      statusEl.textContent = err.message || 'Erro ao buscar.';
+      statusEl.textContent = err.message || i18n('search.error.generic');
       statusEl.classList.add('is-error');
     }
   }
@@ -322,7 +323,7 @@ function readSearchForm() {
 }
 
 function validateFilial(filial_id) {
-  if (!filial_id) return 'Selecione o local de retirada.';
+  if (!filial_id) return 'search.error.pickup';
   return null;
 }
 
@@ -347,13 +348,13 @@ function initSearchWidget() {
     const statusEl = $('#search-status');
     const filialErr = validateFilial(params.filial_id);
     if (filialErr) {
-      statusEl.textContent = filialErr;
+      statusEl.textContent = i18n(filialErr);
       statusEl.classList.add('is-error');
       return;
     }
     const err = validateSearch(params.retirada_em, params.devolucao_em);
     if (err) {
-      statusEl.textContent = err;
+      statusEl.textContent = i18n(err);
       statusEl.classList.add('is-error');
       return;
     }
@@ -389,7 +390,7 @@ function initSearchWidget() {
 async function loadCotacaoPreview(categoriaId) {
   const cotacaoEl = $('#reserve-cotacao');
   if (!cotacaoEl || !lastSearch) return;
-  cotacaoEl.textContent = 'Calculando cotação…';
+  cotacaoEl.textContent = i18n('quote.calculating');
   try {
     const data = await bind().cotacao({
       categoria_id: categoriaId,
@@ -402,7 +403,7 @@ async function loadCotacaoPreview(categoriaId) {
       data?.total_formatado ||
       data?.valor_total_formatado ||
       (data?.total != null ? `Total: R$ ${data.total}` : null);
-    cotacaoEl.textContent = total || 'Cotação disponível na confirmação.';
+    cotacaoEl.textContent = total || i18n('quote.on_confirm');
   } catch {
     cotacaoEl.textContent = '';
   }
@@ -410,7 +411,7 @@ async function loadCotacaoPreview(categoriaId) {
 
 function openReserveModal(categoriaId) {
   if (!lastSearch) {
-    $('#search-status').textContent = 'Faça uma busca antes de reservar.';
+    $('#search-status').textContent = i18n('search.error.before_reserve');
     $('#search-status')?.classList.add('is-error');
     return;
   }
@@ -426,7 +427,7 @@ async function submitReservation(e) {
   e.preventDefault();
   if (!lastSearch || !pendingCategoriaId) return;
   const msg = $('#reserve-message');
-  msg.textContent = 'Enviando reserva…';
+  msg.textContent = i18n('reserve.sending');
   msg.classList.remove('is-error', 'is-success');
 
   const payload = {
@@ -446,10 +447,10 @@ async function submitReservation(e) {
 
   try {
     await bind().reservar(payload);
-    msg.textContent = 'Reserva enviada com sucesso! Em breve você receberá a confirmação.';
+    msg.textContent = i18n('reserve.success');
     msg.classList.add('is-success');
   } catch (err) {
-    msg.textContent = err.message || 'Não foi possível concluir a reserva.';
+    msg.textContent = err.message || i18n('reserve.error');
     msg.classList.add('is-error');
   }
 }
@@ -470,12 +471,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     initFleetShowcase();
     initReserveModal();
     document.addEventListener('rodavia:slides-ready', () => initHeroCarousel());
+    document.addEventListener('site:langchange', () => {
+      const emptyText = $('#fleet-empty .fleet-empty__text');
+      const showcase = $('#fleet-showcase');
+      if (emptyText && (!showcase || showcase.hidden)) {
+        emptyText.textContent = i18n('fleet.empty');
+      }
+      if (fleetGroups.length) paintFleetCarousel();
+    });
     await bind().boot();
     initHeroCarousel();
   } catch (err) {
     const statusEl = $('#bff-status');
     if (statusEl) {
-      statusEl.textContent = 'Erro ao iniciar integração';
+      statusEl.textContent = i18n('search.error.boot');
       statusEl.classList.add('is-error');
     }
     console.error(err);

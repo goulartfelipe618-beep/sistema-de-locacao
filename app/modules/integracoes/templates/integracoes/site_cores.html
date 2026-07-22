@@ -5,8 +5,8 @@
 <div class="card erp-form-card">
   <h2 class="card-title">{{ title }}</h2>
   <p class="form-help">
-    Personalize a paleta do site público (botões, cabeçalho, textos e fundo).
-    O padrão é preto e branco. As alterações são aplicadas automaticamente via
+    Personalize a aparência do site público: cabeçalho, topbar, botões, cards, links e rodapé.
+    As alterações são aplicadas automaticamente via
     <code>GET /api/v1/public/empresa</code> (campo <code>tema</code>).
     <a href="/integracoes/site/slides">Gerenciar slides</a>.
   </p>
@@ -15,40 +15,145 @@
   <div class="alert alert-error">{{ error }}</div>
   {% endif %}
 
-  <div class="site-theme-preview" id="site-theme-preview" style="margin:20px 0;padding:16px;border-radius:8px;border:1px solid var(--border);">
-    <p style="margin:0 0 8px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;opacity:.7">Prévia</p>
-    <div class="site-theme-preview__header" style="padding:12px 16px;border-radius:6px;margin-bottom:8px;font-weight:700">Cabeçalho / botões</div>
-    <div class="site-theme-preview__body" style="padding:12px 16px;border-radius:6px">
-      <p style="margin:0 0 4px;font-weight:600">Texto principal</p>
-      <p style="margin:0;font-size:13px;opacity:.75">Texto secundário e fundo da página</p>
+  <div class="site-theme-preview" id="site-theme-preview"
+       style="margin:20px 0;padding:16px;border-radius:8px;border:1px solid var(--border);">
+    <p style="margin:0 0 12px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;opacity:.7">
+      Prévia ao vivo
+    </p>
+    <div class="site-theme-preview__topbar" style="display:flex;gap:2px;padding:0;border-radius:6px 6px 0 0;overflow:hidden">
+      <span class="site-theme-preview__tab site-theme-preview__tab--active" style="flex:1;padding:6px 8px;font-size:10px;font-weight:700;text-transform:uppercase;text-align:center">Aluguel</span>
+      <span class="site-theme-preview__tab" style="flex:1;padding:6px 8px;font-size:10px;font-weight:700;text-transform:uppercase;text-align:center">Assinatura</span>
+      <span class="site-theme-preview__tab" style="flex:1;padding:6px 8px;font-size:10px;font-weight:700;text-transform:uppercase;text-align:center">App</span>
+    </div>
+    <div class="site-theme-preview__header" style="padding:12px 16px;font-weight:700;display:flex;justify-content:space-between;align-items:center">
+      <span>Cabeçalho</span>
+      <span style="font-size:12px;font-weight:600;opacity:.9">Menu</span>
+    </div>
+    <div class="site-theme-preview__body" style="padding:16px;border-radius:0 0 6px 6px">
+      <p style="margin:0 0 6px;font-weight:600">Texto principal da página</p>
+      <p class="site-theme-preview__muted" style="margin:0 0 12px;font-size:13px">Texto secundário e descrições</p>
+      <div class="site-theme-preview__surface" style="padding:12px;border-radius:6px;margin-bottom:12px;border:1px solid transparent">
+        <p style="margin:0;font-size:13px">Card / seção com fundo alternativo</p>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+        <span class="site-theme-preview__btn" style="display:inline-block;padding:8px 16px;border-radius:4px;font-weight:600;font-size:13px;cursor:default">Botão primário</span>
+        <a class="site-theme-preview__link" href="#" onclick="return false" style="font-weight:600;font-size:13px">Link de destaque</a>
+      </div>
+    </div>
+    <div class="site-theme-preview__footer" style="margin-top:8px;padding:12px 16px;border-radius:6px;font-size:12px">
+      Rodapé — links e informações institucionais
     </div>
   </div>
 
   {% if can_edit %}
   <form method="post" action="/integracoes/site/cores" class="erp-form" id="site-cores-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
-      <div class="form-group">
-        {{ field_label('Cor primária (header, botões, destaques)', true, 'site_primary_color') }}
-        <input class="form-input" type="color" id="site_primary_color" name="site_primary_color"
-               value="{{ colors.primary }}">
-        <p class="form-help">Padrão: #111111</p>
+
+    <fieldset style="border:none;padding:0;margin:0 0 24px">
+      <legend style="font-weight:700;font-size:15px;margin-bottom:12px">Geral</legend>
+      <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+        <div class="form-group">
+          {{ field_label('Cor primária (marca)', true, 'site_primary_color') }}
+          <input class="form-input" type="color" id="site_primary_color" name="site_primary_color" value="{{ colors.primary }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Fundo da página', true, 'site_background_color') }}
+          <input class="form-input" type="color" id="site_background_color" name="site_background_color" value="{{ colors.background }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Texto principal', true, 'site_text_color') }}
+          <input class="form-input" type="color" id="site_text_color" name="site_text_color" value="{{ colors.text }}">
+        </div>
       </div>
-      <div class="form-group">
-        {{ field_label('Cor de fundo da página', true, 'site_background_color') }}
-        <input class="form-input" type="color" id="site_background_color" name="site_background_color"
-               value="{{ colors.background }}">
-        <p class="form-help">Padrão: #ffffff</p>
+    </fieldset>
+
+    <fieldset style="border:none;padding:0;margin:0 0 24px">
+      <legend style="font-weight:700;font-size:15px;margin-bottom:12px">Cabeçalho</legend>
+      <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+        <div class="form-group">
+          {{ field_label('Fundo do cabeçalho', true, 'site_header_bg_color') }}
+          <input class="form-input" type="color" id="site_header_bg_color" name="site_header_bg_color" value="{{ colors.header_bg }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Texto do cabeçalho', true, 'site_header_text_color') }}
+          <input class="form-input" type="color" id="site_header_text_color" name="site_header_text_color" value="{{ colors.header_text }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Fundo da topbar', true, 'site_topbar_bg_color') }}
+          <input class="form-input" type="color" id="site_topbar_bg_color" name="site_topbar_bg_color" value="{{ colors.topbar_bg }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Abas inativas — fundo (cinza)', true, 'site_topbar_tab_bg_color') }}
+          <input class="form-input" type="color" id="site_topbar_tab_bg_color" name="site_topbar_tab_bg_color" value="{{ colors.topbar_tab_bg }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Abas inativas — texto', true, 'site_topbar_tab_text_color') }}
+          <input class="form-input" type="color" id="site_topbar_tab_text_color" name="site_topbar_tab_text_color" value="{{ colors.topbar_tab_text }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Aba ativa — fundo', true, 'site_topbar_tab_active_bg_color') }}
+          <input class="form-input" type="color" id="site_topbar_tab_active_bg_color" name="site_topbar_tab_active_bg_color" value="{{ colors.topbar_tab_active_bg }}">
+          <p class="form-help">Padrão: cor primária</p>
+        </div>
+        <div class="form-group">
+          {{ field_label('Aba ativa — texto', true, 'site_topbar_tab_active_text_color') }}
+          <input class="form-input" type="color" id="site_topbar_tab_active_text_color" name="site_topbar_tab_active_text_color" value="{{ colors.topbar_tab_active_text }}">
+        </div>
       </div>
-      <div class="form-group">
-        {{ field_label('Cor do texto', true, 'site_text_color') }}
-        <input class="form-input" type="color" id="site_text_color" name="site_text_color"
-               value="{{ colors.text }}">
-        <p class="form-help">Padrão: #111111</p>
+    </fieldset>
+
+    <fieldset style="border:none;padding:0;margin:0 0 24px">
+      <legend style="font-weight:700;font-size:15px;margin-bottom:12px">Botões e links</legend>
+      <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+        <div class="form-group">
+          {{ field_label('Fundo dos botões', true, 'site_button_bg_color') }}
+          <input class="form-input" type="color" id="site_button_bg_color" name="site_button_bg_color" value="{{ colors.button_bg }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Texto dos botões', true, 'site_button_text_color') }}
+          <input class="form-input" type="color" id="site_button_text_color" name="site_button_text_color" value="{{ colors.button_text }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Cor dos links', true, 'site_link_color') }}
+          <input class="form-input" type="color" id="site_link_color" name="site_link_color" value="{{ colors.link }}">
+        </div>
       </div>
-    </div>
+    </fieldset>
+
+    <fieldset style="border:none;padding:0;margin:0 0 24px">
+      <legend style="font-weight:700;font-size:15px;margin-bottom:12px">Conteúdo e cards</legend>
+      <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+        <div class="form-group">
+          {{ field_label('Fundo de cards / seções', true, 'site_surface_color') }}
+          <input class="form-input" type="color" id="site_surface_color" name="site_surface_color" value="{{ colors.surface }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Texto secundário', true, 'site_text_muted_color') }}
+          <input class="form-input" type="color" id="site_text_muted_color" name="site_text_muted_color" value="{{ colors.text_muted }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Bordas e divisores', true, 'site_border_color') }}
+          <input class="form-input" type="color" id="site_border_color" name="site_border_color" value="{{ colors.border }}">
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset style="border:none;padding:0;margin:0 0 24px">
+      <legend style="font-weight:700;font-size:15px;margin-bottom:12px">Rodapé</legend>
+      <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+        <div class="form-group">
+          {{ field_label('Fundo do rodapé', true, 'site_footer_bg_color') }}
+          <input class="form-input" type="color" id="site_footer_bg_color" name="site_footer_bg_color" value="{{ colors.footer_bg }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Texto do rodapé', true, 'site_footer_text_color') }}
+          <input class="form-input" type="color" id="site_footer_text_color" name="site_footer_text_color" value="{{ colors.footer_text }}">
+        </div>
+      </div>
+    </fieldset>
+
     <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:16px">
-      <button class="btn btn-primary" type="submit">Salvar cores</button>
+      <button class="btn btn-primary" type="submit">Salvar tema</button>
       <button class="btn btn-secondary" type="submit" name="reset_defaults" value="on"
               formaction="/integracoes/site/cores"
               onclick="return confirm('Restaurar paleta preto e branco padrão do site?');">
@@ -57,7 +162,7 @@
     </div>
   </form>
   {% else %}
-  <p class="form-help">Você não tem permissão para editar as cores do site.</p>
+  <p class="form-help">Você não tem permissão para editar o tema do site.</p>
   {% endif %}
 </div>
 
@@ -65,40 +170,79 @@
 (function () {
   var preview = document.getElementById('site-theme-preview');
   if (!preview) return;
-  var header = preview.querySelector('.site-theme-preview__header');
-  var body = preview.querySelector('.site-theme-preview__body');
-  var inputs = ['site_primary_color', 'site_background_color', 'site_text_color'].map(function (id) {
-    return document.getElementById(id);
-  }).filter(Boolean);
 
-  function luminance(hex) {
-    var h = hex.replace('#', '');
-    if (h.length === 3) h = h.split('').map(function (c) { return c + c; }).join('');
-    var r = parseInt(h.slice(0, 2), 16) / 255;
-    var g = parseInt(h.slice(2, 4), 16) / 255;
-    var b = parseInt(h.slice(4, 6), 16) / 255;
-    var a = [r, g, b].map(function (c) {
-      return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
-    });
-    return 0.2126 * a[0] + 0.7152 * a[1] + 0.0722 * a[2];
-  }
+  var els = {
+    topbar: preview.querySelector('.site-theme-preview__topbar'),
+    topbarTabs: preview.querySelectorAll('.site-theme-preview__tab'),
+    header: preview.querySelector('.site-theme-preview__header'),
+    body: preview.querySelector('.site-theme-preview__body'),
+    muted: preview.querySelector('.site-theme-preview__muted'),
+    surface: preview.querySelector('.site-theme-preview__surface'),
+    btn: preview.querySelector('.site-theme-preview__btn'),
+    link: preview.querySelector('.site-theme-preview__link'),
+    footer: preview.querySelector('.site-theme-preview__footer')
+  };
 
-  function onPrimary(bg) {
-    return luminance(bg) < 0.45 ? '#ffffff' : '#111111';
+  var fieldIds = [
+    'site_primary_color', 'site_background_color', 'site_text_color',
+    'site_header_bg_color', 'site_header_text_color', 'site_topbar_bg_color',
+    'site_topbar_tab_bg_color', 'site_topbar_tab_text_color',
+    'site_topbar_tab_active_bg_color', 'site_topbar_tab_active_text_color',
+    'site_button_bg_color', 'site_button_text_color', 'site_link_color',
+    'site_border_color', 'site_surface_color', 'site_text_muted_color',
+    'site_footer_bg_color', 'site_footer_text_color'
+  ];
+
+  function val(id) {
+    var el = document.getElementById(id);
+    return el ? el.value : '';
   }
 
   function paint() {
-    var primary = document.getElementById('site_primary_color').value;
-    var bg = document.getElementById('site_background_color').value;
-    var text = document.getElementById('site_text_color').value;
-    header.style.background = primary;
-    header.style.color = onPrimary(primary);
-    body.style.background = bg;
-    body.style.color = text;
+    var bg = val('site_background_color');
+    var text = val('site_text_color');
+    var headerBg = val('site_header_bg_color');
+    var headerText = val('site_header_text_color');
+    var topbarBg = val('site_topbar_bg_color');
+    var tabBg = val('site_topbar_tab_bg_color');
+    var tabText = val('site_topbar_tab_text_color');
+    var tabActiveBg = val('site_topbar_tab_active_bg_color');
+    var tabActiveText = val('site_topbar_tab_active_text_color');
+    var buttonBg = val('site_button_bg_color');
+    var buttonText = val('site_button_text_color');
+    var link = val('site_link_color');
+    var border = val('site_border_color');
+    var surface = val('site_surface_color');
+    var muted = val('site_text_muted_color');
+    var footerBg = val('site_footer_bg_color');
+    var footerText = val('site_footer_text_color');
+
     preview.style.background = bg;
+    preview.style.borderColor = border;
+    els.topbar.style.background = topbarBg;
+    els.topbarTabs.forEach(function (tab) {
+      var active = tab.classList.contains('site-theme-preview__tab--active');
+      tab.style.background = active ? tabActiveBg : tabBg;
+      tab.style.color = active ? tabActiveText : tabText;
+    });
+    els.header.style.background = headerBg;
+    els.header.style.color = headerText;
+    els.body.style.background = bg;
+    els.body.style.color = text;
+    els.muted.style.color = muted;
+    els.surface.style.background = surface;
+    els.surface.style.borderColor = border;
+    els.btn.style.background = buttonBg;
+    els.btn.style.color = buttonText;
+    els.link.style.color = link;
+    els.footer.style.background = footerBg;
+    els.footer.style.color = footerText;
   }
 
-  inputs.forEach(function (el) { el.addEventListener('input', paint); });
+  fieldIds.forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('input', paint);
+  });
   paint();
 })();
 </script>

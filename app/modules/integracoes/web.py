@@ -467,7 +467,7 @@ async def site_cores_list(
         request,
         "integracoes/site_cores.html",
         {
-            "title": "Website — Cores",
+            "title": "Website — Tema e cores",
             "tenant": tenant,
             "colors": colors,
             "tema": site_theme_payload(tenant),
@@ -483,18 +483,30 @@ async def site_cores_salvar(
     current_user: Annotated[
         AuthenticatedUser, Depends(require_web_permission("integracoes.site.editar"))
     ],
-    site_primary_color: Annotated[str, Form()] = "",
-    site_background_color: Annotated[str, Form()] = "",
-    site_text_color: Annotated[str, Form()] = "",
-    reset_defaults: Annotated[str, Form()] = "",
 ) -> HTMLResponse:
     svc = TenantService(session)
+    form = await request.form()
     try:
         data = SiteThemeUpdate(
-            site_primary_color=site_primary_color.strip() or None,
-            site_background_color=site_background_color.strip() or None,
-            site_text_color=site_text_color.strip() or None,
-            reset_defaults=reset_defaults == "on",
+            site_primary_color=(form.get("site_primary_color") or "").strip() or None,
+            site_background_color=(form.get("site_background_color") or "").strip() or None,
+            site_text_color=(form.get("site_text_color") or "").strip() or None,
+            site_header_bg_color=(form.get("site_header_bg_color") or "").strip() or None,
+            site_header_text_color=(form.get("site_header_text_color") or "").strip() or None,
+            site_topbar_bg_color=(form.get("site_topbar_bg_color") or "").strip() or None,
+            site_topbar_tab_bg_color=(form.get("site_topbar_tab_bg_color") or "").strip() or None,
+            site_topbar_tab_text_color=(form.get("site_topbar_tab_text_color") or "").strip() or None,
+            site_topbar_tab_active_bg_color=(form.get("site_topbar_tab_active_bg_color") or "").strip() or None,
+            site_topbar_tab_active_text_color=(form.get("site_topbar_tab_active_text_color") or "").strip() or None,
+            site_button_bg_color=(form.get("site_button_bg_color") or "").strip() or None,
+            site_button_text_color=(form.get("site_button_text_color") or "").strip() or None,
+            site_link_color=(form.get("site_link_color") or "").strip() or None,
+            site_border_color=(form.get("site_border_color") or "").strip() or None,
+            site_surface_color=(form.get("site_surface_color") or "").strip() or None,
+            site_text_muted_color=(form.get("site_text_muted_color") or "").strip() or None,
+            site_footer_bg_color=(form.get("site_footer_bg_color") or "").strip() or None,
+            site_footer_text_color=(form.get("site_footer_text_color") or "").strip() or None,
+            reset_defaults=form.get("reset_defaults") == "on",
         )
         await svc.update_site_theme(current_user.tenant_id, data)
         await session.commit()
@@ -512,7 +524,7 @@ async def site_cores_salvar(
             request,
             "integracoes/site_cores.html",
             {
-                "title": "Website — Cores",
+                "title": "Website — Tema e cores",
                 "tenant": tenant,
                 "colors": colors,
                 "tema": site_theme_payload(tenant),

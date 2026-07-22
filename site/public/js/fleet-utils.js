@@ -25,10 +25,10 @@ export function validateSearch(retiradaIso, devolucaoIso) {
   const r = new Date(retiradaIso);
   const d = new Date(devolucaoIso);
   if (Number.isNaN(r.getTime()) || Number.isNaN(d.getTime())) {
-    return 'Informe datas válidas.';
+    return 'search.error.invalid_dates';
   }
   if (d <= r) {
-    return 'A devolução deve ser posterior à retirada.';
+    return 'search.error.return_after';
   }
   return null;
 }
