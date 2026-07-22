@@ -67,6 +67,11 @@ Navegador → site:80/bff/* → BFF (FastAPI interno) → ERP:8000/api/v1/public
 O arquivo `Dockerfile.site` na raiz do repositório existe para Easypanel que sempre faz build na raiz do clone.
 
 5. **Porta exposta:** 80 (domínio público do site, ex.: `rodavia.com.br`). No Easypanel use **domínio**, não mapeie porta 80 do host duas vezes — cada container tem sua porta 80 interna.
+
+   **⚠️ Porta interna do serviço `site` = `80`** (nginx).  
+   **⚠️ Porta interna do serviço `erp-locadora` = `8000`** (Gunicorn).  
+   Se o site mostrar **502 Service is not reachable**, a porta do serviço `site` provavelmente está errada (ex.: 8000 ou 8090).
+
 6. **Variáveis de ambiente** (serviço `site`):
 
 ```env
@@ -122,3 +127,19 @@ failed to read dockerfile: open Dockerfile: no such file or directory
 **Causa:** build apontando para a **raiz do repositório** em vez da pasta `site/`.
 
 **Correção:** use **Opção B** — Dockerfile = `Dockerfile.site` (raiz do repo), depois **Rebuild**.
+
+## Site com 502 "Service is not reachable"
+
+**Causa 1 — porta errada no Easypanel (mais comum):** serviço `site` com porta **80**, não 8000/8090.
+
+**Causa 2 — variáveis ausentes:** após o site subir, `/bff/*` pode falhar se faltar:
+
+```env
+ERP_INTERNAL_URL=http://erp-locadora:8000
+ERP_TENANT_SLUG=matriz
+ERP_API_KEY=erp_SUA_CHAVE_CATALOGO_READ
+SITE_PUBLIC_URL=https://SEU-DOMINIO-DO-SITE
+SITE_ALLOWED_ORIGINS=https://SEU-DOMINIO-DO-SITE
+```
+
+**Validar:** `https://SEU-SITE/bff/health` → `"erp_status":"ok"`.

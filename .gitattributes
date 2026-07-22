@@ -2,6 +2,7 @@
 * text=auto eol=lf
 *.sh text eol=lf
 docker/entrypoint.sh text eol=lf
+site/docker/entrypoint.sh text eol=lf
 docker/postgres/*.sh text eol=lf
 scripts/**/*.sh text eol=lf
 
