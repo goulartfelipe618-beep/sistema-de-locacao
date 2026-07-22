@@ -12,11 +12,11 @@ from fastapi.responses import JSONResponse
 from config import settings
 
 app = FastAPI(
-    title="Rodavia Site BFF",
-    description="Backend-for-Frontend entre o site institucional e o ERP.",
-    version="1.0.0",
-    docs_url="/bff/docs" if settings.site_public_url.startswith("http://localhost") else None,
-    openapi_url="/bff/openapi.json" if settings.site_public_url.startswith("http://localhost") else None,
+    title="Site BFF",
+    description="Backend-for-Frontend entre o site institucional e o ERP (white-label).",
+    version="2.0.0",
+    docs_url="/bff/docs" if "localhost" in settings.site_public_url else None,
+    openapi_url="/bff/openapi.json" if "localhost" in settings.site_public_url else None,
 )
 
 app.add_middleware(
@@ -28,11 +28,12 @@ app.add_middleware(
 )
 
 
-def _erp_headers() -> dict[str, str]:
-    if not settings.erp_api_key.strip():
+def _erp_headers(scope: str = "catalogo:read") -> dict[str, str]:
+    api_key = settings.api_key_for_scope(scope)
+    if not api_key:
         raise HTTPException(status_code=503, detail="BFF não configurado (ERP_API_KEY ausente).")
     return {
-        "X-API-Key": settings.erp_api_key.strip(),
+        "X-API-Key": api_key,
         "X-Tenant-Slug": settings.erp_tenant_slug.strip(),
         "Accept": "application/json",
     }
@@ -42,10 +43,11 @@ async def _erp_request(
     method: str,
     path: str,
     *,
+    scope: str = "catalogo:read",
     params: dict[str, Any] | None = None,
     json_body: dict[str, Any] | None = None,
 ) -> Any:
-    url = settings.erp_base_url.rstrip("/") + path
+    url = settings.erp_api_base + path
     try:
         async with httpx.AsyncClient(timeout=settings.bff_request_timeout_seconds) as client:
             response = await client.request(
@@ -53,7 +55,7 @@ async def _erp_request(
                 url,
                 params=params,
                 json=json_body,
-                headers=_erp_headers(),
+                headers=_erp_headers(scope),
             )
     except httpx.TimeoutException as exc:
         raise HTTPException(status_code=504, detail="ERP demorou para responder.") from exc
@@ -79,7 +81,7 @@ async def _erp_request(
 
 @app.get("/bff/health")
 async def bff_health() -> dict[str, str]:
-    return {"status": "ok", "service": "site-bff"}
+    return {"status": "ok", "service": "site-bff", "erp": settings.erp_api_base}
 
 
 @app.get("/bff/ping")
@@ -103,28 +105,67 @@ async def bff_grupos(request: Request) -> Any:
     return await _erp_request("GET", "/api/v1/public/grupos", params=params or None)
 
 
+@app.get("/bff/slides")
+async def bff_slides() -> Any:
+    return await _erp_request("GET", "/api/v1/public/slides")
+
+
+@app.get("/bff/slides/{slide_id}/imagem")
+async def bff_slide_imagem(slide_id: str) -> Response:
+    url = f"{settings.erp_api_base}/api/v1/public/slides/{slide_id}/imagem"
+    headers = _erp_headers("catalogo:read")
+    headers["Accept"] = "*/*"
+    try:
+        async with httpx.AsyncClient(timeout=settings.bff_request_timeout_seconds) as client:
+            response = await client.get(url, headers=headers)
+    except httpx.TimeoutException as exc:
+        raise HTTPException(status_code=504, detail="ERP demorou para responder.") from exc
+    except httpx.RequestError as exc:
+        raise HTTPException(status_code=502, detail="Não foi possível contactar o ERP.") from exc
+
+    if response.status_code >= 400:
+        raise HTTPException(status_code=response.status_code, detail="Imagem indisponível")
+
+    return Response(
+        content=response.content,
+        media_type=response.headers.get("content-type", "image/jpeg"),
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
+
+
 @app.get("/bff/veiculos")
 async def bff_veiculos(request: Request) -> Any:
     params = dict(request.query_params)
-    return await _erp_request("GET", "/api/v1/public/veiculos", params=params or None)
+    return await _erp_request(
+        "GET", "/api/v1/public/veiculos", scope="veiculos:read", params=params or None
+    )
 
 
 @app.get("/bff/disponibilidade")
 async def bff_disponibilidade(request: Request) -> Any:
     params = dict(request.query_params)
-    return await _erp_request("GET", "/api/v1/public/disponibilidade", params=params or None)
+    return await _erp_request(
+        "GET",
+        "/api/v1/public/disponibilidade",
+        scope="disponibilidade:read",
+        params=params or None,
+    )
 
 
 @app.post("/bff/cotacao")
 async def bff_cotacao(request: Request) -> Any:
     body = await request.json()
-    return await _erp_request("POST", "/api/v1/public/cotacao", json_body=body)
+    return await _erp_request(
+        "POST", "/api/v1/public/cotacao", scope="pricing:read", json_body=body
+    )
 
 
 @app.post("/bff/reservas")
 async def bff_reservas(request: Request) -> Any:
     body = await request.json()
-    return await _erp_request("POST", "/api/v1/public/reservas/site", json_body=body)
+    return await _erp_request(
+        "POST", "/api/v1/public/reservas/site", scope="reservas:write", json_body=body
+    )
 
 
 @app.exception_handler(HTTPException)

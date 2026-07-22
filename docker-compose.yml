@@ -199,6 +199,37 @@ services:
     networks:
       - erp_net
 
+  # Site institucional (serviço separado — white-label)
+  site:
+    build:
+      context: ./site
+      dockerfile: Dockerfile
+    image: erp-site:${IMAGE_TAG:-latest}
+    container_name: erp_site
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      ERP_INTERNAL_URL: http://web:8000
+      ERP_TENANT_SLUG: ${DEFAULT_TENANT_SLUG:-matriz}
+      ERP_API_KEY: ${SITE_ERP_API_KEY:-}
+      DEFAULT_TENANT_SLUG: ${DEFAULT_TENANT_SLUG:-matriz}
+      SITE_PUBLIC_URL: ${SITE_PUBLIC_URL:-http://localhost:8080}
+      SITE_ALLOWED_ORIGINS: ${SITE_ALLOWED_ORIGINS:-http://localhost:8080,http://127.0.0.1:8080}
+    ports:
+      - "${SITE_HTTP_PORT:-8080}:80"
+    depends_on:
+      web:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1/bff/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    logging: *default-logging
+    networks:
+      - erp_net
+
 volumes:
   pgdata:
     name: erp_pgdata

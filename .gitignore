@@ -55,6 +55,14 @@ scripts/_q*
 scripts/_single*
 scripts/_tmp*
 
+# Cópia legada do site (conteúdo oficial está em site/)
+SITE DO SISTEMA DE LOCAÇÃO/
+
+# Duplicatas acidentais de assets no site
+site/public/js/js/
+site/public/css/css/
+site/public/assets/assets/
+
 # Dados locais (volumes Docker gerenciam persistência na VPS)
 pgdata/
 data/

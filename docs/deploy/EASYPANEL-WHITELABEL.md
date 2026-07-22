@@ -1,0 +1,73 @@
+# Deploy white-label (Easypanel / Docker)
+
+Um **projeto** por locadora: **ERP + Site + Postgres + Redis**, com **dois serviços de aplicação**:
+
+| Serviço | Função | Porta |
+|---------|--------|-------|
+| `erp-locadora` (web) | Painel administrativo FastAPI | 8000 |
+| `site` | Site público (nginx + BFF) | 80 |
+| `postgres` | Banco de dados | 5432 |
+| `redis` | Filas / cache | 6379 |
+
+## Como o site fala com o ERP
+
+```
+Navegador → site:80/bff/* → BFF (FastAPI interno) → ERP:8000/api/v1/public/*
+```
+
+- A **API Key fica só no servidor** (variável `SITE_ERP_API_KEY` / `ERP_API_KEY` no serviço site).
+- O BFF usa **rede interna**, não URL pública:
+  - Docker Compose: `ERP_INTERNAL_URL=http://web:8000`
+  - Easypanel: `ERP_INTERNAL_URL=http://erp-locadora:8000` (nome do serviço ERP)
+- Tenant white-label: `ERP_TENANT_SLUG=matriz` (igual ao `DEFAULT_TENANT_SLUG` do ERP).
+
+## Easypanel — adicionar serviço Site
+
+1. No projeto, clique **+** em SERVIÇOS.
+2. **App → Docker** (ou GitHub).
+3. Repositório: `goulartfelipe618-beep/sistema-de-locacao`
+4. **Build context / Dockerfile:** `site/Dockerfile` (contexto = pasta `site/` ou raiz com `-f site/Dockerfile`).
+5. **Porta exposta:** 80 (domínio público do site, ex.: `www.sualocadora.com`).
+6. **Variáveis de ambiente** (serviço `site`):
+
+```env
+ERP_INTERNAL_URL=http://erp-locadora:8000
+ERP_TENANT_SLUG=matriz
+ERP_API_KEY=erp_sua_chave_gerada_no_erp
+SITE_PUBLIC_URL=https://www.sualocadora.com
+SITE_ALLOWED_ORIGINS=https://www.sualocadora.com
+```
+
+7. Gere a API Key no ERP: **Integrações → API Pública** (escopos: `catalogo:read`, `veiculos:read`, `pricing:read`, `reservas:write`, `disponibilidade:read`).
+
+## Docker Compose (VPS)
+
+```bash
+cp .env.example .env
+# Preencha SITE_ERP_API_KEY e demais segredos
+docker compose up -d --build
+```
+
+- ERP admin: `http://localhost` (porta 80, nginx → web)
+- Site: `http://localhost:8080` (serviço `site`)
+
+## Dev local
+
+```powershell
+# Terminal 1 — stack ERP
+docker compose up db redis web
+
+# Terminal 2 — site
+cd site
+pip install -r bff/requirements.txt
+$env:ERP_INTERNAL_URL="http://127.0.0.1:8000"
+$env:ERP_API_KEY="sua_chave"
+$env:ERP_TENANT_SLUG="matriz"
+python -m uvicorn bff.main:app --app-dir . --host 127.0.0.1 --port 8090
+
+# Terminal 3 — estático (ou use site/Dockerfile)
+cd site/public
+python -m http.server 8080
+```
+
+Ou use `site/scripts/start-dev.ps1` (carrega `.env` da raiz do repo).

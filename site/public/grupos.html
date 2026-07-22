@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Grupos de carros LOCADORA RODAVIA — escolha a categoria ideal e alugue com as melhores condições."
+    />
+    <title>Grupos de Carros | LOCADORA RODAVIA</title>
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="css/grupos.css" />
+  </head>
+  <body class="page-grupos has-cookie-banner">
+    <a href="#main-content" class="skip-link">Ir para conteúdo principal</a>
+
+    <div class="topbar">
+      <nav class="topbar__tabs" aria-label="Negócios Rodavia">
+        <a href="index.html" class="topbar__tab is-active" data-erp="nome_exibicao">Aluguel de carros</a>
+        <a href="#" class="topbar__tab">Gestão de frotas</a>
+        <a href="#" class="topbar__tab">Seminovos</a>
+        <a href="#" class="topbar__tab">Carro por assinatura</a>
+        <a href="#" class="topbar__tab">Carro para app</a>
+      </nav>
+      <button type="button" class="topbar__country" id="country-selector" aria-expanded="false">
+        <span class="topbar__flag" aria-hidden="true"></span>
+        Brasil ▾
+      </button>
+    </div>
+
+    <header class="site-header site-header--brand">
+      <div class="site-header__inner">
+        <a href="index.html" class="logo logo--brand" aria-label="Página inicial">
+          <img id="brand-logo-img" class="logo__img" alt="" hidden />
+          <span class="logo__mark" aria-hidden="true">R</span>
+          <span class="logo__text" data-erp="nome_exibicao">Rodavia</span>
+        </a>
+
+        <button
+          type="button"
+          class="nav-toggle nav-toggle--light"
+          id="nav-toggle"
+          aria-expanded="false"
+          aria-controls="primary-nav"
+          aria-label="Abrir menu"
+        >
+          <span></span><span></span><span></span>
+        </button>
+
+        <nav class="primary-nav primary-nav--brand" id="primary-nav" aria-label="Menu principal">
+          <ul>
+            <li><a href="grupos.html" aria-current="page">Grupos de carros</a></li>
+            <li><a href="#">Rede de agências</a></li>
+            <li><a href="#">Ofertas</a></li>
+            <li><a href="#">Fidelidade</a></li>
+            <li><a href="#">Para empresas</a></li>
+            <li><a href="#">Dúvidas</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <div class="page-search-strip">
+      <form class="search-widget" id="search-form" novalidate>
+        <div class="search-widget__bar">
+          <div class="search-field search-field--grow">
+            <label class="visually-hidden" for="pickup-location">Local de retirada</label>
+            <span class="search-field__icon" aria-hidden="true"></span>
+            <select id="pickup-location" name="filial_id" required>
+              <option value="">Carregando filiais…</option>
+            </select>
+          </div>
+          <div class="search-field">
+            <label class="search-field__label" for="pickup-date">Data</label>
+            <input type="date" id="pickup-date" name="pickup_date" required />
+          </div>
+          <div class="search-field">
+            <label class="search-field__label" for="pickup-time">Hora</label>
+            <input type="time" id="pickup-time" name="pickup_time" value="10:00" required />
+          </div>
+          <div class="search-field search-field--return">
+            <label class="search-field__label" for="return-date">Devolução</label>
+            <input type="date" id="return-date" name="return_date" required />
+          </div>
+          <div class="search-field search-field--return">
+            <label class="search-field__label" for="return-time">Hora</label>
+            <input type="time" id="return-time" name="return_time" value="10:00" required />
+          </div>
+          <button type="submit" class="search-widget__submit btn btn--primary">Buscar</button>
+        </div>
+        <p class="search-status" id="search-status" role="status" aria-live="polite"></p>
+      </form>
+    </div>
+
+    <nav class="groups-rail" id="groups-rail" aria-label="Atalhos por grupo"></nav>
+
+    <main id="main-content" class="groups-main" tabindex="-1">
+      <nav class="groups-breadcrumb" aria-label="Trilha">
+        <a href="index.html">Home</a>
+        <span class="groups-breadcrumb__sep">›</span>
+        <span>Aluguel de carros</span>
+        <span class="groups-breadcrumb__sep">›</span>
+        <span aria-current="page">Grupos de carros</span>
+      </nav>
+
+      <h1 class="groups-page-title">Grupos de Carros</h1>
+
+      <p class="groups-loading" id="groups-loading" hidden>Carregando…</p>
+
+      <div class="groups-empty" id="groups-empty">
+        <p class="groups-empty__text">
+          Informe retirada e devolução na barra acima e clique em Buscar para listar apenas grupos
+          disponíveis no período (dados do ERP).
+        </p>
+      </div>
+
+      <div class="groups-layout">
+        <div id="groups-sections"></div>
+      </div>
+    </main>
+
+    <footer class="footer--groups">
+      <div class="footer-band footer-band--dark">
+        <div class="footer-band__grid">
+          <div>
+            <h3>Aluguel de carros</h3>
+            <ul>
+              <li><a href="grupos.html">Grupos de carros</a></li>
+              <li><a href="#">Rede de agências</a></li>
+              <li><a href="#">Ofertas</a></li>
+            </ul>
+          </div>
+          <div>
+            <h3>Reservas</h3>
+            <ul>
+              <li><a href="#">Minhas reservas</a></li>
+              <li><a href="#">Pré-pagamento</a></li>
+              <li><a href="#">Dúvidas</a></li>
+            </ul>
+          </div>
+          <div>
+            <h3>Negócios</h3>
+            <ul>
+              <li><a href="#">Para empresas</a></li>
+              <li><a href="#">Gestão de frotas</a></li>
+              <li><a href="#">Seminovos</a></li>
+            </ul>
+          </div>
+          <div>
+            <h3>Atendimento</h3>
+            <ul>
+              <li><a href="tel:08001234567">0800 123 4567</a></li>
+              <li><a href="#">WhatsApp</a></li>
+              <li><a href="#">Fale conosco</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="footer-band footer-band--light">
+        <div class="footer-band__grid">
+          <div>
+            <strong>Aplicativo Rodavia</strong>
+            <p style="margin: 0.5rem 0 0; font-size: 0.8125rem">Gerencie reservas pelo celular.</p>
+          </div>
+          <div class="footer-band__apps">
+            <span class="footer-band__store">App Store</span>
+            <span class="footer-band__store">Google Play</span>
+          </div>
+        </div>
+      </div>
+      <div class="footer-band footer-band--brand">
+        <div style="max-width: 1200px; margin: 0 auto">
+          © LOCADORA RODAVIA — CNPJ 00.000.000/0001-00 — Versão do site v1.0.0
+        </div>
+      </div>
+    </footer>
+
+    <aside class="cookie-banner" id="cookie-banner" role="dialog" aria-labelledby="cookie-title">
+      <div class="cookie-banner__inner">
+        <p class="cookie-banner__text" id="cookie-desc">
+          <strong id="cookie-title">Cookies</strong> — Este site utiliza cookies para melhorar sua
+          experiência. Clique em Rejeitar se não desejar ofertas direcionadas.
+        </p>
+        <div class="cookie-banner__actions">
+          <button type="button" class="btn btn--primary btn--sm" id="cookie-accept">Manter cookies</button>
+          <button type="button" class="btn btn--secondary btn--sm" id="cookie-reject">Rejeitar</button>
+        </div>
+      </div>
+    </aside>
+
+    <button type="button" class="chat-fab" id="chat-fab" aria-label="Abrir chat">💬</button>
+
+    <div class="modal" id="reserve-modal" aria-hidden="true" role="dialog" aria-labelledby="reserve-title">
+      <div class="modal__backdrop" data-close-modal="reserve-modal"></div>
+      <div class="modal__panel">
+        <button type="button" class="modal__close" data-close-modal="reserve-modal" aria-label="Fechar">×</button>
+        <h2 class="modal__title" id="reserve-title">Confirmar reserva</h2>
+        <form id="reserve-form">
+          <input type="hidden" id="reserve-categoria-id" name="categoria_id" />
+          <div class="form-field">
+            <label for="reserve-nome">Nome completo</label>
+            <input type="text" id="reserve-nome" name="nome" required autocomplete="name" />
+          </div>
+          <div class="form-field">
+            <label for="reserve-email">E-mail</label>
+            <input type="email" id="reserve-email" name="email" required autocomplete="email" />
+          </div>
+          <div class="form-field">
+            <label for="reserve-cpf">CPF</label>
+            <input type="text" id="reserve-cpf" name="cpf" required inputmode="numeric" />
+          </div>
+          <div class="form-field">
+            <label for="reserve-telefone">Telefone</label>
+            <input type="tel" id="reserve-telefone" name="telefone" required autocomplete="tel" />
+          </div>
+          <p class="form-message" id="reserve-cotacao" aria-live="polite"></p>
+          <button type="submit" class="btn btn--primary">Enviar reserva</button>
+          <p class="form-message" id="reserve-message" role="status"></p>
+        </form>
+      </div>
+    </div>
+
+    <script src="js/rodavia-config.js?v=4"></script>
+    <script src="js/rodavia-api.js?v=4"></script>
+    <script src="js/rodavia-bind.js?v=4"></script>
+    <script type="module" src="js/grupos.js?v=4"></script>
+    <script>
+      (function () {
+        function bffBase() {
+          if (window.RODAVIA_BFF_BASE) return window.RODAVIA_BFF_BASE;
+          var h = location.hostname;
+          return h === 'localhost' || h === '127.0.0.1' ? 'http://127.0.0.1:8090/bff' : '/bff';
+        }
+        function setApiStatus(ok) {
+          var el = document.getElementById('bff-status');
+          if (!el) return;
+          el.textContent = ok ? 'API conectada' : 'API offline';
+          el.classList.toggle('is-ok', ok);
+          el.classList.toggle('is-off', !ok);
+        }
+        function fallbackBoot() {
+          fetch(bffBase() + '/ping', { headers: { Accept: 'application/json' } })
+            .then(function (r) {
+              if (!r.ok) throw new Error('ping fail');
+              setApiStatus(true);
+              if (window.RodaviaBind && !window.RodaviaBind._booted) {
+                return window.RodaviaBind.boot();
+              }
+            })
+            .catch(function () { setApiStatus(false); });
+        }
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', fallbackBoot);
+        } else {
+          fallbackBoot();
+        }
+      })();
+    </script>
+  </body>
+</html>

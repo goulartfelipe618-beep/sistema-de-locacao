@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="LOCADORA RODAVIA — aluguel de carros com retirada rápida, frota diversificada e as melhores condições para sua viagem."
+    />
+    <title>LOCADORA RODAVIA | Aluguel de carros</title>
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body class="has-cookie-banner">
+    <a href="#main-content" class="skip-link">Ir para conteúdo principal</a>
+
+    <section class="home-first" aria-label="Topo e destaque">
+      <div class="topbar">
+        <nav class="topbar__tabs" aria-label="Negócios Rodavia">
+          <a href="index.html" class="topbar__tab is-active" data-erp="nome_exibicao">Aluguel de carros</a>
+          <a href="#" class="topbar__tab">Gestão de frotas</a>
+          <a href="#" class="topbar__tab">Seminovos</a>
+          <a href="#" class="topbar__tab">Carro por assinatura</a>
+          <a href="#" class="topbar__tab">Carro para app</a>
+        </nav>
+        <button type="button" class="topbar__country" id="country-selector" aria-expanded="false">
+          <span class="topbar__flag" aria-hidden="true"></span>
+          Brasil ▾
+        </button>
+      </div>
+
+      <header class="site-header site-header--brand">
+        <div class="site-header__inner">
+          <a href="#" class="logo logo--brand" aria-label="Página inicial">
+            <img id="brand-logo-img" class="logo__img" alt="" hidden />
+            <span class="logo__mark" aria-hidden="true">R</span>
+            <span class="logo__text" data-erp="nome_exibicao">Rodavia</span>
+          </a>
+
+          <button
+            type="button"
+            class="nav-toggle nav-toggle--light"
+            id="nav-toggle"
+            aria-expanded="false"
+            aria-controls="primary-nav"
+            aria-label="Abrir menu"
+          >
+            <span></span><span></span><span></span>
+          </button>
+
+          <nav class="primary-nav primary-nav--brand" id="primary-nav" aria-label="Menu principal">
+            <ul>
+              <li><a href="grupos.html">Grupos de carros</a></li>
+              <li><a href="#">Rede de agências</a></li>
+              <li><a href="#">Ofertas</a></li>
+              <li><a href="#">Fidelidade</a></li>
+              <li><a href="#">Para empresas</a></li>
+              <li><a href="#">Dúvidas</a></li>
+            </ul>
+          </nav>
+        </div>
+      </header>
+
+      <div class="hero-block">
+        <div class="hero" aria-label="Destaques" data-hero-carousel>
+          <div class="hero__slides" id="hero-slides">
+            <div
+              class="hero__slide hero__slide--fallback is-active"
+              role="img"
+              aria-label="Carregando destaques…"
+            ></div>
+          </div>
+
+          <button
+            type="button"
+            class="hero__arrow hero__arrow--prev"
+            data-hero-prev
+            aria-label="Slide anterior"
+            hidden
+          >
+            ‹
+          </button>
+          <button
+            type="button"
+            class="hero__arrow hero__arrow--next"
+            data-hero-next
+            aria-label="Próximo slide"
+            hidden
+          >
+            ›
+          </button>
+
+          <div class="hero__dots" id="hero-dots" role="tablist" aria-label="Slides do hero" hidden></div>
+        </div>
+
+        <div class="search-bridge">
+          <form class="search-widget" id="search-form" novalidate>
+            <h1 class="visually-hidden">Busca de veículos Rodavia</h1>
+            <div class="search-widget__bar">
+              <div class="search-field search-field--grow">
+                <label class="visually-hidden" for="pickup-location">Local de retirada</label>
+                <span class="search-field__icon" aria-hidden="true"></span>
+                <select id="pickup-location" name="filial_id" required aria-label="Onde você quer retirar o carro?">
+                  <option value="">Carregando filiais…</option>
+                </select>
+              </div>
+              <div class="search-field">
+                <label class="search-field__label" for="pickup-date">Data</label>
+                <input type="date" id="pickup-date" name="pickup_date" required />
+              </div>
+              <div class="search-field">
+                <label class="search-field__label" for="pickup-time">Hora</label>
+                <input type="time" id="pickup-time" name="pickup_time" value="10:00" required />
+              </div>
+              <div class="search-field search-field--return">
+                <label class="search-field__label" for="return-date">Devolução</label>
+                <input type="date" id="return-date" name="return_date" required />
+              </div>
+              <div class="search-field search-field--return">
+                <label class="search-field__label" for="return-time">Hora</label>
+                <input type="time" id="return-time" name="return_time" value="10:00" required />
+              </div>
+              <label class="search-widget__promo">
+                <input type="checkbox" id="monthly-toggle" />
+                <span class="search-widget__promo-icon" aria-hidden="true">$</span>
+                <span class="search-widget__promo-text">Economize com o aluguel mensal</span>
+              </label>
+              <button type="submit" class="search-widget__submit btn btn--primary">Buscar</button>
+            </div>
+            <div class="search-widget__meta">
+              <p class="search-status" id="search-status" role="status" aria-live="polite"></p>
+              <p class="bff-status" id="bff-status">Verificando API…</p>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <main id="main-content" tabindex="-1">
+      <section class="section section--fleet section--after-hero" id="frota" aria-labelledby="fleet-title">
+        <div class="container container--fleet">
+          <header class="fleet-showcase__header">
+            <h2 class="fleet-showcase__title" id="fleet-title">Conheça a nossa Frota</h2>
+            <p class="fleet-showcase__subtitle">
+              As melhores condições para você reservar e aproveitar
+            </p>
+          </header>
+
+          <div class="fleet-showcase" id="fleet-showcase" hidden>
+            <button
+              type="button"
+              class="fleet-showcase__arrow fleet-showcase__arrow--prev"
+              id="fleet-prev"
+              aria-label="Grupo anterior"
+            >
+              <span aria-hidden="true">‹</span>
+            </button>
+
+            <div class="fleet-showcase__stage">
+              <div class="fleet-showcase__track" id="fleet-track" aria-live="polite"></div>
+            </div>
+
+            <button
+              type="button"
+              class="fleet-showcase__arrow fleet-showcase__arrow--next"
+              id="fleet-next"
+              aria-label="Próximo grupo"
+            >
+              <span aria-hidden="true">›</span>
+            </button>
+          </div>
+
+          <div class="fleet-empty" id="fleet-empty">
+            <p class="fleet-empty__text">
+              Faça uma busca no topo para ver os grupos disponíveis no período escolhido.
+            </p>
+          </div>
+
+          <a href="grupos.html" class="fleet-showcase__cta" id="fleet-all-groups-link">Confira todos os grupos</a>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="services-title">
+        <div class="container">
+          <div class="service-cards">
+            <article class="service-card">
+              <div class="service-card__icon" aria-hidden="true">5′</div>
+              <h2 class="service-card__title" id="services-title">Fast Retirada Digital</h2>
+              <p class="service-card__text">
+                Retire seu carro em até 5 minutos com check-in digital, contrato eletrônico e chaves
+                liberadas na hora — menos fila, mais viagem.
+              </p>
+              <a href="#" class="btn btn--secondary btn--sm">Saiba mais</a>
+            </article>
+            <article class="service-card">
+              <div class="service-card__icon" aria-hidden="true">+</div>
+              <h2 class="service-card__title">Adicionais</h2>
+              <p class="service-card__text">
+                Pra que sua viagem seja ainda mais simples: GPS, cadeirinha, proteção extra e outros
+                serviços para personalizar seu aluguel.
+              </p>
+              <a href="#" class="btn btn--secondary btn--sm">Saiba mais</a>
+            </article>
+            <article class="service-card">
+              <div class="service-card__icon" aria-hidden="true">◎</div>
+              <h2 class="service-card__title">Portal do Cliente</h2>
+              <p class="service-card__text">
+                Tudo que você precisa em um só lugar: reservas, faturas, histórico de locações e
+                benefícios do programa de fidelidade Rodavia.
+              </p>
+              <a href="#" class="btn btn--secondary btn--sm">Saiba mais</a>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section--muted" aria-labelledby="dest-title">
+        <div class="container">
+          <header class="section__header">
+            <h2 class="section__title" id="dest-title">Destinos para descobrir e se inspirar</h2>
+            <p class="section__subtitle">
+              Do litoral às montanhas, explore o Brasil com a liberdade de um carro Rodavia. Inspire-se
+              com roteiros selecionados e planeje sua próxima escapada.
+            </p>
+          </header>
+
+          <div class="carousel" data-carousel>
+            <div class="carousel__controls">
+              <button type="button" class="carousel__btn carousel__btn--prev" aria-label="Anterior">‹</button>
+              <button type="button" class="carousel__btn carousel__btn--next" aria-label="Próximo">›</button>
+            </div>
+            <div class="carousel__track">
+              <article class="dest-card carousel__item">
+                <div
+                  class="dest-card__img"
+                  style="background-image: url('https://images.unsplash.com/photo-1483729558449-99ef09a8c325?w=600&q=80')"
+                  role="img"
+                  aria-label="Rio de Janeiro"
+                ></div>
+                <div class="dest-card__body">
+                  <h3 class="dest-card__title">Rio de Janeiro — RJ</h3>
+                </div>
+              </article>
+              <article class="dest-card carousel__item">
+                <div
+                  class="dest-card__img"
+                  style="background-image: url('https://images.unsplash.com/photo-1516026672322-bc52a8c2c874?w=600&q=80')"
+                  role="img"
+                  aria-label="Gramado"
+                ></div>
+                <div class="dest-card__body">
+                  <h3 class="dest-card__title">Gramado — RS</h3>
+                </div>
+              </article>
+              <article class="dest-card carousel__item">
+                <div
+                  class="dest-card__img"
+                  style="background-image: url('https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=600&q=80')"
+                  role="img"
+                  aria-label="Salvador"
+                ></div>
+                <div class="dest-card__body">
+                  <h3 class="dest-card__title">Salvador — BA</h3>
+                </div>
+              </article>
+              <article class="dest-card carousel__item">
+                <div
+                  class="dest-card__img"
+                  style="background-image: url('https://images.unsplash.com/photo-1585208797987-87349b19e089?w=600&q=80')"
+                  role="img"
+                  aria-label="Foz do Iguaçu"
+                ></div>
+                <div class="dest-card__body">
+                  <h3 class="dest-card__title">Foz do Iguaçu — PR</h3>
+                </div>
+              </article>
+              <article class="dest-card carousel__item">
+                <div
+                  class="dest-card__img"
+                  style="background-image: url('https://images.unsplash.com/photo-1568473182899-ef3f9decd8c2?w=600&q=80')"
+                  role="img"
+                  aria-label="Florianópolis"
+                ></div>
+                <div class="dest-card__body">
+                  <h3 class="dest-card__title">Florianópolis — SC</h3>
+                </div>
+              </article>
+              <article class="dest-card carousel__item">
+                <div
+                  class="dest-card__img"
+                  style="background-image: url('https://images.unsplash.com/photo-1555881400-74d7acaacd8b?w=600&q=80')"
+                  role="img"
+                  aria-label="Brasília"
+                ></div>
+                <div class="dest-card__body">
+                  <h3 class="dest-card__title">Brasília — DF</h3>
+                </div>
+              </article>
+            </div>
+          </div>
+
+          <a href="#" class="section__footer-link">Conferir todos os destinos</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <div class="footer-app">
+          <strong>Aplicativo Rodavia</strong>
+          <p style="margin: 0.5rem 0 0; opacity: 0.85">
+            Baixe o app fictício para gerenciar reservas e fidelidade (em breve nas lojas).
+          </p>
+        </div>
+
+        <div class="footer-grid">
+          <div class="footer-col">
+            <h3>Institucional</h3>
+            <ul>
+              <li><a href="#">Sobre a Rodavia</a></li>
+              <li><a href="#">Sustentabilidade</a></li>
+              <li><a href="#">Imprensa</a></li>
+              <li><a href="#">Trabalhe conosco</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h3>Negócios</h3>
+            <ul>
+              <li><a href="#">Gestão de frotas</a></li>
+              <li><a href="#">Parcerias</a></li>
+              <li><a href="#">Seminovos</a></li>
+              <li><a href="#">Rodavia empresas</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h3>Para você</h3>
+            <ul>
+              <li><a href="#">Ofertas</a></li>
+              <li><a href="#">Fidelidade</a></li>
+              <li><a href="#">Dúvidas frequentes</a></li>
+              <li><a href="#">Preferência de cookies</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h3>Contatos</h3>
+            <ul>
+              <li><a href="tel:" data-erp="telefone">—</a></li>
+              <li><a href="mailto:" data-erp="email">—</a></li>
+              <li data-erp="endereco">—</li>
+              <li data-erp="cnpj">—</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="footer-social">
+          <a href="#" aria-label="Instagram">Instagram</a>
+          <a href="#" aria-label="LinkedIn">LinkedIn</a>
+          <a href="#" aria-label="YouTube">YouTube</a>
+        </div>
+
+        <div class="footer-bottom">
+          <p>© LOCADORA RODAVIA. Todos os direitos reservados.</p>
+          <p>Versão do site v1.0.0</p>
+        </div>
+      </div>
+    </footer>
+
+    <aside
+      class="cookie-banner"
+      id="cookie-banner"
+      role="dialog"
+      aria-labelledby="cookie-title"
+      aria-describedby="cookie-desc"
+    >
+      <div class="cookie-banner__inner">
+        <p class="cookie-banner__text" id="cookie-desc">
+          <strong id="cookie-title">Cookies</strong> — Este site utiliza cookies para garantir que você
+          obtenha a melhor experiência durante sua navegação, melhorar continuamente nossos serviços e
+          lhe ofertar publicidade relevante aos seus interesses. Clique em Rejeitar se não desejar receber
+          ofertas direcionadas.
+        </p>
+        <div class="cookie-banner__actions">
+          <a href="#" class="btn btn--ghost btn--sm">Saiba mais</a>
+          <button type="button" class="btn btn--primary btn--sm" id="cookie-accept">Manter cookies</button>
+          <button type="button" class="btn btn--secondary btn--sm" id="cookie-reject">Rejeitar</button>
+          <a href="#" class="btn btn--ghost btn--sm" id="cookie-prefs-link">Preferência de Cookies</a>
+        </div>
+      </div>
+    </aside>
+
+    <button type="button" class="chat-fab" id="chat-fab" aria-label="Abrir chat">💬</button>
+
+    <div class="modal" id="chat-modal" aria-hidden="true" role="dialog" aria-labelledby="chat-modal-title">
+      <div class="modal__backdrop" data-close-modal="chat-modal"></div>
+      <div class="modal__panel">
+        <button type="button" class="modal__close" data-close-modal="chat-modal" aria-label="Fechar">×</button>
+        <h2 class="modal__title" id="chat-modal-title">Atendimento Rodavia</h2>
+        <p>Chat em breve. Enquanto isso, ligue para <strong>0800 123 4567</strong> ou envie e-mail para contato@rodavia.com.br.</p>
+      </div>
+    </div>
+
+    <div class="modal" id="cookie-prefs-modal" aria-hidden="true" role="dialog" aria-labelledby="prefs-title">
+      <div class="modal__backdrop" data-close-modal="cookie-prefs-modal"></div>
+      <div class="modal__panel">
+        <button type="button" class="modal__close" data-close-modal="cookie-prefs-modal" aria-label="Fechar">×</button>
+        <h2 class="modal__title" id="prefs-title">Preferência de cookies</h2>
+        <p>Sua escolha é salva no navegador (localStorage). Você pode alterá-la limpando os dados do site.</p>
+        <button type="button" class="btn btn--primary btn--sm" id="cookie-accept-prefs">Manter cookies</button>
+      </div>
+    </div>
+
+    <div class="modal" id="reserve-modal" aria-hidden="true" role="dialog" aria-labelledby="reserve-title">
+      <div class="modal__backdrop" data-close-modal="reserve-modal"></div>
+      <div class="modal__panel">
+        <button type="button" class="modal__close" data-close-modal="reserve-modal" aria-label="Fechar">×</button>
+        <h2 class="modal__title" id="reserve-title">Confirmar reserva</h2>
+        <form id="reserve-form">
+          <input type="hidden" id="reserve-categoria-id" name="categoria_id" />
+          <div class="form-field">
+            <label for="reserve-nome">Nome completo</label>
+            <input type="text" id="reserve-nome" name="nome" required autocomplete="name" />
+          </div>
+          <div class="form-field">
+            <label for="reserve-email">E-mail</label>
+            <input type="email" id="reserve-email" name="email" required autocomplete="email" />
+          </div>
+          <div class="form-field">
+            <label for="reserve-cpf">CPF</label>
+            <input type="text" id="reserve-cpf" name="cpf" required inputmode="numeric" autocomplete="off" />
+          </div>
+          <div class="form-field">
+            <label for="reserve-telefone">Telefone</label>
+            <input type="tel" id="reserve-telefone" name="telefone" required autocomplete="tel" />
+          </div>
+          <p class="form-message" id="reserve-cotacao" aria-live="polite"></p>
+          <button type="submit" class="btn btn--primary">Enviar reserva</button>
+          <p class="form-message" id="reserve-message" role="status"></p>
+        </form>
+      </div>
+    </div>
+
+    <script src="js/rodavia-config.js?v=7"></script>
+    <script src="js/rodavia-api.js?v=7"></script>
+    <script src="js/rodavia-bind.js?v=7"></script>
+    <script type="module" src="js/main.js?v=7"></script>
+  </body>
+</html>
