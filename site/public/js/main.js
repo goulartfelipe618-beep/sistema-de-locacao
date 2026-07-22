@@ -84,7 +84,10 @@ function initHeroCarousel() {
   const prev = $('[data-hero-prev]', root);
   const next = $('[data-hero-next]', root);
 
+  if (!slides.length) return;
+
   if (slides.length <= 1) {
+    slides[0].classList.add('is-active');
     prev?.setAttribute('hidden', '');
     next?.setAttribute('hidden', '');
     dotsContainer?.setAttribute('hidden', '');
@@ -466,6 +469,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initSearchWidget();
     initFleetShowcase();
     initReserveModal();
+    document.addEventListener('rodavia:slides-ready', () => initHeroCarousel());
     await bind().boot();
     initHeroCarousel();
   } catch (err) {

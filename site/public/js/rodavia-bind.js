@@ -156,16 +156,29 @@
         .join('');
   }
 
+  function slideId(slide) {
+    if (!slide || typeof slide !== 'object') return '';
+    return slide.id || slide.slide_id || '';
+  }
+
   function heroSlideMarkup(slide, isActive) {
-    if (!global.RodaviaAPI || !slide?.id) return '';
+    var id = slideId(slide);
+    if (!global.RodaviaAPI || !id) return '';
     var rawUrl = slide.imagem_url || '';
     var useBff =
       !rawUrl || rawUrl.indexOf('/api/') === 0 || rawUrl.indexOf('/bff/') === 0;
-    var imgUrl = useBff ? global.RodaviaAPI.slideImagemUrl(slide.id) : rawUrl;
+    var imgUrl = useBff ? global.RodaviaAPI.slideImagemUrl(id) : rawUrl;
     var label = escapeHtml(slide.titulo || 'Destaque promocional');
     var activeClass = isActive ? ' is-active' : '';
-    var style = 'background-image:url("' + String(imgUrl).replace(/"/g, '%22') + '")';
     var erpClass = ' hero__slide--erp';
+    var img =
+      '<img class="hero__slide-img" src="' +
+      escapeHtml(imgUrl) +
+      '" alt="' +
+      label +
+      '" decoding="async"' +
+      (isActive ? ' fetchpriority="high"' : '') +
+      ' />';
     if (slide.link_url) {
       return (
         '<a href="' +
@@ -173,11 +186,11 @@
         '" class="hero__slide hero__slide--linked' +
         erpClass +
         activeClass +
-        '" role="img" aria-label="' +
+        '" aria-label="' +
         label +
-        '" style="' +
-        style +
-        '"></a>'
+        '">' +
+        img +
+        '</a>'
       );
     }
     return (
@@ -186,9 +199,9 @@
       activeClass +
       '" role="img" aria-label="' +
       label +
-      '" style="' +
-      style +
-      '"></div>'
+      '">' +
+      img +
+      '</div>'
     );
   }
 
@@ -235,14 +248,21 @@
       if (slides.length > 1) dotsRoot.removeAttribute('hidden');
       else dotsRoot.setAttribute('hidden', '');
     }
+    try {
+      document.dispatchEvent(
+        new CustomEvent('rodavia:slides-ready', { detail: { count: slides.length } })
+      );
+    } catch (_) {
+      /* ignore */
+    }
     return true;
   }
 
   function applyCatalog(catalog) {
     if (!catalog || typeof catalog !== 'object') return;
-    if (catalog.empresa) applyEmpresa(catalog.empresa);
+    if (Array.isArray(catalog.slides)) applyHeroSlides(catalog.slides);
     if (catalog.filiais) populateFiliaisSelect(catalog.filiais);
-    if (catalog.slides) applyHeroSlides(catalog.slides);
+    if (catalog.empresa) applyEmpresa(catalog.empresa);
   }
 
   function hydrateFromCache() {
@@ -333,6 +353,16 @@
 
       try {
         var catalog = await api().catalog();
+        if (!normalizeSlidesList(catalog.slides).length) {
+          try {
+            var slidesOnly = await api().slides();
+            if (normalizeSlidesList(slidesOnly).length) {
+              catalog.slides = slidesOnly;
+            }
+          } catch (_) {
+            /* fallback slides opcional */
+          }
+        }
         applyCatalog(catalog);
         if (global.RodaviaCache) {
           global.RodaviaCache.write(catalog);
@@ -343,7 +373,8 @@
         global.RodaviaBind._booted = true;
         return { erpOk: true, catalog: catalog };
       } catch (err) {
-        console.warn('[Rodavia] Falha ao carregar catálogo:', err?.message || err);
+        console.warn('[Rodavia] Falha ao carregar catálogo:', err && err.message ? err.message : err);
+        bootPromise = null;
         var hadCache = hydrateFromCache();
         setApiStatus(hadCache);
         setReady(hadCache);
@@ -396,5 +427,4 @@
     document.documentElement.classList.add('erp-ready');
     document.documentElement.classList.remove('erp-loading');
   }
-  w.RodaviaBind.boot();
 })();

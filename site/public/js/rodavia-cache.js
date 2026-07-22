@@ -2,11 +2,24 @@
  * Cache do catálogo ERP (empresa, filiais, slides) — evita flash de placeholders.
  */
 (function (global) {
-  var CACHE_KEY = 'rodavia_catalog_v1';
+  var CACHE_KEY = 'rodavia_catalog_v2';
+  var LEGACY_CACHE_KEY = 'rodavia_catalog_v1';
   var TTL_MS = 15 * 60 * 1000;
+
+  function slimEmpresa(empresa) {
+    if (!empresa || typeof empresa !== 'object') return null;
+    return {
+      nome_exibicao: empresa.nome_exibicao,
+      cnpj_formatado: empresa.cnpj_formatado,
+      endereco_formatado: empresa.endereco_formatado,
+      email: empresa.email,
+      telefone: empresa.telefone || empresa.telefone_formatado,
+    };
+  }
 
   function read() {
     try {
+      sessionStorage.removeItem(LEGACY_CACHE_KEY);
       var raw = sessionStorage.getItem(CACHE_KEY);
       if (!raw) return null;
       var data = JSON.parse(raw);
@@ -24,7 +37,7 @@
         CACHE_KEY,
         JSON.stringify({
           savedAt: Date.now(),
-          empresa: payload.empresa || null,
+          empresa: slimEmpresa(payload.empresa),
           filiais: payload.filiais || [],
           slides: payload.slides || [],
         })
