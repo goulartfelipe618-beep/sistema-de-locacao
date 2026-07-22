@@ -554,6 +554,12 @@ NAVIGATION: tuple[MenuSection, ...] = (
                 permission="integracoes.api_publica.visualizar",
                 implemented=True,
             ),
+            MenuItem(
+                "Site — Slides",
+                url="/integracoes/site/slides",
+                permission="integracoes.site.visualizar",
+                implemented=True,
+            ),
         ),
     ),
     MenuSection(
@@ -674,6 +680,25 @@ def _item_state(item: MenuItem, user: AuthenticatedUser) -> dict | None:
         return {"label": item.label, "url": item.url, "enabled": True}
     # Item de módulo futuro: exibido, porém desabilitado ("em breve").
     return {"label": item.label, "url": None, "enabled": False}
+
+
+def resolve_active_menu_url(path: str, menu: list[dict]) -> str | None:
+    """Retorna a URL de menu mais específica para ``path`` (evita /reservas vs /reservas/calendario)."""
+    candidates: list[str] = []
+    for section in menu:
+        if section.get("enabled") and section.get("url"):
+            url = section["url"]
+            if path == url or (url != "/" and path.startswith(url + "/")):
+                candidates.append(url)
+        for item in section.get("children") or []:
+            if not item.get("enabled") or not item.get("url"):
+                continue
+            url = item["url"]
+            if path == url or path.startswith(url + "/"):
+                candidates.append(url)
+    if not candidates:
+        return None
+    return max(candidates, key=len)
 
 
 def build_menu(user: AuthenticatedUser | None) -> list[dict]:

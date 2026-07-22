@@ -168,3 +168,18 @@ class IntOutboundWebhook(TenantBaseModel):
         DateTime(timezone=True), nullable=True
     )
     ultimo_erro: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class IntSiteSlide(TenantBaseModel):
+    """Slide do carrossel hero do site institucional (upload no ERP)."""
+
+    __tablename__ = "int_site_slides"
+    __table_args__ = (Index("ix_int_site_slides_tenant_ordem", "tenant_id", "sort_order"),)
+
+    titulo: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    storage_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    image_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    content_type: Mapped[str] = mapped_column(String(120), nullable=False, default="image/jpeg")
+    link_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default=text("0"))
+    ativo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default=text("true"))

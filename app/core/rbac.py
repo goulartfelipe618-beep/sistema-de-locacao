@@ -331,6 +331,8 @@ SYSTEM_PERMISSIONS: tuple[PermissionDef, ...] = (
     _perm("integracoes", "api_publica", "visualizar", "Visualizar API Keys públicas"),
     _perm("integracoes", "api_publica", "criar", "Criar API Keys públicas"),
     _perm("integracoes", "api_publica", "editar", "Revogar/editar API Keys públicas"),
+    _perm("integracoes", "site", "visualizar", "Visualizar slides do site"),
+    _perm("integracoes", "site", "editar", "Gerenciar slides do site (upload)"),
     # ---- Automações (§13) ----
     _perm("automacoes", "regras", "visualizar", "Visualizar regras de automação"),
     _perm("automacoes", "regras", "criar", "Criar regras de automação"),

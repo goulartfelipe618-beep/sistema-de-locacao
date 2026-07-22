@@ -15,7 +15,7 @@
       {% if section.children %}
         {% set ns = namespace(active=false) %}
         {% for item in section.children %}
-          {% if item.enabled and item.url and (current_path == item.url or current_path.startswith(item.url + '/')) %}
+          {% if item.enabled and item.url and item.url == active_menu_url %}
             {% set ns.active = true %}
           {% endif %}
         {% endfor %}
@@ -32,7 +32,7 @@
               <li>
                 {% if item.enabled %}
                   <a href="{{ item.url }}"
-                     class="nav-sub-link {% if item.url and (current_path == item.url or current_path.startswith(item.url + '/')) %}is-active{% endif %}">
+                     class="nav-sub-link {% if item.url == active_menu_url %}is-active{% endif %}">
                     {{ item.label }}
                   </a>
                 {% else %}
@@ -46,7 +46,7 @@
         <div class="nav-group">
           {% if section.enabled %}
             <a href="{{ section.url }}"
-               class="nav-group-link {% if current_path == section.url %}is-active{% endif %}">
+               class="nav-group-link {% if section.url == active_menu_url %}is-active{% endif %}">
               <span class="nav-ico">{{ section.label[:1] }}</span>
               <span class="nav-label">{{ section.label }}</span>
             </a>

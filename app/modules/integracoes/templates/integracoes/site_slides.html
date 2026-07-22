@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% from "macros/forms.html" import field_label, form_legend %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card erp-form-card">
+  <h2 class="card-title">{{ title }}</h2>
+  <p class="form-help">
+    Imagens do carrossel da página inicial do site. Após salvar, aparecem automaticamente via API pública
+    (<code>GET /api/v1/public/slides</code>).
+  </p>
+
+  {% if error %}
+  <div class="alert alert-error">{{ error }}</div>
+  {% endif %}
+
+  {% if slides %}
+  <div class="table-wrap" style="margin-top:20px">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Prévia</th>
+          <th>Título / ordem</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in slides %}
+        {% set slide = item.slide %}
+        <tr>
+          <td style="width:180px">
+            {% if item.preview_url %}
+            <img src="{{ item.preview_url }}" alt="" style="max-width:160px;max-height:80px;object-fit:cover;border-radius:6px">
+            {% else %}—{% endif %}
+          </td>
+          <td>
+            {% if can_edit %}
+            <form method="post" action="/integracoes/site/slides/{{ slide.id }}/salvar" class="erp-form" style="margin:0">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <div class="form-group">
+                {{ field_label('Título (alt)', false, 'titulo_' ~ slide.id) }}
+                <input class="form-input" id="titulo_{{ slide.id }}" name="titulo" value="{{ slide.titulo or '' }}" placeholder="Descrição da imagem">
+              </div>
+              <div class="form-grid" style="grid-template-columns:1fr 1fr">
+                <div class="form-group">
+                  {{ field_label('Ordem', false, 'ordem_' ~ slide.id) }}
+                  <input class="form-input" id="ordem_{{ slide.id }}" name="sort_order" type="number" min="0" value="{{ slide.sort_order }}">
+                </div>
+                <div class="form-group">
+                  {{ field_label('Link ao clicar', false, 'link_' ~ slide.id) }}
+                  <input class="form-input" id="link_{{ slide.id }}" name="link_url" value="{{ slide.link_url or '' }}" placeholder="https://... (opcional)">
+                </div>
+              </div>
+              <label class="form-check">
+                <input type="checkbox" name="ativo" value="on" {% if slide.ativo %}checked{% endif %}> Ativo no site
+              </label>
+              <button class="btn btn-primary btn-sm" type="submit">Salvar</button>
+            </form>
+            {% else %}
+            <strong>{{ slide.titulo or '—' }}</strong><br>
+            <span class="form-help">Ordem {{ slide.sort_order }}</span>
+            {% endif %}
+          </td>
+          <td>{{ 'Ativo' if slide.ativo else 'Inativo' }}</td>
+          <td>
+            {% if can_edit %}
+            <form method="post" action="/integracoes/site/slides/{{ slide.id }}/substituir-imagem" enctype="multipart/form-data" class="erp-form" style="margin-bottom:8px">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <input class="form-input" type="file" name="imagem" accept="image/jpeg,image/png,image/webp" required>
+              <button class="btn btn-secondary btn-sm" type="submit">Trocar imagem</button>
+            </form>
+            <form method="post" action="/integracoes/site/slides/{{ slide.id }}/excluir" onsubmit="return confirm('Remover este slide do site?');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <button class="btn btn-danger btn-sm" type="submit">Excluir</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">Nenhum slide cadastrado. Adicione a primeira imagem abaixo.</div>
+  {% endif %}
+
+  {% if can_edit and slides|length < max_slides %}
+  <fieldset class="form-fieldset" style="margin-top:24px">
+    <legend>Adicionar slide</legend>
+    <form method="post" action="/integracoes/site/slides/novo" enctype="multipart/form-data" class="erp-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="form-grid">
+        <div class="form-group">
+          {{ field_label('Imagem', true, 'imagem') }}
+          <input class="form-input" type="file" id="imagem" name="imagem" accept="image/jpeg,image/png,image/webp" required>
+          <p class="form-help">JPG, PNG ou WebP · até 5 MB · recomendado 1920×600 px</p>
+        </div>
+        <div class="form-group">
+          {{ field_label('Título (opcional)', false, 'titulo') }}
+          <input class="form-input" id="titulo" name="titulo" placeholder="Ex.: Promoção de verão">
+        </div>
+        <div class="form-group">
+          {{ field_label('Link ao clicar (opcional)', false, 'link_url') }}
+          <input class="form-input" id="link_url" name="link_url" placeholder="https://...">
+        </div>
+      </div>
+      <button class="btn btn-primary" type="submit">Salvar slide</button>
+    </form>
+  </fieldset>
+  {% elif can_edit %}
+  <p class="form-help">Limite de {{ max_slides }} slides atingido. Exclua um slide para adicionar outro.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -38,7 +38,7 @@ def test_menu_integracoes_completo() -> None:
     menu = build_menu(_make_user(INT_PERMS))
     section = next(s for s in menu if s["label"] == "Integrações")
     labels = {item["label"] for item in section["children"]}
-    assert labels >= {"Pagamentos", "Trânsito (DETRAN)", "Crédito", "Telemetria", "API Pública"}
+    assert labels >= {"Pagamentos", "Trânsito (DETRAN)", "Crédito", "Telemetria", "API Pública", "Site — Slides"}
 
 
 def test_crypto_roundtrip() -> None:

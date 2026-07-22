@@ -9,6 +9,7 @@ Monta um ambiente Jinja2 com:
 
 from __future__ import annotations
 
+import re
 from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
@@ -16,6 +17,7 @@ from typing import Any
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from starlette.requests import Request
+from starlette.responses import HTMLResponse
 from starlette.templating import Jinja2Templates
 
 from app.core.config import settings
@@ -90,6 +92,22 @@ def _register_instruction_macros(env: Environment) -> None:
 # Objeto de templates compartilhado (Starlette gerencia o ``request`` no contexto).
 templates = Jinja2Templates(env=_build_environment())
 
+_APP_CONTENT_RE = re.compile(
+    r'(<main[^>]*\bid=["\']app-content["\'][^>]*>.*?</main>)',
+    re.DOTALL | re.IGNORECASE,
+)
+
+
+def extract_app_content(html: str) -> str | None:
+    """Extrai o fragmento ``#app-content`` de uma página HTML completa."""
+    match = _APP_CONTENT_RE.search(html)
+    return match.group(1) if match else None
+
+
+def is_spa_request(request: Request) -> bool:
+    """True quando a navegação SPA pede só o fragmento #app-content."""
+    return request.headers.get("X-ERP-SPA") == "1"
+
 
 def render(
     request: Request,
@@ -106,7 +124,7 @@ def render(
     """
     from app.core.csrf import ensure_csrf_token
     from app.core.ui_theme import read_ui_theme
-    from app.web.navigation import build_menu
+    from app.web.navigation import build_menu, resolve_active_menu_url
 
     ctx: dict[str, Any] = dict(context or {})
     from app import __version__
@@ -115,7 +133,9 @@ def render(
     current_user = getattr(request.state, "current_user", None)
     ctx.setdefault("current_user", current_user)
     ctx.setdefault("current_path", request.url.path)
-    ctx.setdefault("menu", build_menu(current_user))
+    menu = build_menu(current_user)
+    ctx.setdefault("menu", menu)
+    ctx.setdefault("active_menu_url", resolve_active_menu_url(request.url.path, menu))
     ctx.setdefault("csrf_token", ensure_csrf_token(request))
     branding = getattr(request.state, "tenant_branding", None) or request.session.get("tenant_branding")
     ctx.setdefault("tenant_branding", branding)
@@ -124,4 +144,9 @@ def render(
     ctx.setdefault("ui_theme", read_ui_theme(request))
     flash = request.session.pop("_flash", None)
     ctx.setdefault("flash", flash)
+    if is_spa_request(request):
+        html = templates.env.get_template(template_name).render({"request": request, **ctx})
+        fragment = extract_app_content(html)
+        if fragment:
+            return HTMLResponse(fragment, status_code=status_code)
     return templates.TemplateResponse(request, template_name, ctx, status_code=status_code)

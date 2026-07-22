@@ -7,6 +7,8 @@ from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
+from starlette.requests import Request
+from starlette.responses import Response
 
 from app import __version__
 from app.modules.integracoes.deps import PublicSessionDep, require_api_key_scope
@@ -22,8 +24,10 @@ from app.modules.integracoes.public_site_service import (
     get_empresa_public,
     list_filiais_public,
     list_grupos_public,
+    list_slides_public,
     list_veiculos_public,
 )
+from app.modules.integracoes.site_slides import SiteSlideService, decode_slide_image_bytes
 from app.modules.locacoes.service import ContratoService
 from app.modules.reservas.schemas import ReservaCreate
 from app.modules.reservas.service import DisponibilidadeService, ReservaService
@@ -56,6 +60,35 @@ async def public_filiais(
 ) -> list[dict]:
     """Lojas/pontos de retirada ativos."""
     return await list_filiais_public(session, key.tenant_id)
+
+
+@public_router.get("/slides")
+async def public_slides(
+    session: PublicSessionDep,
+    key: Annotated[IntApiKey, Depends(require_api_key_scope("catalogo:read"))],
+) -> list[dict]:
+    """Slides do carrossel hero do site (imagens via GET /slides/{id}/imagem)."""
+    return await list_slides_public(session, key.tenant_id)
+
+
+@public_router.get("/slides/{slide_id}/imagem")
+async def public_slide_imagem(
+    slide_id: uuid.UUID,
+    session: PublicSessionDep,
+    key: Annotated[IntApiKey, Depends(require_api_key_scope("catalogo:read"))],
+) -> Response:
+    """Bytes da imagem do slide (proxy seguro para o site via BFF)."""
+    slide = await SiteSlideService(session).get(key.tenant_id, slide_id)
+    if not slide.ativo:
+        from app.core.exceptions import NotFoundError
+
+        raise NotFoundError("Slide não encontrado.")
+    data, content_type = decode_slide_image_bytes(slide)
+    return Response(
+        content=data,
+        media_type=content_type,
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
 
 
 @public_router.get("/grupos")

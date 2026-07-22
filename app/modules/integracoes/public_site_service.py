@@ -294,3 +294,19 @@ async def cotacao_site(
         desconto_cupom=desconto,
         total_com_desconto=total_final,
     )
+
+
+async def list_slides_public(session: AsyncSession, tenant_id: uuid.UUID) -> list[dict]:
+    """Slides ativos do carrossel do site (somente metadados; imagem via /slides/{id}/imagem)."""
+    from app.modules.integracoes.site_slides import SiteSlideService
+
+    slides = await SiteSlideService(session).list_slides(tenant_id, active_only=True)
+    return [
+        {
+            "id": str(slide.id),
+            "titulo": slide.titulo,
+            "ordem": slide.sort_order,
+            "link_url": slide.link_url,
+        }
+        for slide in slides
+    ]

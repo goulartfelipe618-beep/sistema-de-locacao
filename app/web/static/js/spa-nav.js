@@ -73,12 +73,15 @@
   }
 
   function spaAjax(url) {
+    var targetEl = document.querySelector(CONTENT);
+    if (targetEl && window.htmx) {
+      window.htmx.trigger(targetEl, "htmx:abort");
+    }
     showLoader();
     window.htmx.ajax("GET", url, {
       target: CONTENT,
-      select: CONTENT,
       swap: "outerHTML",
-      headers: { "X-CSRF-Token": csrfToken() },
+      headers: { "X-CSRF-Token": csrfToken(), "X-ERP-SPA": "1" },
     });
   }
 
@@ -267,6 +270,10 @@
 
   document.body.addEventListener("htmx:configRequest", function (event) {
     event.detail.headers["X-CSRF-Token"] = csrfToken();
+    var target = event.detail.target;
+    if (target && target.id === "app-content") {
+      event.detail.headers["X-ERP-SPA"] = "1";
+    }
   });
 
   syncChrome();

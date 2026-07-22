@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -38,6 +38,7 @@ from app.modules.integracoes.service import (
     TransitoService,
     WebhookLogService,
 )
+from app.modules.integracoes.site_slides import SiteSlideService, resolve_slide_image_url
 from app.modules.tenants.service import FilialService
 from app.shared.enums import IntegracaoTipo
 
@@ -59,7 +60,7 @@ _EDIT_PERMS: dict[str, str] = {
 }
 
 API_PUBLIC_SCOPES: list[tuple[str, str]] = [
-    ("catalogo:read", "Empresa, filiais e grupos de veículos"),
+    ("catalogo:read", "Empresa, filiais, grupos de veículos e slides do site"),
     ("disponibilidade:read", "Consultar disponibilidade"),
     ("veiculos:read", "Listar veículos publicados no site"),
     ("pricing:read", "Cotação de preços (canal site)"),
@@ -395,3 +396,162 @@ async def outbound_webhook_excluir(
     except AppError:
         await session.rollback()
     return RedirectResponse("/integracoes/api", status_code=303)
+
+
+@router.get("/integracoes/site/slides", response_class=HTMLResponse)
+async def site_slides_list(
+    request: Request,
+    session: SessionDep,
+    current_user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("integracoes.site.visualizar"))
+    ],
+) -> HTMLResponse:
+    svc = SiteSlideService(session)
+    slides = await svc.list_slides(current_user.tenant_id)
+    can_edit = has_permission(
+        current_user.permissions, "integracoes.site.editar", is_superuser=current_user.is_superuser
+    )
+    api_base = str(request.base_url).rstrip("/")
+    items = [
+        {
+            "slide": slide,
+            "preview_url": resolve_slide_image_url(slide, request_base=api_base),
+        }
+        for slide in slides
+    ]
+    return render(
+        request,
+        "integracoes/site_slides.html",
+        {
+            "title": "Site — Slides",
+            "slides": items,
+            "can_edit": can_edit,
+            "max_slides": 10,
+        },
+    )
+
+
+@router.post("/integracoes/site/slides/novo", response_class=HTMLResponse)
+async def site_slides_novo(
+    request: Request,
+    session: SessionDep,
+    current_user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("integracoes.site.editar"))
+    ],
+    imagem: UploadFile = File(...),
+    titulo: Annotated[str, Form()] = "",
+    link_url: Annotated[str, Form()] = "",
+) -> HTMLResponse:
+    svc = SiteSlideService(session)
+    try:
+        file_bytes = await imagem.read()
+        await svc.create_slide(
+            current_user.tenant_id,
+            file_bytes=file_bytes,
+            filename=imagem.filename or "slide.jpg",
+            content_type=imagem.content_type or "image/jpeg",
+            titulo=titulo,
+            link_url=link_url,
+        )
+        await session.commit()
+        request.session["_flash"] = {"type": "success", "message": "Slide adicionado. Já está visível no site."}
+        return RedirectResponse("/integracoes/site/slides", status_code=303)
+    except AppError as exc:
+        await session.rollback()
+        slides = await svc.list_slides(current_user.tenant_id)
+        api_base = str(request.base_url).rstrip("/")
+        items = [
+            {"slide": s, "preview_url": resolve_slide_image_url(s, request_base=api_base)}
+            for s in slides
+        ]
+        return render(
+            request,
+            "integracoes/site_slides.html",
+            {
+                "title": "Site — Slides",
+                "slides": items,
+                "can_edit": True,
+                "max_slides": 10,
+                "error": exc.message,
+            },
+            status_code=400,
+        )
+
+
+@router.post("/integracoes/site/slides/{slide_id}/salvar", response_class=HTMLResponse)
+async def site_slides_salvar(
+    request: Request,
+    slide_id: uuid.UUID,
+    session: SessionDep,
+    current_user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("integracoes.site.editar"))
+    ],
+    titulo: Annotated[str, Form()] = "",
+    link_url: Annotated[str, Form()] = "",
+    sort_order: Annotated[int, Form()] = 0,
+    ativo: Annotated[str, Form()] = "",
+) -> HTMLResponse:
+    svc = SiteSlideService(session)
+    try:
+        await svc.update_slide(
+            current_user.tenant_id,
+            slide_id,
+            titulo=titulo,
+            link_url=link_url,
+            sort_order=sort_order,
+            ativo=ativo == "on" or ativo == "true" or ativo == "1",
+        )
+        await session.commit()
+        request.session["_flash"] = {"type": "success", "message": "Slide atualizado."}
+    except AppError as exc:
+        await session.rollback()
+        request.session["_flash"] = {"type": "error", "message": exc.message}
+    return RedirectResponse("/integracoes/site/slides", status_code=303)
+
+
+@router.post("/integracoes/site/slides/{slide_id}/substituir-imagem", response_class=HTMLResponse)
+async def site_slides_substituir_imagem(
+    request: Request,
+    slide_id: uuid.UUID,
+    session: SessionDep,
+    current_user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("integracoes.site.editar"))
+    ],
+    imagem: UploadFile = File(...),
+) -> HTMLResponse:
+    svc = SiteSlideService(session)
+    try:
+        file_bytes = await imagem.read()
+        await svc.replace_image(
+            current_user.tenant_id,
+            slide_id,
+            file_bytes=file_bytes,
+            filename=imagem.filename or "slide.jpg",
+            content_type=imagem.content_type or "image/jpeg",
+        )
+        await session.commit()
+        request.session["_flash"] = {"type": "success", "message": "Imagem do slide substituída."}
+    except AppError as exc:
+        await session.rollback()
+        request.session["_flash"] = {"type": "error", "message": exc.message}
+    return RedirectResponse("/integracoes/site/slides", status_code=303)
+
+
+@router.post("/integracoes/site/slides/{slide_id}/excluir")
+async def site_slides_excluir(
+    request: Request,
+    slide_id: uuid.UUID,
+    session: SessionDep,
+    current_user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("integracoes.site.editar"))
+    ],
+) -> RedirectResponse:
+    svc = SiteSlideService(session)
+    try:
+        await svc.delete_slide(current_user.tenant_id, slide_id)
+        await session.commit()
+        request.session["_flash"] = {"type": "success", "message": "Slide removido do site."}
+    except AppError as exc:
+        await session.rollback()
+        request.session["_flash"] = {"type": "error", "message": exc.message}
+    return RedirectResponse("/integracoes/site/slides", status_code=303)

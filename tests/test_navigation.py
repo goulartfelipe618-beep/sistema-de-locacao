@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 
 from app.modules.identity.service import AuthenticatedUser
-from app.web.navigation import build_menu
+from app.web.navigation import build_menu, resolve_active_menu_url
 
 
 def _make_user(permissions: set[str], is_superuser: bool = False) -> AuthenticatedUser:
@@ -132,3 +132,38 @@ def test_financeiro_enabled_with_permissions() -> None:
     financeiro = next(s for s in menu if s["label"] == "Financeiro")
     enabled = {item["label"] for item in financeiro["children"] if item["enabled"]}
     assert {"Caixa", "Contas a Receber"} <= enabled
+
+
+def test_resolve_active_menu_url_longest_prefix() -> None:
+    menu = build_menu(_make_user(set(), is_superuser=True))
+    assert resolve_active_menu_url("/reservas/calendario", menu) == "/reservas/calendario"
+    assert resolve_active_menu_url("/reservas", menu) == "/reservas"
+    assert resolve_active_menu_url("/frota/veiculos", menu) == "/frota/veiculos"
+    assert resolve_active_menu_url("/frota/veiculos/novo", menu) == "/frota/veiculos"
+    assert resolve_active_menu_url("/inexistente", menu) is None
+
+
+def test_spa_request_returns_app_content_fragment(client) -> None:
+    login = client.get("/login")
+    import re
+
+    m = re.search(r'name="csrf_token" value="([^"]+)"', login.text)
+    client.post(
+        "/login",
+        data={"email": "admin@locadora.local", "password": "Admin@123", "csrf_token": m.group(1)},
+        follow_redirects=True,
+    )
+    full = client.get("/frota/veiculos")
+    assert full.status_code == 200
+    assert "<!DOCTYPE html>" in full.text
+    assert 'id="app-content"' in full.text
+
+    spa = client.get("/frota/veiculos", headers={"X-ERP-SPA": "1"})
+    assert spa.status_code == 200
+    assert "<!DOCTYPE html>" not in spa.text
+    assert spa.text.strip().startswith("<main")
+    assert 'id="app-content"' in spa.text
+
+    spa_categorias = client.get("/frota/categorias", headers={"X-ERP-SPA": "1"})
+    assert spa_categorias.status_code == 200
+    assert "Veículos" not in spa_categorias.text or "Categorias" in spa_categorias.text

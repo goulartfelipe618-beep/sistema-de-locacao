@@ -13,6 +13,8 @@ def test_public_api_routes_registered() -> None:
     assert "/api/v1/public/cotacao" in paths
     assert "/api/v1/public/reservas/site" in paths
     assert "/api/v1/public/ping" in paths
+    assert "/api/v1/public/slides" in paths
+    assert "/api/v1/public/slides/{slide_id}/imagem" in paths
 
 
 def test_public_scopes_include_catalogo_and_pricing() -> None:
