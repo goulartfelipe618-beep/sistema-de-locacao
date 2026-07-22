@@ -72,6 +72,11 @@ run_seed() {
   echo "[entrypoint] Executando seed idempotente..."
   python -m scripts.seed
   echo "[entrypoint] Seed OK."
+  if [[ "${SEED_DEMO_DATA:-false}" == "true" ]]; then
+    echo "[entrypoint] Seed demo (SEED_DEMO_COUNT=${SEED_DEMO_COUNT:-7})..."
+    python -m scripts.seed_demo_data
+    echo "[entrypoint] Seed demo OK."
+  fi
 }
 
 case "${ROLE}" in
