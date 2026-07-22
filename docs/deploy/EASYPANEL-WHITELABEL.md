@@ -26,8 +26,25 @@ Navegador → site:80/bff/* → BFF (FastAPI interno) → ERP:8000/api/v1/public
 1. No projeto, clique **+** em SERVIÇOS.
 2. **App → Docker** (ou GitHub).
 3. Repositório: `goulartfelipe618-beep/sistema-de-locacao`
-4. **Build context / Dockerfile:** `site/Dockerfile` (contexto = pasta `site/` ou raiz com `-f site/Dockerfile`).
-5. **Porta exposta:** 80 (domínio público do site, ex.: `www.sualocadora.com`).
+4. **Build (escolha UMA opção):**
+
+**Opção A — subpasta `site` (preferida se o Easypanel tiver Root Directory):**
+
+| Campo | Valor |
+|-------|--------|
+| Root Directory / Source Path | `site` |
+| Dockerfile | `Dockerfile` |
+
+**Opção B — raiz do repo (se der erro `Dockerfile: no such file`):**
+
+| Campo | Valor |
+|-------|--------|
+| Root Directory | *(vazio / raiz)* |
+| Dockerfile | `Dockerfile.site` |
+
+O arquivo `Dockerfile.site` na raiz do repositório existe para Easypanel que sempre faz build na raiz do clone.
+
+5. **Porta exposta:** 80 (domínio público do site, ex.: `rodavia.com.br`). No Easypanel use **domínio**, não mapeie porta 80 do host duas vezes — cada container tem sua porta 80 interna.
 6. **Variáveis de ambiente** (serviço `site`):
 
 ```env
@@ -73,3 +90,13 @@ python -m http.server 8080
 ```
 
 Ou use `site/scripts/start-dev.ps1` (carrega `.env` da raiz do repo).
+
+## Erro comum no Easypanel
+
+```
+failed to read dockerfile: open Dockerfile: no such file or directory
+```
+
+**Causa:** build apontando para a **raiz do repositório** em vez da pasta `site/`.
+
+**Correção:** use **Opção B** — Dockerfile = `Dockerfile.site` (raiz do repo), depois **Rebuild**.

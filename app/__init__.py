@@ -5,4 +5,4 @@ vive em ``app.modules.<modulo>`` e compartilha a infraestrutura transversal de
 ``app.core`` e os blocos reutilizáveis de ``app.shared``.
 """
 
-__version__ = "0.2.6"
+__version__ = "0.2.7"
