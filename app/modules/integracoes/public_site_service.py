@@ -297,7 +297,7 @@ async def cotacao_site(
 
 
 async def list_slides_public(session: AsyncSession, tenant_id: uuid.UUID) -> list[dict]:
-    """Slides ativos do carrossel do site (somente metadados; imagem via /slides/{id}/imagem)."""
+    """Slides ativos do carrossel do site."""
     from app.modules.integracoes.site_slides import SiteSlideService
 
     slides = await SiteSlideService(session).list_slides(tenant_id, active_only=True)
@@ -307,6 +307,7 @@ async def list_slides_public(session: AsyncSession, tenant_id: uuid.UUID) -> lis
             "titulo": slide.titulo,
             "ordem": slide.sort_order,
             "link_url": slide.link_url,
+            "imagem_url": f"/api/v1/public/slides/{slide.id}/imagem",
         }
         for slide in slides
     ]
