@@ -9,17 +9,18 @@
     />
     <title>Grupos de Carros | LOCADORA RODAVIA</title>
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="css/styles.css?v=16" />
+    <link rel="stylesheet" href="css/styles.css?v=17" />
+    <link rel="stylesheet" href="css/pages.css?v=17" />
     <link rel="stylesheet" href="css/grupos.css" />
   </head>
-  <body class="page-grupos has-cookie-banner">
+  <body class="page-grupos has-cookie-banner" data-site-chrome="footer" data-topbar="rental" data-nav="groups">
     <a href="#main-content" class="skip-link" data-i18n="skip.main">Ir para conteúdo principal</a>
 
     <div class="topbar">
       <nav class="topbar__tabs" data-i18n-aria="topbar.business" aria-label="Negócios Rodavia">
         <a href="index.html" class="topbar__tab is-active" data-i18n="topbar.rental">Aluguel de carros</a>
-        <a href="#" class="topbar__tab" data-i18n="topbar.subscription">Carro por assinatura</a>
-        <a href="#" class="topbar__tab" data-i18n="topbar.app">Carro para app</a>
+        <a href="assinatura.html" class="topbar__tab" data-i18n="topbar.subscription">Carro por assinatura</a>
+        <a href="app-motoristas.html" class="topbar__tab" data-i18n="topbar.app">Carro para app</a>
       </nav>
       <div class="topbar__locale" id="locale-selector">
         <button
@@ -75,10 +76,10 @@
         <nav class="primary-nav primary-nav--brand" id="primary-nav" data-i18n-aria="nav.main" aria-label="Menu principal">
           <ul>
             <li><a href="grupos.html" aria-current="page" data-i18n="nav.groups">Grupos de carros</a></li>
-            <li><a href="#" data-i18n="nav.agencies">Rede de agências</a></li>
-            <li><a href="#" data-i18n="nav.about">Sobre nós</a></li>
-            <li><a href="#" data-i18n="nav.loyalty">Fidelidade</a></li>
-            <li><a href="#" data-i18n="nav.faq">Dúvidas</a></li>
+            <li><a href="agencias.html" data-i18n="nav.agencies">Rede de agências</a></li>
+            <li><a href="sobre.html" data-i18n="nav.about">Sobre nós</a></li>
+            <li><a href="fidelidade.html" data-i18n="nav.loyalty">Fidelidade</a></li>
+            <li><a href="duvidas.html" data-i18n="nav.faq">Dúvidas</a></li>
           </ul>
         </nav>
       </div>
@@ -138,66 +139,44 @@
         </p>
       </div>
 
-      <div class="groups-layout">
-        <div id="groups-sections"></div>
+      <div class="groups-layout-with-filters">
+        <aside class="filters-panel" id="groups-filters" aria-label="Filtros">
+          <h2 class="filters-panel__title" data-i18n="page.grupos.filters">Filtros</h2>
+          <div class="filters-panel__group">
+            <h3 data-i18n="page.grupos.filter_category">Categoria</h3>
+            <label><input type="checkbox" name="cat" value="hatch" checked /> Hatch</label>
+            <label><input type="checkbox" name="cat" value="sedan" checked /> Sedan</label>
+            <label><input type="checkbox" name="cat" value="suv" checked /> SUV</label>
+            <label><input type="checkbox" name="cat" value="luxo" checked /> Luxo</label>
+          </div>
+          <div class="filters-panel__group">
+            <h3 data-i18n="page.grupos.filter_transmission">Câmbio</h3>
+            <label><input type="checkbox" name="cambio" value="manual" checked /> Manual</label>
+            <label><input type="checkbox" name="cambio" value="automatico" checked /> Automático</label>
+          </div>
+          <div class="filters-panel__group">
+            <h3 data-i18n="page.grupos.filter_passengers">Passageiros</h3>
+            <label><input type="checkbox" name="pax" value="4" checked /> Até 4</label>
+            <label><input type="checkbox" name="pax" value="5" checked /> 5+</label>
+          </div>
+          <div class="filters-panel__group">
+            <h3 data-i18n="page.grupos.filter_luggage">Bagagem</h3>
+            <label><input type="checkbox" name="bags" value="small" checked /> 1 mala grande</label>
+            <label><input type="checkbox" name="bags" value="large" checked /> 2+ malas grandes</label>
+          </div>
+          <div class="filters-panel__group">
+            <h3 data-i18n="page.grupos.filter_fuel">Combustível</h3>
+            <label><input type="checkbox" name="fuel" value="flex" checked /> Flex</label>
+            <label><input type="checkbox" name="fuel" value="diesel" checked /> Diesel</label>
+          </div>
+        </aside>
+        <div class="groups-layout">
+          <div id="groups-sections"></div>
+        </div>
       </div>
     </main>
 
-    <footer class="footer--groups">
-      <div class="footer-band footer-band--dark">
-        <div class="footer-band__grid">
-          <div>
-            <h3 data-i18n="topbar.rental">Aluguel de carros</h3>
-            <ul>
-              <li><a href="grupos.html" data-i18n="nav.groups">Grupos de carros</a></li>
-              <li><a href="#" data-i18n="nav.agencies">Rede de agências</a></li>
-              <li><a href="#" data-i18n="nav.offers">Ofertas</a></li>
-            </ul>
-          </div>
-          <div>
-            <h3 data-i18n="groups.rentals">Reservas</h3>
-            <ul>
-              <li><a href="#" data-i18n="groups.my_reservations">Minhas reservas</a></li>
-              <li><a href="#" data-i18n="groups.prepay">Pré-pagamento</a></li>
-              <li><a href="#" data-i18n="nav.faq">Dúvidas</a></li>
-            </ul>
-          </div>
-          <div>
-            <h3 data-i18n="footer.business">Negócios</h3>
-            <ul>
-              <li><a href="#" data-i18n="nav.business">Para empresas</a></li>
-              <li><a href="#" data-i18n="topbar.fleet">Gestão de frotas</a></li>
-              <li><a href="#" data-i18n="topbar.used">Seminovos</a></li>
-            </ul>
-          </div>
-          <div>
-            <h3 data-i18n="groups.support">Atendimento</h3>
-            <ul>
-              <li><a href="tel:08001234567">0800 123 4567</a></li>
-              <li><a href="#" data-i18n="groups.whatsapp">WhatsApp</a></li>
-              <li><a href="#" data-i18n="groups.contact">Fale conosco</a></li>
-            </ul>
-          </div>
-        </div>
-      </div>
-      <div class="footer-band footer-band--light">
-        <div class="footer-band__grid">
-          <div>
-            <strong data-i18n="footer.app_title">Aplicativo Rodavia</strong>
-            <p style="margin: 0.5rem 0 0; font-size: 0.8125rem" data-i18n="groups.app_short">Gerencie reservas pelo celular.</p>
-          </div>
-          <div class="footer-band__apps">
-            <span class="footer-band__store">App Store</span>
-            <span class="footer-band__store">Google Play</span>
-          </div>
-        </div>
-      </div>
-      <div class="footer-band footer-band--brand">
-        <div style="max-width: 1200px; margin: 0 auto" data-i18n="groups.footer_legal">
-          © LOCADORA RODAVIA — CNPJ 00.000.000/0001-00 — Versão do site v1.0.0
-        </div>
-      </div>
-    </footer>
+    <div id="site-footer-mount"></div>
 
     <aside class="cookie-banner" id="cookie-banner" role="dialog" aria-labelledby="cookie-title">
       <div class="cookie-banner__inner">
@@ -245,11 +224,14 @@
       </div>
     </div>
 
-    <script src="js/site-i18n.js?v=16"></script>
-    <script src="js/rodavia-cache.js?v=16"></script>
-    <script src="js/rodavia-config.js?v=16"></script>
-    <script src="js/rodavia-api.js?v=16"></script>
-    <script src="js/rodavia-bind.js?v=16"></script>
-    <script type="module" src="js/grupos.js?v=16"></script>
+    <script src="js/site-i18n.js?v=17"></script>
+    <script src="js/site-i18n-pages.js?v=17"></script>
+    <script src="js/rodavia-cache.js?v=17"></script>
+    <script src="js/rodavia-config.js?v=17"></script>
+    <script src="js/rodavia-api.js?v=17"></script>
+    <script src="js/rodavia-bind.js?v=17"></script>
+    <script src="js/site-chrome.js?v=17"></script>
+    <script src="js/pages.js?v=17"></script>
+    <script type="module" src="js/grupos.js?v=17"></script>
   </body>
 </html>

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="erp-loading" data-page="agencias">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Encontre a agência Rodavia mais próxima de você — endereços, horários, telefone e WhatsApp em todo o Brasil."
+    />
+    <title>Rede de Agências | LOCADORA RODAVIA</title>
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="css/styles.css?v=17" />
+    <link rel="stylesheet" href="css/pages.css?v=17" />
+  </head>
+  <body class="page-agencias has-cookie-banner" data-site-chrome="auto" data-topbar="rental" data-nav="agencies">
+    <main id="main-content" class="page-content" tabindex="-1">
+      <section class="page-hero page-hero--compact" aria-labelledby="agencies-title">
+        <div class="page-hero__inner">
+          <h1 class="page-hero__title" id="agencies-title" data-i18n="page.agencies.title">
+            Encontre a agência mais próxima de você
+          </h1>
+          <p class="page-hero__subtitle" data-i18n="page.agencies.subtitle">
+            Consulte endereços, horários de atendimento e fale diretamente com a unidade da sua região.
+          </p>
+          <div class="agency-search">
+            <label class="visually-hidden" for="agency-filter" data-i18n="page.agencies.filter_label">
+              Filtrar agências por cidade, bairro ou endereço
+            </label>
+            <input
+              type="search"
+              id="agency-filter"
+              class="agency-search__input"
+              placeholder="Busque por cidade, bairro ou endereço…"
+              autocomplete="off"
+              data-i18n-placeholder="page.agencies.filter_placeholder"
+            />
+          </div>
+        </div>
+      </section>
+
+      <section class="page-section" aria-labelledby="agency-map-heading">
+        <div class="page-section__inner">
+          <h2 class="visually-hidden" id="agency-map-heading">Mapa de agências</h2>
+          <div class="agency-map-wrap">
+            <iframe
+              id="agency-map"
+              class="agency-map"
+              title="Mapa das agências Rodavia no Brasil"
+              src="https://www.openstreetmap.org/export/embed.html?bbox=-73.99%2C-33.75%2C-34.79%2C5.27&amp;layer=mapnik"
+              loading="lazy"
+            ></iframe>
+            <p class="agency-map__note" data-i18n="page.agencies.map_note">
+              Mapa ilustrativo via OpenStreetMap. Para rotas detalhadas, use o link
+              <strong>Como chegar</strong> em cada agência (Google Maps).
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="page-section page-section--muted" aria-labelledby="agency-list-heading">
+        <div class="page-section__inner">
+          <h2 class="page-section__title" id="agency-list-heading" data-i18n="page.agencies.list_title">
+            Nossas agências
+          </h2>
+          <p class="page-section__lead" data-i18n="page.agencies.list_lead">
+            A lista abaixo é atualizada automaticamente com as filiais cadastradas no ERP Rodavia.
+          </p>
+
+          <div class="agency-list" id="agency-list">
+            <article class="agency-card agency-card--placeholder" data-agency-placeholder>
+              <h3 class="agency-card__name">Rodavia — Centro (exemplo)</h3>
+              <p class="agency-card__address">
+                Av. Paulista, 1000 — Bela Vista, São Paulo — SP, CEP 01310-100
+              </p>
+              <p class="agency-card__hours">
+                <strong>Horário:</strong> Segunda a sábado, das 8h às 18h
+              </p>
+              <p class="agency-card__contact">
+                <a href="tel:08001234567">0800 123 4567</a>
+                ·
+                <a href="https://wa.me/5511999999999" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+              </p>
+              <a
+                class="agency-card__directions btn btn--secondary btn--sm"
+                href="https://www.google.com/maps/search/?api=1&amp;query=Av.+Paulista+1000+São+Paulo"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Como chegar
+              </a>
+            </article>
+
+            <article class="agency-card agency-card--placeholder" data-agency-placeholder>
+              <h3 class="agency-card__name">Rodavia — Aeroporto (exemplo)</h3>
+              <p class="agency-card__address">
+                Rod. dos Trabalhadores, s/n — Guarulhos — SP, CEP 07190-100
+              </p>
+              <p class="agency-card__hours">
+                <strong>Horário:</strong> Segunda a sábado, das 8h às 18h
+              </p>
+              <p class="agency-card__contact">
+                <a href="tel:08001234567">0800 123 4567</a>
+                ·
+                <a href="https://wa.me/5511999999999" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+              </p>
+              <a
+                class="agency-card__directions btn btn--secondary btn--sm"
+                href="https://www.google.com/maps/search/?api=1&amp;query=Rod.+dos+Trabalhadores+Guarulhos"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Como chegar
+              </a>
+            </article>
+
+            <article class="agency-card agency-card--placeholder" data-agency-placeholder>
+              <h3 class="agency-card__name">Rodavia — Zona Sul (exemplo)</h3>
+              <p class="agency-card__address">
+                Rua das Palmeiras, 250 — Copacabana, Rio de Janeiro — RJ, CEP 22070-010
+              </p>
+              <p class="agency-card__hours">
+                <strong>Horário:</strong> Segunda a sábado, das 8h às 18h
+              </p>
+              <p class="agency-card__contact">
+                <a href="tel:08001234567">0800 123 4567</a>
+                ·
+                <a href="https://wa.me/5521999999999" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+              </p>
+              <a
+                class="agency-card__directions btn btn--secondary btn--sm"
+                href="https://www.google.com/maps/search/?api=1&amp;query=Rua+das+Palmeiras+250+Copacabana"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Como chegar
+              </a>
+            </article>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div id="site-footer-mount"></div>
+
+    <script src="js/site-i18n.js?v=17"></script>
+    <script src="js/site-i18n-pages.js?v=17"></script>
+    <script src="js/rodavia-cache.js?v=17"></script>
+    <script src="js/rodavia-config.js?v=17"></script>
+    <script src="js/rodavia-api.js?v=17"></script>
+    <script src="js/rodavia-bind.js?v=17"></script>
+    <script src="js/site-chrome.js?v=17"></script>
+    <script src="js/pages.js?v=17"></script>
+  </body>
+</html>

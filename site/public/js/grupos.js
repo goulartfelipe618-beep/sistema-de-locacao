@@ -122,6 +122,92 @@ function initSearchWidget() {
   });
 }
 
+function formatDailyPrice(group) {
+  const formatted =
+    group.diaria_formatada || group.preco_diaria_formatado || group.valor_diaria_formatado;
+  if (formatted) return formatted;
+  const n = group.diaria ?? group.preco_diaria ?? group.valor_diaria;
+  if (n == null || Number.isNaN(Number(n))) return null;
+  return `R$ ${Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/dia`;
+}
+
+function normalizeCategory(group) {
+  const seg = String(
+    group.segmento || group.categoria_segmento || group.nome || ''
+  ).toLowerCase();
+  if (/lux|premium|execut|black/.test(seg)) return 'luxo';
+  if (/suv|utilit|pickup|van|4x4/.test(seg)) return 'suv';
+  if (/sedan|sedã/.test(seg)) return 'sedan';
+  if (/hatch|compact|econom|popular/.test(seg)) return 'hatch';
+  return 'hatch';
+}
+
+function normalizeCambio(group) {
+  const c = String(group.cambio || '').toLowerCase();
+  if (/auto|cvt|tiptronic|automático|automatico/.test(c)) return 'automatico';
+  return 'manual';
+}
+
+function normalizePax(group) {
+  const p = Number(group.passageiros ?? group.capacidade_passageiros ?? 5);
+  return p >= 5 ? '5' : '4';
+}
+
+function normalizeFuel(group) {
+  const f = String(group.combustivel || group.fuel || 'flex').toLowerCase();
+  if (/diesel/.test(f)) return 'diesel';
+  return 'flex';
+}
+
+function readFilterState() {
+  const panel = $('#groups-filters');
+  if (!panel) return null;
+  const checked = (name) =>
+    [...panel.querySelectorAll(`input[name="${name}"]:checked`)].map((i) => i.value);
+  return {
+    cat: checked('cat'),
+    cambio: checked('cambio'),
+    pax: checked('pax'),
+    fuel: checked('fuel'),
+    bags: checked('bags'),
+  };
+}
+
+function normalizeBags(group) {
+  const bg = Number(group.malas_grandes ?? 1);
+  return bg >= 2 ? 'large' : 'small';
+}
+
+function applyFilters(groups) {
+  const filters = readFilterState();
+  if (!filters) return groups;
+  return groups.filter((group) => {
+    if (filters.cat.length && !filters.cat.includes(normalizeCategory(group))) return false;
+    if (filters.cambio.length && !filters.cambio.includes(normalizeCambio(group))) return false;
+    if (filters.pax.length && !filters.pax.includes(normalizePax(group))) return false;
+    if (filters.bags.length && !filters.bags.includes(normalizeBags(group))) return false;
+    if (filters.fuel.length && !filters.fuel.includes(normalizeFuel(group))) return false;
+    return true;
+  });
+}
+
+function specTagsHtml(group) {
+  const p = group.passageiros ?? group.capacidade_passageiros ?? 5;
+  const doors = group.portas ?? 4;
+  const cambio = group.cambio || i18n('groups.tag_manual');
+  const ar = group.ar_condicionado !== false ? i18n('feature.ac') : i18n('feature.no_ac');
+  const steer = group.direcao || i18n('groups.tag_electric_steer');
+  return `
+    <ul class="group-card__tags" aria-label="${escapeHtml(i18n('groups.specs'))}">
+      <li>${escapeHtml(String(p))} ${escapeHtml(i18n('groups.tag_seats'))}</li>
+      <li>${escapeHtml(ar)}</li>
+      <li>${escapeHtml(steer)}</li>
+      <li>${escapeHtml(String(doors))} ${escapeHtml(i18n('groups.tag_doors'))}</li>
+      <li>${escapeHtml(cambio)}</li>
+    </ul>
+  `;
+}
+
 function featureRow(group) {
   const p = group.passageiros ?? group.capacidade_passageiros ?? '—';
   const bg = group.malas_grandes ?? 1;
@@ -141,6 +227,7 @@ function groupCardHtml(group) {
   const title = escapeHtml(fleetGroupTitle(group));
   const subtitle = escapeHtml(fleetGroupSubtitle(group));
   const tag = escapeHtml(fleetGroupTag(group));
+  const daily = formatDailyPrice(group);
   const imgUrl = group.imagem_url;
   const media = imgUrl
     ? `<img class="group-card__img" src="${escapeHtml(imgUrl)}" alt="" loading="lazy" />`
@@ -152,28 +239,42 @@ function groupCardHtml(group) {
       <h2 class="group-card__title">${title}</h2>
       <p class="group-card__subtitle">${subtitle}</p>
       <div class="group-card__media">${media}</div>
+      ${specTagsHtml(group)}
       <ul class="group-card__features">${featureRow(group)}</ul>
-      <button type="button" class="group-card__cta" data-rent>${escapeHtml(i18n('groups.rent_now'))}</button>
-      <a href="#grupo-${escapeHtml(id)}" class="group-card__details">${escapeHtml(i18n('groups.view_details'))}</a>
+      ${
+        daily
+          ? `<p class="group-card__price"><span class="group-card__price-label">${escapeHtml(i18n('groups.daily_from'))}</span> <strong>${escapeHtml(daily)}</strong></p>`
+          : ''
+      }
+      <button type="button" class="group-card__cta btn btn--primary" data-rent>${escapeHtml(i18n('groups.continue_reserve'))}</button>
     </article>
   `;
 }
 
 function renderGroupsGrid(groups) {
+  const filtered = applyFilters(groups);
   const host = $('#groups-sections');
   const rail = $('#groups-rail');
   const empty = $('#groups-empty');
   if (!host) return;
 
-  if (!groups.length) {
+  if (!filtered.length) {
     host.innerHTML = '';
-    if (empty) empty.hidden = false;
+    if (empty) {
+      empty.hidden = false;
+      const emptyText = $('#groups-empty .groups-empty__text');
+      if (emptyText && groups.length) {
+        emptyText.textContent = i18n('groups.empty_filtered');
+      } else if (emptyText && !groups.length) {
+        emptyText.textContent = i18n('groups.empty');
+      }
+    }
     rail?.classList.remove('is-visible');
     return;
   }
 
   if (empty) empty.hidden = true;
-  const segments = groupFleetBySegment(groups);
+  const segments = groupFleetBySegment(filtered);
   let html = '';
   segments.forEach((items, segmentTitle) => {
     const segId = segmentTitle.replace(/\W/g, '') || 'geral';
@@ -186,7 +287,7 @@ function renderGroupsGrid(groups) {
   });
   host.innerHTML = html;
 
-  const letters = [...new Map(groups.map((g) => [fleetGroupLetter(g), g])).entries()];
+  const letters = [...new Map(filtered.map((g) => [fleetGroupLetter(g), g])).entries()];
   if (rail) {
     rail.innerHTML = letters
       .map(
@@ -302,6 +403,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   initCookieBanner();
   initSearchWidget();
   $('#reserve-form')?.addEventListener('submit', submitReservation);
+
+  document.addEventListener('groups:filter-change', () => {
+    if (lastGroups.length) renderGroupsGrid(lastGroups);
+  });
 
   await bind().boot();
 

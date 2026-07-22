@@ -665,12 +665,20 @@
     /* ignore */
   }
 
+  function mergeLocale(lang, entries) {
+    if (!entries) return;
+    if (!MESSAGES[lang]) MESSAGES[lang] = {};
+    Object.assign(MESSAGES[lang], entries);
+  }
+
   global.SiteI18n = {
     t: t,
     getLang: getLang,
     setLang: setLang,
     apply: apply,
     init: init,
+    mergeLocale: mergeLocale,
+    _mergeLocale: mergeLocale,
     STORAGE_KEY: STORAGE_KEY,
     LOCALES: LOCALES,
   };
