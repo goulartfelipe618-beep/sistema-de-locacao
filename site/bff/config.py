@@ -26,14 +26,38 @@ class Settings(BaseSettings):
     )
 
     # ERP — preferir rede interna (Docker/Easypanel): http://web:8000 ou http://erp-locadora:8000
-    erp_internal_url: str = ""
-    erp_base_url: str = "http://web:8000"
-    erp_api_key: str = ""
-    erp_api_key_catalogo: str = ""
-    erp_api_key_disponibilidade: str = ""
-    erp_api_key_veiculos: str = ""
-    erp_api_key_pricing: str = ""
-    erp_api_key_reservas: str = ""
+    erp_internal_url: str = Field(
+        default="",
+        validation_alias=AliasChoices("ERP_INTERNAL_URL"),
+    )
+    erp_base_url: str = Field(
+        default="",
+        validation_alias=AliasChoices("ERP_BASE_URL"),
+    )
+    erp_api_key: str = Field(
+        default="",
+        validation_alias=AliasChoices("ERP_API_KEY", "SITE_ERP_API_KEY"),
+    )
+    erp_api_key_catalogo: str = Field(
+        default="",
+        validation_alias=AliasChoices("ERP_API_KEY_CATALOGO"),
+    )
+    erp_api_key_disponibilidade: str = Field(
+        default="",
+        validation_alias=AliasChoices("ERP_API_KEY_DISPONIBILIDADE"),
+    )
+    erp_api_key_veiculos: str = Field(
+        default="",
+        validation_alias=AliasChoices("ERP_API_KEY_VEICULOS"),
+    )
+    erp_api_key_pricing: str = Field(
+        default="",
+        validation_alias=AliasChoices("ERP_API_KEY_PRICING"),
+    )
+    erp_api_key_reservas: str = Field(
+        default="",
+        validation_alias=AliasChoices("ERP_API_KEY_RESERVAS"),
+    )
     erp_tenant_slug: str = Field(
         default="matriz",
         validation_alias=AliasChoices("ERP_TENANT_SLUG", "DEFAULT_TENANT_SLUG"),
@@ -61,11 +85,31 @@ class Settings(BaseSettings):
         internal = self.erp_internal_url.strip()
         if internal:
             return internal.rstrip("/")
-        return self.erp_base_url.rstrip("/")
+        public = self.erp_base_url.strip()
+        if public:
+            return public.rstrip("/")
+        # Fallback Compose (site + erp no mesmo stack)
+        return "http://web:8000"
 
     @property
     def cors_origins(self) -> list[str]:
         return [o.strip() for o in self.site_allowed_origins.split(",") if o.strip()]
+
+    @property
+    def config_issues(self) -> list[str]:
+        issues: list[str] = []
+        if not self.api_key_for_scope("catalogo:read"):
+            issues.append("ERP_API_KEY ou ERP_API_KEY_CATALOGO ausente")
+        slug = self.erp_tenant_slug.strip().lower()
+        if slug == "rodavia":
+            issues.append(
+                "ERP_TENANT_SLUG=rodavia não existe no ERP; use matriz (DEFAULT_TENANT_SLUG)"
+            )
+        if not self.erp_internal_url.strip() and not self.erp_base_url.strip():
+            issues.append(
+                "Defina ERP_INTERNAL_URL (Docker/Easypanel) ou ERP_BASE_URL (dev local → ERP remoto)"
+            )
+        return issues
 
 
 settings = Settings()

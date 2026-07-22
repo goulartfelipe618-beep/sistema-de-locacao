@@ -80,8 +80,27 @@ async def _erp_request(
 
 
 @app.get("/bff/health")
-async def bff_health() -> dict[str, str]:
-    return {"status": "ok", "service": "site-bff", "erp": settings.erp_api_base}
+async def bff_health() -> dict[str, object]:
+    issues = settings.config_issues
+    erp_status = "unknown"
+    if not issues:
+        try:
+            await _erp_request("GET", "/api/v1/public/ping")
+            erp_status = "ok"
+        except HTTPException as exc:
+            erp_status = f"error:{exc.status_code}"
+        except Exception:
+            erp_status = "unreachable"
+    else:
+        erp_status = "misconfigured"
+    return {
+        "status": "ok" if erp_status == "ok" and not issues else "degraded",
+        "service": "site-bff",
+        "erp": settings.erp_api_base,
+        "tenant": settings.erp_tenant_slug,
+        "erp_status": erp_status,
+        "issues": issues,
+    }
 
 
 @app.get("/bff/ping")
@@ -105,9 +124,28 @@ async def bff_grupos(request: Request) -> Any:
     return await _erp_request("GET", "/api/v1/public/grupos", params=params or None)
 
 
+def _normalize_slides_payload(payload: Any) -> list[dict[str, Any]]:
+    if isinstance(payload, list):
+        slides = payload
+    elif isinstance(payload, dict):
+        raw = payload.get("slides") or payload.get("items")
+        slides = raw if isinstance(raw, list) else []
+    else:
+        slides = []
+    normalized: list[dict[str, Any]] = []
+    for slide in slides:
+        if not isinstance(slide, dict) or not slide.get("id"):
+            continue
+        item = dict(slide)
+        item["imagem_url"] = f"/bff/slides/{slide['id']}/imagem"
+        normalized.append(item)
+    return normalized
+
+
 @app.get("/bff/slides")
-async def bff_slides() -> Any:
-    return await _erp_request("GET", "/api/v1/public/slides")
+async def bff_slides() -> list[dict[str, Any]]:
+    payload = await _erp_request("GET", "/api/v1/public/slides")
+    return _normalize_slides_payload(payload)
 
 
 @app.get("/bff/slides/{slide_id}/imagem")

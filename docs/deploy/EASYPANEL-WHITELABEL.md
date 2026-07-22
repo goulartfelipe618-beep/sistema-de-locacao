@@ -33,10 +33,12 @@ Navegador → site:80/bff/* → BFF (FastAPI interno) → ERP:8000/api/v1/public
 ```env
 ERP_INTERNAL_URL=http://erp-locadora:8000
 ERP_TENANT_SLUG=matriz
-ERP_API_KEY=erp_sua_chave_gerada_no_erp
+ERP_API_KEY=erp_sua_chave_catalogo_read
 SITE_PUBLIC_URL=https://www.sualocadora.com
 SITE_ALLOWED_ORIGINS=https://www.sualocadora.com
 ```
+
+> **Importante:** o tenant padrão do ERP é `matriz` (não `rodavia`). Use a chave de **catalogo:read** em `ERP_API_KEY`, ou defina `ERP_API_KEY_CATALOGO`.
 
 7. Gere a API Key no ERP: **Integrações → API Pública** (escopos: `catalogo:read`, `veiculos:read`, `pricing:read`, `reservas:write`, `disponibilidade:read`).
 

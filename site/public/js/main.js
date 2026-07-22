@@ -139,10 +139,12 @@ function normalizeSlidesList(payload) {
 
 function heroSlideMarkup(slide, isActive) {
   if (!window.RodaviaAPI || !slide?.id) return '';
-  const imgUrl =
-    slide.imagem_url && slide.imagem_url.indexOf('/api/') === 0
-      ? window.RodaviaAPI.slideImagemUrl(slide.id)
-      : slide.imagem_url || window.RodaviaAPI.slideImagemUrl(slide.id);
+  const rawUrl = slide.imagem_url || '';
+  const useBff =
+    !rawUrl ||
+    rawUrl.indexOf('/api/') === 0 ||
+    rawUrl.indexOf('/bff/') === 0;
+  const imgUrl = useBff ? window.RodaviaAPI.slideImagemUrl(slide.id) : rawUrl;
   const label = escapeHtml(slide.titulo || 'Destaque promocional');
   const activeClass = isActive ? ' is-active' : '';
   const style = `background-image:url("${String(imgUrl).replace(/"/g, '%22')}")`;
