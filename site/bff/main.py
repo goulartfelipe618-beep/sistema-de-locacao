@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 import httpx
@@ -140,6 +141,25 @@ def _normalize_slides_payload(payload: Any) -> list[dict[str, Any]]:
         item["imagem_url"] = f"/bff/slides/{slide['id']}/imagem"
         normalized.append(item)
     return normalized
+
+
+@app.get("/bff/catalog")
+async def bff_catalog() -> JSONResponse:
+    """Empresa + filiais + slides em uma única ida ao ERP (menos latência no boot do site)."""
+    empresa, filiais, slides_raw = await asyncio.gather(
+        _erp_request("GET", "/api/v1/public/empresa"),
+        _erp_request("GET", "/api/v1/public/filiais"),
+        _erp_request("GET", "/api/v1/public/slides"),
+    )
+    payload = {
+        "empresa": empresa,
+        "filiais": filiais,
+        "slides": _normalize_slides_payload(slides_raw),
+    }
+    return JSONResponse(
+        content=payload,
+        headers={"Cache-Control": "private, max-age=60"},
+    )
 
 
 @app.get("/bff/slides")

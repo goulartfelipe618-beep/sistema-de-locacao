@@ -297,9 +297,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initSearchWidget();
   $('#reserve-form')?.addEventListener('submit', submitReservation);
 
-  if (window.RodaviaBind && !window.RodaviaBind._booted) {
-    await bind().boot();
-  }
+  await bind().boot();
 
   let params = parseSearchFromUrl();
   if (!params) {

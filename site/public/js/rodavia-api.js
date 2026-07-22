@@ -35,6 +35,7 @@
         method: method,
         headers: headers,
         body: body !== undefined ? JSON.stringify(body) : undefined,
+        cache: options.cache,
       });
     } catch (_) {
       throw new Error('Não foi possível conectar ao serviço. Verifique sua conexão.');
@@ -75,6 +76,9 @@
     },
     slides: function () {
       return request('GET', '/slides');
+    },
+    catalog: function () {
+      return request('GET', '/catalog', { cache: 'no-store' });
     },
     slideImagemUrl: function (slideId) {
       return apiUrl('/slides/' + encodeURIComponent(slideId) + '/imagem');

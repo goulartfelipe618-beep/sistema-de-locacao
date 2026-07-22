@@ -1,6 +1,6 @@
 /**
- * BFF: mesma origem /bff (nginx faz proxy para o FastAPI interno).
- * Em dev local sem Docker, tenta :8090 como fallback.
+ * BFF: mesma origem /bff (nginx → FastAPI interno).
+ * Em produção não faz ping — economiza 1 round-trip por página.
  */
 (function () {
   if (typeof window.RODAVIA_BFF_BASE === 'string' && window.RODAVIA_BFF_BASE) {
@@ -12,11 +12,18 @@
   var port = location.port;
   var isLocal = host === 'localhost' || host === '127.0.0.1';
 
-  var candidates = isLocal
-    ? (port === '8080' ? ['/bff', 'http://127.0.0.1:8090/bff'] : ['http://127.0.0.1:8090/bff', '/bff'])
-    : ['/bff'];
+  window.RODAVIA_BFF_BASE = '/bff';
 
-  window.RODAVIA_BFF_BASE = candidates[0];
+  if (!isLocal) {
+    window.RODAVIA_BFF_READY = true;
+    return;
+  }
+
+  var candidates =
+    port === '8080'
+      ? ['/bff', 'http://127.0.0.1:8090/bff']
+      : ['http://127.0.0.1:8090/bff', '/bff'];
+
   window.RODAVIA_BFF_READY = false;
 
   function pingBase(base) {

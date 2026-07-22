@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="erp-loading">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -9,7 +9,7 @@
     />
     <title>Grupos de Carros | LOCADORA RODAVIA</title>
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="css/styles.css?v=9" />
     <link rel="stylesheet" href="css/grupos.css" />
   </head>
   <body class="page-grupos has-cookie-banner">
@@ -17,7 +17,7 @@
 
     <div class="topbar">
       <nav class="topbar__tabs" aria-label="Negócios Rodavia">
-        <a href="index.html" class="topbar__tab is-active" data-erp="nome_exibicao">Aluguel de carros</a>
+        <a href="index.html" class="topbar__tab is-active">Aluguel de carros</a>
         <a href="#" class="topbar__tab">Gestão de frotas</a>
         <a href="#" class="topbar__tab">Seminovos</a>
         <a href="#" class="topbar__tab">Carro por assinatura</a>
@@ -33,8 +33,8 @@
       <div class="site-header__inner">
         <a href="index.html" class="logo logo--brand" aria-label="Página inicial">
           <img id="brand-logo-img" class="logo__img" alt="" hidden />
-          <span class="logo__mark" aria-hidden="true">R</span>
-          <span class="logo__text" data-erp="nome_exibicao">Rodavia</span>
+          <span class="logo__mark" aria-hidden="true"></span>
+          <span class="logo__text" data-erp="nome_exibicao"></span>
         </a>
 
         <button
@@ -67,7 +67,7 @@
           <div class="search-field search-field--grow">
             <label class="visually-hidden" for="pickup-location">Local de retirada</label>
             <span class="search-field__icon" aria-hidden="true"></span>
-            <select id="pickup-location" name="filial_id" required>
+            <select id="pickup-location" name="filial_id" required disabled>
               <option value="">Carregando filiais…</option>
             </select>
           </div>
@@ -221,41 +221,10 @@
       </div>
     </div>
 
-    <script src="js/rodavia-config.js?v=4"></script>
-    <script src="js/rodavia-api.js?v=4"></script>
-    <script src="js/rodavia-bind.js?v=4"></script>
-    <script type="module" src="js/grupos.js?v=4"></script>
-    <script>
-      (function () {
-        function bffBase() {
-          if (window.RODAVIA_BFF_BASE) return window.RODAVIA_BFF_BASE;
-          var h = location.hostname;
-          return h === 'localhost' || h === '127.0.0.1' ? 'http://127.0.0.1:8090/bff' : '/bff';
-        }
-        function setApiStatus(ok) {
-          var el = document.getElementById('bff-status');
-          if (!el) return;
-          el.textContent = ok ? 'API conectada' : 'API offline';
-          el.classList.toggle('is-ok', ok);
-          el.classList.toggle('is-off', !ok);
-        }
-        function fallbackBoot() {
-          fetch(bffBase() + '/ping', { headers: { Accept: 'application/json' } })
-            .then(function (r) {
-              if (!r.ok) throw new Error('ping fail');
-              setApiStatus(true);
-              if (window.RodaviaBind && !window.RodaviaBind._booted) {
-                return window.RodaviaBind.boot();
-              }
-            })
-            .catch(function () { setApiStatus(false); });
-        }
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', fallbackBoot);
-        } else {
-          fallbackBoot();
-        }
-      })();
-    </script>
+    <script src="js/rodavia-cache.js?v=9"></script>
+    <script src="js/rodavia-config.js?v=9"></script>
+    <script src="js/rodavia-api.js?v=9"></script>
+    <script src="js/rodavia-bind.js?v=9"></script>
+    <script type="module" src="js/grupos.js?v=9"></script>
   </body>
 </html>

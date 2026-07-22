@@ -1,9 +1,8 @@
 /**
  * Liga RodaviaAPI aos seletores do HTML (sem alterar layout/CSS).
- * Depende de: rodavia-config.js, rodavia-api.js (RodaviaAPI global).
+ * Depende de: rodavia-cache.js, rodavia-config.js, rodavia-api.js
  */
 (function (global) {
-  /** @type {Record<string, string>} IDs usados no index.html / grupos.html */
   var SELECTORS = {
     bffStatus: '#bff-status',
     brandLogoImg: '#brand-logo-img',
@@ -30,6 +29,7 @@
   };
 
   var SEARCH_STATE_KEY = 'rodavia_last_search';
+  var bootPromise = null;
 
   function $(sel, root) {
     return (root || document).querySelector(sel);
@@ -39,6 +39,14 @@
     return Array.prototype.slice.call((root || document).querySelectorAll(sel));
   }
 
+  function escapeHtml(str) {
+    return String(str ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
   function normalizeList(payload) {
     if (Array.isArray(payload)) return payload;
     if (payload && Array.isArray(payload.items)) return payload.items;
@@ -46,6 +54,24 @@
     if (payload && Array.isArray(payload.filiais)) return payload.filiais;
     if (payload && Array.isArray(payload.grupos)) return payload.grupos;
     return [];
+  }
+
+  function normalizeSlidesList(payload) {
+    if (Array.isArray(payload)) return payload;
+    if (payload?.items && Array.isArray(payload.items)) return payload.items;
+    if (payload?.slides && Array.isArray(payload.slides)) return payload.slides;
+    return [];
+  }
+
+  function setReady(isReady) {
+    var root = document.documentElement;
+    if (isReady) {
+      root.classList.add('erp-ready');
+      root.classList.remove('erp-loading');
+    } else {
+      root.classList.add('erp-loading');
+      root.classList.remove('erp-ready');
+    }
   }
 
   function setText(selector, value) {
@@ -89,7 +115,7 @@
       }
     }
 
-    setText('[data-erp="nome_exibicao"]', empresa.nome_exibicao);
+    setText('.logo__text[data-erp="nome_exibicao"]', empresa.nome_exibicao);
     setText('[data-erp="cnpj"]', empresa.cnpj_formatado);
     setText('[data-erp="endereco"]', empresa.endereco_formatado);
     setText('[data-erp="email"]', empresa.email);
@@ -99,12 +125,11 @@
       $$('.logo[aria-label]').forEach(function (el) {
         el.setAttribute('aria-label', 'Página inicial ' + empresa.nome_exibicao);
       });
-    }
-
-    if (empresa.nome_exibicao && document.title.indexOf('|') >= 0) {
-      var parts = document.title.split('|');
-      if (parts.length >= 2) {
-        document.title = parts[0].trim() + ' | ' + empresa.nome_exibicao;
+      if (document.title.indexOf('|') >= 0) {
+        var parts = document.title.split('|');
+        if (parts.length >= 2) {
+          document.title = parts[0].trim() + ' | ' + empresa.nome_exibicao;
+        }
       }
     }
   }
@@ -129,6 +154,103 @@
           return '<option value="' + fid + '">' + filialLabel(f) + '</option>';
         })
         .join('');
+  }
+
+  function heroSlideMarkup(slide, isActive) {
+    if (!global.RodaviaAPI || !slide?.id) return '';
+    var rawUrl = slide.imagem_url || '';
+    var useBff =
+      !rawUrl || rawUrl.indexOf('/api/') === 0 || rawUrl.indexOf('/bff/') === 0;
+    var imgUrl = useBff ? global.RodaviaAPI.slideImagemUrl(slide.id) : rawUrl;
+    var label = escapeHtml(slide.titulo || 'Destaque promocional');
+    var activeClass = isActive ? ' is-active' : '';
+    var style = 'background-image:url("' + String(imgUrl).replace(/"/g, '%22') + '")';
+    var erpClass = ' hero__slide--erp';
+    if (slide.link_url) {
+      return (
+        '<a href="' +
+        escapeHtml(slide.link_url) +
+        '" class="hero__slide hero__slide--linked' +
+        erpClass +
+        activeClass +
+        '" role="img" aria-label="' +
+        label +
+        '" style="' +
+        style +
+        '"></a>'
+      );
+    }
+    return (
+      '<div class="hero__slide' +
+      erpClass +
+      activeClass +
+      '" role="img" aria-label="' +
+      label +
+      '" style="' +
+      style +
+      '"></div>'
+    );
+  }
+
+  function applyHeroSlides(slidesPayload) {
+    var slidesRoot = $('#hero-slides');
+    var dotsRoot = $('#hero-dots');
+    if (!slidesRoot) return false;
+
+    var slides = normalizeSlidesList(slidesPayload)
+      .slice()
+      .sort(function (a, b) {
+        return (a.ordem ?? 0) - (b.ordem ?? 0);
+      });
+
+    if (!slides.length) {
+      slidesRoot.innerHTML =
+        '<div class="hero__slide hero__slide--fallback is-active" role="img" aria-label="Aluguel de carros"></div>';
+      if (dotsRoot) {
+        dotsRoot.innerHTML = '';
+        dotsRoot.setAttribute('hidden', '');
+      }
+      return false;
+    }
+
+    slidesRoot.innerHTML = slides.map(function (s, i) {
+      return heroSlideMarkup(s, i === 0);
+    }).join('');
+    slidesRoot.classList.remove('hero__slides--loading');
+
+    if (dotsRoot) {
+      dotsRoot.innerHTML = slides
+        .map(function (_, i) {
+          return (
+            '<button type="button" class="hero__dot' +
+            (i === 0 ? ' is-active' : '') +
+            '" role="tab" aria-selected="' +
+            (i === 0 ? 'true' : 'false') +
+            '" aria-label="Slide ' +
+            (i + 1) +
+            '"></button>'
+          );
+        })
+        .join('');
+      if (slides.length > 1) dotsRoot.removeAttribute('hidden');
+      else dotsRoot.setAttribute('hidden', '');
+    }
+    return true;
+  }
+
+  function applyCatalog(catalog) {
+    if (!catalog || typeof catalog !== 'object') return;
+    if (catalog.empresa) applyEmpresa(catalog.empresa);
+    if (catalog.filiais) populateFiliaisSelect(catalog.filiais);
+    if (catalog.slides) applyHeroSlides(catalog.slides);
+  }
+
+  function hydrateFromCache() {
+    var cache = global.RodaviaCache && global.RodaviaCache.read();
+    if (!cache) return false;
+    applyCatalog(cache);
+    setReady(true);
+    return true;
   }
 
   function mapGruposToFleet(gruposPayload) {
@@ -156,13 +278,24 @@
     return global.RodaviaAPI;
   }
 
-  async function pingOk() {
-    try {
-      await api().ping();
-      return true;
-    } catch (_) {
-      return false;
-    }
+  function waitForBff(maxMs) {
+    maxMs = maxMs || 3000;
+    if (global.RODAVIA_BFF_READY === true) return Promise.resolve(true);
+    if (global.RODAVIA_BFF_READY === false) return Promise.resolve(false);
+    var start = Date.now();
+    return new Promise(function (resolve) {
+      (function tick() {
+        if (global.RODAVIA_BFF_READY === true) {
+          resolve(true);
+          return;
+        }
+        if (global.RODAVIA_BFF_READY === false || Date.now() - start >= maxMs) {
+          resolve(false);
+          return;
+        }
+        setTimeout(tick, 30);
+      })();
+    });
   }
 
   function restoreFilialFromSearchState() {
@@ -177,36 +310,48 @@
     }
   }
 
-  async function boot() {
+  function setApiStatus(ok) {
     var statusEl = $(SELECTORS.bffStatus);
-    var waitStart = Date.now();
-    while (window.RODAVIA_BFF_READY === undefined && Date.now() - waitStart < 8000) {
-      await new Promise(function (r) {
-        setTimeout(r, 50);
-      });
-    }
-    var erpOk = await pingOk();
-    if (statusEl) {
-      statusEl.textContent = erpOk ? 'API conectada' : 'API offline';
-      statusEl.classList.toggle('is-ok', erpOk);
-      statusEl.classList.toggle('is-off', !erpOk);
-    }
-    if (!erpOk) return { erpOk: false };
+    if (!statusEl) return;
+    statusEl.textContent = ok ? 'API conectada' : 'API offline';
+    statusEl.classList.toggle('is-ok', ok);
+    statusEl.classList.toggle('is-off', !ok);
+  }
 
-    await Promise.allSettled([
-      api()
-        .empresa()
-        .then(applyEmpresa),
-      api()
-        .filiais()
-        .then(function (data) {
-          populateFiliaisSelect(data);
-        }),
-    ]);
+  async function boot() {
+    if (bootPromise) return bootPromise;
 
-    restoreFilialFromSearchState();
-    global.RodaviaBind._booted = true;
-    return { erpOk: true };
+    bootPromise = (async function () {
+      hydrateFromCache();
+
+      var bffOk = await waitForBff();
+      if (!bffOk) {
+        setApiStatus(false);
+        setReady(hydrateFromCache());
+        return { erpOk: false, fromCache: false };
+      }
+
+      try {
+        var catalog = await api().catalog();
+        applyCatalog(catalog);
+        if (global.RodaviaCache) {
+          global.RodaviaCache.write(catalog);
+        }
+        restoreFilialFromSearchState();
+        setApiStatus(true);
+        setReady(true);
+        global.RodaviaBind._booted = true;
+        return { erpOk: true, catalog: catalog };
+      } catch (err) {
+        console.warn('[Rodavia] Falha ao carregar catálogo:', err?.message || err);
+        var hadCache = hydrateFromCache();
+        setApiStatus(hadCache);
+        setReady(hadCache);
+        return { erpOk: hadCache, fromCache: hadCache };
+      }
+    })();
+
+    return bootPromise;
   }
 
   global.RodaviaBind = {
@@ -215,9 +360,21 @@
     normalizeList: normalizeList,
     applyEmpresa: applyEmpresa,
     populateFiliaisSelect: populateFiliaisSelect,
+    applyHeroSlides: applyHeroSlides,
+    applyCatalog: applyCatalog,
     mapGruposToFleet: mapGruposToFleet,
     boot: boot,
-    pingOk: pingOk,
+    _booted: false,
+    pingOk: function () {
+      return api()
+        .ping()
+        .then(function () {
+          return true;
+        })
+        .catch(function () {
+          return false;
+        });
+    },
     grupos: function (params) {
       return api().grupos(params);
     },
@@ -228,6 +385,16 @@
       return api().reservar(body);
     },
   };
-
-  // Boot é disparado por main.js após detectar BFF (rodavia-config.js).
 })(typeof window !== 'undefined' ? window : globalThis);
+
+(function earlyCatalog() {
+  var w = typeof window !== 'undefined' ? window : globalThis;
+  if (typeof document === 'undefined' || !w.RodaviaBind) return;
+  var cached = w.RodaviaCache && w.RodaviaCache.read();
+  if (cached) {
+    w.RodaviaBind.applyCatalog(cached);
+    document.documentElement.classList.add('erp-ready');
+    document.documentElement.classList.remove('erp-loading');
+  }
+  w.RodaviaBind.boot();
+})();

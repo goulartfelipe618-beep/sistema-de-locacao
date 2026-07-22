@@ -27,6 +27,33 @@
   --cookie-h: 0px;
 }
 
+/* Oculta placeholders estáticos até o ERP responder (evita flash "Rodavia"/Unsplash). */
+html.erp-loading:not(.erp-ready) .logo__text[data-erp='nome_exibicao']:empty,
+html.erp-loading:not(.erp-ready) .logo__mark:empty {
+  visibility: hidden;
+}
+
+html.erp-loading:not(.erp-ready) .logo__mark:not(:empty) {
+  color: transparent;
+  background-color: #e8e8e8;
+  min-width: 2rem;
+  min-height: 2rem;
+  border-radius: 4px;
+}
+
+html.erp-loading:not(.erp-ready) #pickup-location:disabled {
+  color: transparent;
+}
+
+html.erp-loading:not(.erp-ready) .hero__slides--loading .hero__slide--loading {
+  background-image: none !important;
+  filter: none;
+}
+
+html.erp-ready .hero__slides--loading {
+  /* slides ERP substituíram o skeleton */
+}
+
 *,
 *::before,
 *::after {
@@ -548,9 +575,18 @@ a:hover {
   pointer-events: none;
 }
 
-/* Imagens do hero vêm da API (inline style) ou fallback local */
+.hero__slide--loading {
+  background-color: #e0e0e0;
+  filter: none;
+}
+
+.hero__slides--loading {
+  background-color: #e8e8e8;
+}
+
+/* Imagens do hero vêm da API (inline style) ou fallback neutro */
 .hero__slide--fallback {
-  background-image: url('https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=1920&q=80');
+  background-color: #e0e0e0;
 }
 
 .hero__slide--erp {

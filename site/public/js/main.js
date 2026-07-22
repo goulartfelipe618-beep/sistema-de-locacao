@@ -9,29 +9,9 @@ import {
 
 function bind() {
   if (!window.RodaviaBind) {
-    throw new Error('Carregue js/rodavia-config.js, rodavia-api.js e rodavia-bind.js antes de main.js.');
+    throw new Error('Carregue js/rodavia-cache.js, rodavia-config.js, rodavia-api.js e rodavia-bind.js antes de main.js.');
   }
   return window.RodaviaBind;
-}
-
-/** Aguarda rodavia-config resolver a URL do BFF (ping). */
-function waitForBffBase(maxMs) {
-  maxMs = maxMs || 8000;
-  var start = Date.now();
-  return new Promise(function (resolve) {
-    (function tick() {
-      if (window.RODAVIA_BFF_READY === true || window.RODAVIA_BFF_READY === false) {
-        resolve(window.RODAVIA_BFF_BASE);
-        return;
-      }
-      if (Date.now() - start >= maxMs) {
-        window.RODAVIA_BFF_READY = false;
-        resolve(window.RODAVIA_BFF_BASE);
-        return;
-      }
-      setTimeout(tick, 50);
-    })();
-  });
 }
 
 function $(sel, root) {
@@ -128,67 +108,6 @@ function initHeroCarousel() {
   prev?.addEventListener('click', () => show(idx - 1));
   next?.addEventListener('click', () => show(idx + 1));
   setInterval(() => show(idx + 1), 7000);
-}
-
-function normalizeSlidesList(payload) {
-  if (Array.isArray(payload)) return payload;
-  if (payload?.items && Array.isArray(payload.items)) return payload.items;
-  if (payload?.slides && Array.isArray(payload.slides)) return payload.slides;
-  return [];
-}
-
-function heroSlideMarkup(slide, isActive) {
-  if (!window.RodaviaAPI || !slide?.id) return '';
-  const rawUrl = slide.imagem_url || '';
-  const useBff =
-    !rawUrl ||
-    rawUrl.indexOf('/api/') === 0 ||
-    rawUrl.indexOf('/bff/') === 0;
-  const imgUrl = useBff ? window.RodaviaAPI.slideImagemUrl(slide.id) : rawUrl;
-  const label = escapeHtml(slide.titulo || 'Destaque promocional');
-  const activeClass = isActive ? ' is-active' : '';
-  const style = `background-image:url("${String(imgUrl).replace(/"/g, '%22')}")`;
-  const erpClass = ' hero__slide--erp';
-  if (slide.link_url) {
-    return `<a href="${escapeHtml(slide.link_url)}" class="hero__slide hero__slide--linked${erpClass}${activeClass}" role="img" aria-label="${label}" style="${style}"></a>`;
-  }
-  return `<div class="hero__slide${erpClass}${activeClass}" role="img" aria-label="${label}" style="${style}"></div>`;
-}
-
-async function loadHeroSlides() {
-  const slidesRoot = $('#hero-slides');
-  const dotsRoot = $('#hero-dots');
-  if (!slidesRoot || !window.RodaviaAPI?.slides) return;
-
-  let slides = [];
-  try {
-    const data = await window.RodaviaAPI.slides();
-    slides = normalizeSlidesList(data).slice().sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
-  } catch (err) {
-    console.warn('[Rodavia] Slides do ERP indisponíveis:', err?.message || err);
-    slides = [];
-  }
-
-  if (!slides.length) {
-    slidesRoot.innerHTML =
-      '<div class="hero__slide hero__slide--fallback is-active" role="img" aria-label="Aluguel de carros"></div>';
-    if (dotsRoot) {
-      dotsRoot.innerHTML = '';
-      dotsRoot.setAttribute('hidden', '');
-    }
-    return;
-  }
-
-  slidesRoot.innerHTML = slides.map((s, i) => heroSlideMarkup(s, i === 0)).join('');
-  if (dotsRoot) {
-    dotsRoot.innerHTML = slides
-      .map(
-        (_, i) =>
-          `<button type="button" class="hero__dot${i === 0 ? ' is-active' : ''}" role="tab" aria-selected="${i === 0 ? 'true' : 'false'}" aria-label="Slide ${i + 1}"></button>`
-      )
-      .join('');
-    if (slides.length > 1) dotsRoot.removeAttribute('hidden');
-  }
 }
 
 function getCookieConsent() {
@@ -547,12 +466,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initSearchWidget();
     initFleetShowcase();
     initReserveModal();
-    await waitForBffBase();
-    if (window.RodaviaBind && !window.RodaviaBind._booted) {
-      await bind().boot();
-      window.RodaviaBind._booted = true;
-    }
-    await loadHeroSlides();
+    await bind().boot();
     initHeroCarousel();
   } catch (err) {
     const statusEl = $('#bff-status');

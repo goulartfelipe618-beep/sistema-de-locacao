@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="erp-loading">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -9,7 +9,7 @@
     />
     <title>LOCADORA RODAVIA | Aluguel de carros</title>
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="css/styles.css?v=9" />
   </head>
   <body class="has-cookie-banner">
     <a href="#main-content" class="skip-link">Ir para conteúdo principal</a>
@@ -17,7 +17,7 @@
     <section class="home-first" aria-label="Topo e destaque">
       <div class="topbar">
         <nav class="topbar__tabs" aria-label="Negócios Rodavia">
-          <a href="index.html" class="topbar__tab is-active" data-erp="nome_exibicao">Aluguel de carros</a>
+          <a href="index.html" class="topbar__tab is-active">Aluguel de carros</a>
           <a href="#" class="topbar__tab">Gestão de frotas</a>
           <a href="#" class="topbar__tab">Seminovos</a>
           <a href="#" class="topbar__tab">Carro por assinatura</a>
@@ -33,8 +33,8 @@
         <div class="site-header__inner">
           <a href="#" class="logo logo--brand" aria-label="Página inicial">
             <img id="brand-logo-img" class="logo__img" alt="" hidden />
-            <span class="logo__mark" aria-hidden="true">R</span>
-            <span class="logo__text" data-erp="nome_exibicao">Rodavia</span>
+            <span class="logo__mark" aria-hidden="true"></span>
+            <span class="logo__text" data-erp="nome_exibicao"></span>
           </a>
 
           <button
@@ -63,9 +63,9 @@
 
       <div class="hero-block">
         <div class="hero" aria-label="Destaques" data-hero-carousel>
-          <div class="hero__slides" id="hero-slides">
+          <div class="hero__slides hero__slides--loading" id="hero-slides">
             <div
-              class="hero__slide hero__slide--fallback is-active"
+              class="hero__slide hero__slide--loading is-active"
               role="img"
               aria-label="Carregando destaques…"
             ></div>
@@ -100,7 +100,7 @@
               <div class="search-field search-field--grow">
                 <label class="visually-hidden" for="pickup-location">Local de retirada</label>
                 <span class="search-field__icon" aria-hidden="true"></span>
-                <select id="pickup-location" name="filial_id" required aria-label="Onde você quer retirar o carro?">
+                <select id="pickup-location" name="filial_id" required disabled aria-label="Onde você quer retirar o carro?">
                   <option value="">Carregando filiais…</option>
                 </select>
               </div>
@@ -439,9 +439,10 @@
       </div>
     </div>
 
-    <script src="js/rodavia-config.js?v=8"></script>
-    <script src="js/rodavia-api.js?v=8"></script>
-    <script src="js/rodavia-bind.js?v=8"></script>
-    <script type="module" src="js/main.js?v=8"></script>
+    <script src="js/rodavia-cache.js?v=9"></script>
+    <script src="js/rodavia-config.js?v=9"></script>
+    <script src="js/rodavia-api.js?v=9"></script>
+    <script src="js/rodavia-bind.js?v=9"></script>
+    <script type="module" src="js/main.js?v=9"></script>
   </body>
 </html>
