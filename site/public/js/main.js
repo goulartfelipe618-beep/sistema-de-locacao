@@ -77,6 +77,46 @@ function initCarousels() {
 }
 
 let heroCarouselTimer = null;
+const HERO_AUTOPLAY_MS = 7000;
+
+function resetHeroAutoplay(advance) {
+  if (heroCarouselTimer) clearInterval(heroCarouselTimer);
+  heroCarouselTimer = setInterval(advance, HERO_AUTOPLAY_MS);
+}
+
+function setupInfiniteHeroTrack(track, slides) {
+  if (!track || slides.length <= 1) {
+    return { allSlides: slides, realCount: slides.length, startIndex: 0 };
+  }
+  if (track.dataset.infiniteReady === '1') {
+    return {
+      allSlides: $$('.hero__slide', track),
+      realCount: Number(track.dataset.realCount) || slides.length,
+      startIndex: 1,
+    };
+  }
+
+  const realCount = slides.length;
+  const firstClone = slides[0].cloneNode(true);
+  const lastClone = slides[realCount - 1].cloneNode(true);
+
+  [firstClone, lastClone].forEach((node) => {
+    node.classList.add('hero__slide--clone');
+    node.classList.remove('is-active');
+    node.removeAttribute('data-slide-id');
+  });
+
+  track.insertBefore(lastClone, slides[0]);
+  track.appendChild(firstClone);
+  track.dataset.infiniteReady = '1';
+  track.dataset.realCount = String(realCount);
+
+  return {
+    allSlides: $$('.hero__slide', track),
+    realCount,
+    startIndex: 1,
+  };
+}
 
 function initHeroCarousel() {
   const root = $('[data-hero-carousel]');
@@ -90,7 +130,7 @@ function initHeroCarousel() {
   }
 
   const track = $('[data-hero-track]', root);
-  const slides = track ? $$('.hero__slide', track) : $$('.hero__slide', root);
+  const slides = track ? $$('.hero__slide:not(.hero__slide--clone)', track) : $$('.hero__slide', root);
   const dotsContainer = $('.hero__dots', root);
   const dots = $$('.hero__dot', root);
   const prev = $('[data-hero-prev]', root);
@@ -98,8 +138,13 @@ function initHeroCarousel() {
 
   if (!slides.length) return;
 
-  if (slides.length <= 1) {
-    slides[0].classList.add('is-active');
+  const infinite = track ? setupInfiniteHeroTrack(track, slides) : null;
+  const allSlides = infinite?.allSlides || slides;
+  const realCount = infinite?.realCount ?? slides.length;
+  const hasInfinite = realCount > 1 && track;
+
+  if (realCount <= 1) {
+    allSlides[0]?.classList.add('is-active');
     if (track) track.style.transform = 'translateX(0)';
     prev?.setAttribute('hidden', '');
     next?.setAttribute('hidden', '');
@@ -111,8 +156,14 @@ function initHeroCarousel() {
   next?.removeAttribute('hidden');
   dotsContainer?.removeAttribute('hidden');
 
-  let idx = slides.findIndex((s) => s.classList.contains('is-active'));
-  if (idx < 0) idx = 0;
+  let trackIdx = hasInfinite ? infinite.startIndex : 0;
+
+  const realIndex = () => {
+    if (!hasInfinite) return trackIdx;
+    if (trackIdx === 0) return realCount - 1;
+    if (trackIdx === realCount + 1) return 0;
+    return trackIdx - 1;
+  };
 
   const moveTrack = (index, animate) => {
     if (!track) return;
@@ -125,23 +176,63 @@ function initHeroCarousel() {
     track.style.transform = `translateX(-${index * 100}%)`;
   };
 
-  const show = (i, animate) => {
-    idx = (i + slides.length) % slides.length;
-    slides.forEach((s, j) => s.classList.toggle('is-active', j === idx));
-    moveTrack(idx, animate);
+  const updateUi = () => {
+    const activeReal = realIndex();
+    allSlides.forEach((s, j) => s.classList.toggle('is-active', j === trackIdx));
     dots.forEach((d, j) => {
-      d.classList.toggle('is-active', j === idx);
-      d.setAttribute('aria-selected', j === idx ? 'true' : 'false');
+      d.classList.toggle('is-active', j === activeReal);
+      d.setAttribute('aria-selected', j === activeReal ? 'true' : 'false');
     });
   };
 
-  moveTrack(idx, false);
-  show(idx, false);
+  const snapIfClone = () => {
+    if (!hasInfinite) return;
+    if (trackIdx === 0) {
+      trackIdx = realCount;
+      moveTrack(trackIdx, false);
+      updateUi();
+    } else if (trackIdx === realCount + 1) {
+      trackIdx = 1;
+      moveTrack(trackIdx, false);
+      updateUi();
+    }
+  };
 
-  dots.forEach((d, i) => d.addEventListener('click', () => show(i)));
-  prev?.addEventListener('click', () => show(idx - 1));
-  next?.addEventListener('click', () => show(idx + 1));
-  heroCarouselTimer = setInterval(() => show(idx + 1), 7000);
+  const showTrack = (index, animate) => {
+    trackIdx = index;
+    moveTrack(trackIdx, animate);
+    updateUi();
+  };
+
+  const showNext = (userAction) => {
+    showTrack(trackIdx + 1, true);
+    if (userAction) resetHeroAutoplay(() => showNext(false));
+  };
+
+  const showPrev = (userAction) => {
+    showTrack(trackIdx - 1, true);
+    if (userAction) resetHeroAutoplay(() => showNext(false));
+  };
+
+  const showDot = (dotIndex) => {
+    showTrack(hasInfinite ? dotIndex + 1 : dotIndex, true);
+    resetHeroAutoplay(() => showNext(false));
+  };
+
+  if (track) {
+    track.addEventListener('transitionend', (e) => {
+      if (e.target !== track || e.propertyName !== 'transform') return;
+      snapIfClone();
+    });
+  }
+
+  moveTrack(trackIdx, false);
+  updateUi();
+
+  dots.forEach((d, i) => d.addEventListener('click', () => showDot(i)));
+  prev?.addEventListener('click', () => showPrev(true));
+  next?.addEventListener('click', () => showNext(true));
+  resetHeroAutoplay(() => showNext(false));
 }
 
 function getCookieConsent() {
@@ -501,6 +592,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.addEventListener('rodavia:slides-ready', () => {
       const hero = $('[data-hero-carousel]');
       if (hero) delete hero.dataset.heroBound;
+      const track = $('[data-hero-track]', hero);
+      if (track) {
+        delete track.dataset.infiniteReady;
+        delete track.dataset.realCount;
+      }
       initHeroCarousel();
     });
     document.addEventListener('site:langchange', () => {
