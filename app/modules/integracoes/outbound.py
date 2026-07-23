@@ -24,6 +24,7 @@ logger = get_logger(__name__)
 OUTBOUND_EVENTOS = (
     "reserva.confirmada",
     "contrato.encerrado",
+    "contato.site",
 )
 
 

@@ -57,8 +57,34 @@
   {% else %}<div class="empty-state">Nenhuma API Key cadastrada.</div>{% endif %}
 
   <fieldset class="form-fieldset" style="margin-top:24px">
+    <legend>Formulário de atendimento (site)</legend>
+    <p class="form-help">
+      Quando o visitante envia o chat flutuante do site, o ERP registra um <strong>lead no Funil CRM</strong>
+      (Comercial → Funil, estágio Lead, origem Site) e dispara o evento outbound
+      <code>contato.site</code> para webhooks cadastrados abaixo.
+    </p>
+    <div class="form-group">
+      <label class="form-label">Cole no Easypanel (serviço <strong>site</strong>)</label>
+      <p class="form-help">Variável de ambiente: <code>{{ atendimento_env_var }}</code></p>
+      <input class="form-input" type="text" readonly value="{{ atendimento_webhook_url }}" id="atendimento-webhook-url" onclick="this.select()">
+      <p class="form-help" style="margin-top:8px">
+        No Docker/Easypanel na mesma rede, você pode usar
+        <code>http://erp-locadora:8000/api/v1/public/webhooks/atendimento?token=…</code> em vez da URL pública.
+      </p>
+    </div>
+    {% if current_user.is_superuser or 'integracoes.api_publica.criar' in current_user.permissions %}
+    <form method="post" action="/integracoes/api/atendimento-webhook/regenerar" class="erp-form"
+          data-confirm="Regenerar invalida a URL atual. Atualize a variável no Easypanel."
+          data-confirm-title="Regenerar token do webhook">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button class="btn btn-secondary btn-sm" type="submit">Regenerar token</button>
+    </form>
+    {% endif %}
+  </fieldset>
+
+  <fieldset class="form-fieldset" style="margin-top:24px">
     <legend>Webhooks outbound</legend>
-    <p class="form-help">POST JSON em eventos: reserva confirmada, contrato encerrado. Assinatura HMAC em <code>X-ERP-Signature</code>.</p>
+    <p class="form-help">POST JSON em eventos: reserva confirmada, contrato encerrado, contato do site. Assinatura HMAC em <code>X-ERP-Signature</code>.</p>
     {% if current_user.is_superuser or 'integracoes.api_publica.criar' in current_user.permissions %}
     <form method="post" action="/integracoes/api/webhooks/novo" class="erp-form" style="margin:12px 0">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -117,7 +143,8 @@
   <h4 style="margin-top:24px">Endpoints expostos</h4>
   <ul>
     <li><code>GET /api/v1/public/disponibilidade</code></li>
-    <li><code>POST /api/v1/public/reservas</code></li>
+    <li><code>POST /api/v1/public/webhooks/atendimento?token=…</code> (formulário de atendimento do site)</li>
+    <li><code>POST /api/v1/public/reservas/site</code></li>
     <li><code>GET /api/v1/public/contratos/{id}</code></li>
   </ul>
 </div>

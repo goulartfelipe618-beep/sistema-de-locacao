@@ -138,8 +138,11 @@ failed to read dockerfile: open Dockerfile: no such file or directory
 ERP_INTERNAL_URL=http://erp-locadora:8000
 ERP_TENANT_SLUG=matriz
 ERP_API_KEY=erp_SUA_CHAVE_CATALOGO_READ
+SITE_ATENDIMENTO_WEBHOOK_URL=https://SEU-ERP/api/v1/public/webhooks/atendimento?token=TOKEN_DO_ERP
 SITE_PUBLIC_URL=https://SEU-DOMINIO-DO-SITE
 SITE_ALLOWED_ORIGINS=https://SEU-DOMINIO-DO-SITE
 ```
+
+> **Formulário de atendimento (chat):** em **Integrações → API Pública** no ERP, copie a URL exibida em *Formulário de atendimento (site)* e cole em `SITE_ATENDIMENTO_WEBHOOK_URL` no serviço **site**. Os leads aparecem em **Comercial → Funil** (estágio Lead, origem Site).
 
 **Validar:** `https://SEU-SITE/bff/health` → `"erp_status":"ok"`.

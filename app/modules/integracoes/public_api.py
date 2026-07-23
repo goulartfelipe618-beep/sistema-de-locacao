@@ -14,6 +14,7 @@ from app import __version__
 from app.modules.integracoes.deps import PublicSessionDep, require_api_key_scope
 from app.modules.integracoes.models import IntApiKey
 from app.modules.integracoes.public_schemas import (
+    PublicContatoSiteCreate,
     PublicCotacaoSiteCreate,
     PublicCotacaoSiteRead,
     PublicReservaSiteCreate,
@@ -27,6 +28,8 @@ from app.modules.integracoes.public_site_service import (
     list_slides_public,
     list_veiculos_public,
 )
+from app.modules.integracoes.site_atendimento import SiteAtendimentoService, build_atendimento_webhook_url
+from app.modules.integracoes.outbound import notify_outbound_event
 from app.modules.integracoes.site_slides import SiteSlideService, decode_slide_image_bytes
 from app.modules.locacoes.service import ContratoService
 from app.modules.reservas.schemas import ReservaCreate
@@ -182,6 +185,29 @@ async def public_veiculos(
         retirada_em=retirada_em,
         devolucao_em=devolucao_em,
     )
+
+
+@public_router.post("/webhooks/atendimento", status_code=201)
+async def public_webhook_atendimento(
+    payload: PublicContatoSiteCreate,
+    token: str = Query(..., min_length=16),
+) -> dict:
+    """Recebe contato do formulário de atendimento do site (token em Integrações → API Pública)."""
+    from app.core import context
+    from app.core.database import UnitOfWork
+
+    async with UnitOfWork(tenant_id=None) as uow:
+        tenant_id = await SiteAtendimentoService(uow.session).resolve_tenant_id_by_token(token)
+
+    async with UnitOfWork(tenant_id=tenant_id) as uow:
+        context.set_tenant_id(tenant_id)
+        raw = await SiteAtendimentoService(uow.session).registrar_contato(tenant_id, payload)
+        await uow.commit()
+
+    outbound = raw.pop("_outbound_payload", None)
+    if outbound:
+        await notify_outbound_event(tenant_id, "contato.site", outbound)
+    return raw
 
 
 @public_router.get("/contratos/{contrato_id}")

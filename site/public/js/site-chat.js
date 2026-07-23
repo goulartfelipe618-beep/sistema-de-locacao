@@ -240,7 +240,37 @@
         return;
       }
       clearError();
-      showSuccess();
+      var submitBtn = form.querySelector('[type="submit"]');
+      var submitLabel = submitBtn ? submitBtn.textContent : '';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = t('chat.sending');
+      }
+      var payload = {
+        nome: $('#chat-nome')?.value?.trim() || '',
+        email: $('#chat-email')?.value?.trim() || '',
+        telefone: $('#chat-telefone')?.value?.trim() || '',
+        mensagem: $('#chat-duvida')?.value?.trim() || '',
+        origem: 'chat',
+        pagina: (global.location && global.location.pathname) || 'index.html',
+      };
+      var send =
+        global.RodaviaAPI && typeof global.RodaviaAPI.atendimento === 'function'
+          ? global.RodaviaAPI.atendimento(payload)
+          : Promise.reject(new Error(t('chat.error_submit')));
+      send
+        .then(function () {
+          showSuccess();
+        })
+        .catch(function (submitErr) {
+          showError(submitErr && submitErr.message ? submitErr.message : t('chat.error_submit'));
+        })
+        .finally(function () {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = submitLabel || t('chat.send');
+          }
+        });
     });
 
     $('#chat-wizard-close')?.addEventListener('click', closeModal);

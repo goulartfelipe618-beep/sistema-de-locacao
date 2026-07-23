@@ -79,6 +79,7 @@ class Tenant(BaseModel):
     site_text_muted_color: Mapped[str | None] = mapped_column(String(7), nullable=True)
     site_footer_bg_color: Mapped[str | None] = mapped_column(String(7), nullable=True)
     site_footer_text_color: Mapped[str | None] = mapped_column(String(7), nullable=True)
+    site_atendimento_webhook_token: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     zip_code: Mapped[str | None] = mapped_column(String(8), nullable=True)
     address: Mapped[str | None] = mapped_column(String(255), nullable=True)

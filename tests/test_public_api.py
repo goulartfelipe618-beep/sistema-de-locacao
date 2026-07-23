@@ -15,6 +15,25 @@ def test_public_api_routes_registered() -> None:
     assert "/api/v1/public/ping" in paths
     assert "/api/v1/public/slides" in paths
     assert "/api/v1/public/slides/{slide_id}/imagem" in paths
+    assert "/api/v1/public/webhooks/atendimento" in paths
+
+
+def test_outbound_eventos_include_contato_site() -> None:
+    from app.modules.integracoes.outbound import OUTBOUND_EVENTOS
+
+    assert "contato.site" in OUTBOUND_EVENTOS
+
+
+def test_public_contato_site_schema() -> None:
+    from app.modules.integracoes.public_schemas import PublicContatoSiteCreate
+
+    item = PublicContatoSiteCreate(
+        nome="Maria Silva",
+        email="maria@example.com",
+        telefone="11999998888",
+        mensagem="Gostaria de saber sobre assinatura.",
+    )
+    assert item.origem == "chat"
 
 
 def test_public_scopes_include_catalogo_and_pricing() -> None:

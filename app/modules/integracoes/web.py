@@ -31,6 +31,7 @@ from app.modules.integracoes.schemas import (
     TransitoMultasInput,
 )
 from app.modules.integracoes.outbound import OUTBOUND_EVENTOS, OutboundWebhookService
+from app.modules.integracoes.site_atendimento import SiteAtendimentoService, build_atendimento_webhook_url
 from app.modules.integracoes.service import (
     ApiKeyService,
     CreditoService,
@@ -183,7 +184,7 @@ async def telemetria_hub(
 async def api_publica_hub(
     request: Request,
     session: SessionDep,
-    _user: Annotated[
+    current_user: Annotated[
         AuthenticatedUser, Depends(require_web_permission("integracoes.api_publica.visualizar"))
     ],
 ) -> Any:
@@ -194,6 +195,10 @@ async def api_publica_hub(
         for k in keys_page.items
     ]
     webhooks = await OutboundWebhookService(session).list_items(PageParams(page=1, size=50))
+    atendimento_token = await SiteAtendimentoService(session).ensure_token(current_user.tenant_id)
+    await session.commit()
+    base_url = str(request.base_url).rstrip("/")
+    atendimento_webhook_url = build_atendimento_webhook_url(base_url, atendimento_token)
     return render(
         request,
         "integracoes/api_publica.html",
@@ -205,6 +210,8 @@ async def api_publica_hub(
             "api_scopes": API_PUBLIC_SCOPES,
             "docs_url": "/docs",
             "openapi_url": "/openapi.json",
+            "atendimento_webhook_url": atendimento_webhook_url,
+            "atendimento_env_var": "SITE_ATENDIMENTO_WEBHOOK_URL",
         },
     )
 
@@ -432,6 +439,23 @@ async def outbound_webhook_novo(
         eventos=eventos or [],
         secret=secret or None,
     )
+    return RedirectResponse("/integracoes/api", status_code=303)
+
+
+@router.post("/integracoes/api/atendimento-webhook/regenerar")
+async def atendimento_webhook_regenerar(
+    request: Request,
+    session: SessionDep,
+    current_user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("integracoes.api_publica.criar"))
+    ],
+) -> RedirectResponse:
+    await SiteAtendimentoService(session).regenerate_token(current_user.tenant_id)
+    await session.commit()
+    request.session["_flash"] = {
+        "type": "success",
+        "message": "Token do webhook de atendimento regenerado. Atualize SITE_ATENDIMENTO_WEBHOOK_URL no Easypanel (serviço site).",
+    }
     return RedirectResponse("/integracoes/api", status_code=303)
 
 

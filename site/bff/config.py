@@ -58,6 +58,13 @@ class Settings(BaseSettings):
         default="",
         validation_alias=AliasChoices("ERP_API_KEY_RESERVAS"),
     )
+    site_atendimento_webhook_url: str = Field(
+        default="",
+        validation_alias=AliasChoices(
+            "SITE_ATENDIMENTO_WEBHOOK_URL",
+            "SITE_CHAT_WEBHOOK_URL",
+        ),
+    )
     erp_tenant_slug: str = Field(
         default="matriz",
         validation_alias=AliasChoices("ERP_TENANT_SLUG", "DEFAULT_TENANT_SLUG"),
@@ -108,6 +115,10 @@ class Settings(BaseSettings):
         if not self.erp_internal_url.strip() and not self.erp_base_url.strip():
             issues.append(
                 "Defina ERP_INTERNAL_URL (Docker/Easypanel) ou ERP_BASE_URL (dev local → ERP remoto)"
+            )
+        if not self.site_atendimento_webhook_url.strip():
+            issues.append(
+                "SITE_ATENDIMENTO_WEBHOOK_URL ausente (Integrações → API Pública no ERP)"
             )
         return issues
 

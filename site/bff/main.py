@@ -226,6 +226,46 @@ async def bff_reservas(request: Request) -> Any:
     )
 
 
+@app.post("/bff/atendimento")
+async def bff_atendimento(request: Request) -> Any:
+    """Encaminha o formulário de atendimento do site para o webhook do ERP."""
+    webhook_url = settings.site_atendimento_webhook_url.strip()
+    if not webhook_url:
+        raise HTTPException(
+            status_code=503,
+            detail="SITE_ATENDIMENTO_WEBHOOK_URL não configurado no serviço site.",
+        )
+    body = await request.json()
+    try:
+        async with httpx.AsyncClient(timeout=settings.bff_request_timeout_seconds) as client:
+            response = await client.post(
+                webhook_url,
+                json=body,
+                headers={"Accept": "application/json", "Content-Type": "application/json"},
+            )
+    except httpx.TimeoutException as exc:
+        raise HTTPException(status_code=504, detail="ERP demorou para responder.") from exc
+    except httpx.RequestError as exc:
+        raise HTTPException(status_code=502, detail="Não foi possível contactar o webhook.") from exc
+
+    if response.status_code >= 400:
+        detail = "Erro ao registrar atendimento."
+        try:
+            payload = response.json()
+            if isinstance(payload, dict):
+                detail = str(payload.get("message") or payload.get("detail") or detail)
+        except Exception:
+            pass
+        raise HTTPException(status_code=response.status_code, detail=detail)
+
+    if response.status_code == 204 or not response.content:
+        return {"ok": True}
+    try:
+        return response.json()
+    except Exception:
+        return {"ok": True}
+
+
 @app.exception_handler(HTTPException)
 async def http_exception_handler(_request: Request, exc: HTTPException) -> JSONResponse:
     return JSONResponse(status_code=exc.status_code, content={"ok": False, "error": exc.detail})

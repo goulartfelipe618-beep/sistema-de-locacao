@@ -54,6 +54,17 @@ class PublicCotacaoSiteCreate(BaseModel):
     cupom_codigo: str | None = Field(default=None, max_length=40)
 
 
+class PublicContatoSiteCreate(BaseModel):
+    """Contato originado no site (chat flutuante, formulários)."""
+
+    nome: str = Field(min_length=2, max_length=200)
+    email: EmailStr
+    telefone: str = Field(min_length=8, max_length=20)
+    mensagem: str = Field(min_length=5, max_length=4000)
+    origem: str = Field(default="chat", max_length=40)
+    pagina: str | None = Field(default=None, max_length=200)
+
+
 class PublicCotacaoSiteRead(BaseModel):
     diaria_unitaria: Decimal
     dias: int

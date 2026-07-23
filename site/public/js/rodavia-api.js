@@ -74,6 +74,9 @@
     reservar: function (body) {
       return request('POST', '/reservas', { body: body });
     },
+    atendimento: function (body) {
+      return request('POST', '/atendimento', { body: body });
+    },
     slides: function () {
       return request('GET', '/slides');
     },
