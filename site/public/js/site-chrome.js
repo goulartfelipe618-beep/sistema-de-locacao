@@ -194,9 +194,9 @@
       '</div>' +
       '</div>' +
       '</aside>' +
-      (global.SiteChat ? global.SiteChat.fabHtml() + global.SiteChat.modalHtml() : (
+      (global.SiteChat ? global.SiteChat.fabHtml() + global.SiteChat.drawerHtml() : (
       '<button type="button" class="chat-fab" id="chat-fab" data-i18n-aria="chat.open" aria-label="Abrir atendimento"></button>' +
-      '<div class="modal" id="chat-modal" aria-hidden="true" role="dialog" aria-labelledby="chat-modal-title"></div>'
+      '<div class="chat-drawer" id="chat-drawer" aria-hidden="true"></div>'
       )) +
       '<div class="modal" id="cookie-prefs-modal" aria-hidden="true" role="dialog" aria-labelledby="prefs-title">' +
       '<div class="modal__backdrop" data-close-modal="cookie-prefs-modal"></div>' +

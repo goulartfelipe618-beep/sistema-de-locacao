@@ -1,5 +1,5 @@
 /**
- * Botão flutuante de atendimento (quadrado + telefone) e formulário por etapas.
+ * Botão flutuante + painel lateral de atendimento (drawer à direita; tela cheia no mobile).
  * Exposes window.SiteChat
  */
 (function (global) {
@@ -11,6 +11,11 @@
   var PHONE_ICON =
     '<svg class="chat-fab__icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
     '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>' +
+    '</svg>';
+
+  var CLOSE_ICON =
+    '<svg class="chat-fab__icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">' +
+    '<path d="M18 6L6 18M6 6l12 12"/>' +
     '</svg>';
 
   function $(sel, root) {
@@ -26,24 +31,50 @@
 
   function fabHtml() {
     return (
-      '<button type="button" class="chat-fab" id="chat-fab" data-i18n-aria="chat.open" aria-label="Abrir atendimento">' +
+      '<button type="button" class="chat-fab" id="chat-fab" data-i18n-aria="chat.open" aria-label="Abrir atendimento" aria-controls="chat-drawer" aria-expanded="false">' +
       PHONE_ICON +
       '</button>'
     );
   }
 
-  function modalHtml() {
+  function drawerHtml() {
+    var steps = '';
+    for (var i = 1; i <= TOTAL_STEPS; i += 1) {
+      steps +=
+        '<span class="chat-drawer__step-dot" data-step-dot="' +
+        i +
+        '" aria-hidden="true"></span>';
+    }
     return (
-      '<div class="modal" id="chat-modal" aria-hidden="true" role="dialog" aria-labelledby="chat-modal-title" aria-modal="true">' +
-      '<div class="modal__backdrop" data-close-modal="chat-modal"></div>' +
-      '<div class="modal__panel modal__panel--chat">' +
-      '<button type="button" class="modal__close" data-close-modal="chat-modal" data-i18n-aria="modal.close" aria-label="Fechar">×</button>' +
-      '<h2 class="modal__title" id="chat-modal-title" data-i18n="chat.title">Atendimento Rodavia</h2>' +
-      '<p class="chat-wizard__progress" id="chat-wizard-progress" aria-live="polite"></p>' +
+      '<div class="chat-drawer" id="chat-drawer" aria-hidden="true">' +
+      '<div class="chat-drawer__backdrop" data-chat-close tabindex="-1"></div>' +
+      '<aside class="chat-drawer__panel" role="dialog" aria-modal="true" aria-labelledby="chat-drawer-title" tabindex="-1">' +
+      '<header class="chat-drawer__header">' +
+      '<div class="chat-drawer__header-main">' +
+      '<span class="chat-drawer__avatar" aria-hidden="true">' +
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M12 2a3 3 0 0 0-3 3v1H8a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-1V5a3 3 0 0 0-3-3z"/><circle cx="12" cy="14" r="2"/></svg>' +
+      '</span>' +
+      '<div class="chat-drawer__header-text">' +
+      '<h2 class="chat-drawer__title" id="chat-drawer-title" data-i18n="chat.title">Atendimento Rodavia</h2>' +
+      '<p class="chat-drawer__subtitle"><span class="chat-drawer__status-dot" aria-hidden="true"></span><span data-i18n="chat.subtitle">Online · respondemos em breve</span></p>' +
+      '</div>' +
+      '</div>' +
+      '<button type="button" class="chat-drawer__close" data-chat-close data-i18n-aria="modal.close" aria-label="Fechar">' +
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>' +
+      '</button>' +
+      '</header>' +
+      '<div class="chat-drawer__progress-wrap">' +
+      '<div class="chat-drawer__progress-track" aria-hidden="true">' +
+      steps +
+      '</div>' +
+      '<p class="chat-drawer__progress-label" id="chat-wizard-progress" aria-live="polite"></p>' +
+      '</div>' +
+      '<div class="chat-drawer__body">' +
       '<form class="chat-wizard" id="chat-wizard-form" novalidate>' +
       '<p class="form-message chat-wizard__error" id="chat-wizard-error" role="alert" hidden></p>' +
       '<div class="chat-wizard__step is-active" data-chat-step="1">' +
-      '<div class="form-field">' +
+      '<p class="chat-wizard__prompt" data-i18n="chat.prompt_name">Para começar, informe seu nome completo.</p>' +
+      '<div class="form-field chat-wizard__field">' +
       '<label for="chat-nome" data-i18n="chat.step_name_label">Nome completo</label>' +
       '<input type="text" id="chat-nome" name="nome" required autocomplete="name" />' +
       '</div>' +
@@ -52,7 +83,8 @@
       '</div>' +
       '</div>' +
       '<div class="chat-wizard__step" data-chat-step="2" hidden>' +
-      '<div class="form-field">' +
+      '<p class="chat-wizard__prompt" data-i18n="chat.prompt_email">Qual e-mail podemos usar para retorno?</p>' +
+      '<div class="form-field chat-wizard__field">' +
       '<label for="chat-email" data-i18n="chat.step_email_label">E-mail</label>' +
       '<input type="email" id="chat-email" name="email" required autocomplete="email" />' +
       '</div>' +
@@ -62,7 +94,8 @@
       '</div>' +
       '</div>' +
       '<div class="chat-wizard__step" data-chat-step="3" hidden>' +
-      '<div class="form-field">' +
+      '<p class="chat-wizard__prompt" data-i18n="chat.prompt_phone">Informe um telefone com DDD para contato.</p>' +
+      '<div class="form-field chat-wizard__field">' +
       '<label for="chat-telefone" data-i18n="chat.step_phone_label">Telefone</label>' +
       '<input type="tel" id="chat-telefone" name="telefone" required autocomplete="tel" inputmode="tel" />' +
       '</div>' +
@@ -72,9 +105,10 @@
       '</div>' +
       '</div>' +
       '<div class="chat-wizard__step" data-chat-step="4" hidden>' +
-      '<div class="form-field">' +
+      '<p class="chat-wizard__prompt" data-i18n="chat.prompt_message">Descreva sua dúvida com o máximo de detalhes.</p>' +
+      '<div class="form-field chat-wizard__field">' +
       '<label for="chat-duvida" data-i18n="chat.step_message_label">Digite a sua dúvida</label>' +
-      '<textarea id="chat-duvida" name="duvida" rows="4" required></textarea>' +
+      '<textarea id="chat-duvida" name="duvida" rows="5" required></textarea>' +
       '</div>' +
       '<div class="chat-wizard__actions">' +
       '<button type="button" class="btn btn--ghost chat-wizard__back" data-i18n="chat.back">Voltar</button>' +
@@ -83,10 +117,17 @@
       '</div>' +
       '</form>' +
       '<div class="chat-wizard__success" id="chat-wizard-success" hidden>' +
+      '<div class="chat-wizard__success-icon" aria-hidden="true">' +
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>' +
+      '</div>' +
       '<p class="chat-wizard__success-text" data-i18n="chat.success">Em breve um atendente entrará em contato.</p>' +
       '<button type="button" class="btn btn--primary" id="chat-wizard-close" data-i18n="chat.close">Fechar</button>' +
       '</div>' +
       '</div>' +
+      '<footer class="chat-drawer__footer">' +
+      '<p class="chat-drawer__footer-note" data-i18n="chat.footer_note">Seus dados são usados apenas para retorno deste atendimento.</p>' +
+      '</footer>' +
+      '</aside>' +
       '</div>'
     );
   }
@@ -97,13 +138,15 @@
     } else {
       var fab = $('#chat-fab');
       fab.classList.add('chat-fab');
-      fab.innerHTML = PHONE_ICON;
+      if (!fab.classList.contains('is-open')) fab.innerHTML = PHONE_ICON;
     }
-    if (!$('#chat-modal')) {
-      document.body.insertAdjacentHTML('beforeend', modalHtml());
+    var legacy = $('#chat-modal');
+    if (legacy) legacy.remove();
+    if (!$('#chat-drawer')) {
+      document.body.insertAdjacentHTML('beforeend', drawerHtml());
     }
     if (global.SiteI18n && typeof global.SiteI18n.apply === 'function') {
-      global.SiteI18n.apply($('#chat-modal') || document);
+      global.SiteI18n.apply($('#chat-drawer') || document);
       global.SiteI18n.apply($('#chat-fab') || document);
     }
   }
@@ -113,6 +156,12 @@
     if (el) {
       el.textContent = t('chat.step_progress', { current: currentStep, total: TOTAL_STEPS });
     }
+    var drawer = $('#chat-drawer');
+    drawer?.querySelectorAll('[data-step-dot]').forEach(function (dot) {
+      var n = Number(dot.getAttribute('data-step-dot'));
+      dot.classList.toggle('is-done', n < currentStep);
+      dot.classList.toggle('is-active', n === currentStep);
+    });
   }
 
   function showStep(step) {
@@ -129,7 +178,7 @@
       block.classList.toggle('is-active', active);
       if (active) {
         var input = block.querySelector('input, textarea');
-        if (input) setTimeout(function () { input.focus(); }, 80);
+        if (input) setTimeout(function () { input.focus(); }, 120);
       }
     });
 
@@ -184,19 +233,38 @@
     showStep(1);
   }
 
-  function openModal() {
-    ensureWidgets();
-    resetWizard();
-    var modal = $('#chat-modal');
-    modal?.classList.add('is-open');
-    modal?.setAttribute('aria-hidden', 'false');
+  function setFabOpen(open) {
+    var fab = $('#chat-fab');
+    if (!fab) return;
+    fab.classList.toggle('is-open', open);
+    fab.setAttribute('aria-expanded', open ? 'true' : 'false');
+    fab.innerHTML = open ? CLOSE_ICON : PHONE_ICON;
+    fab.setAttribute('aria-label', open ? t('modal.close') : t('chat.open'));
   }
 
-  function closeModal() {
-    var modal = $('#chat-modal');
-    modal?.classList.remove('is-open');
-    modal?.setAttribute('aria-hidden', 'true');
+  function openDrawer() {
+    ensureWidgets();
     resetWizard();
+    var drawer = $('#chat-drawer');
+    drawer?.classList.add('is-open');
+    drawer?.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('chat-drawer-open');
+    setFabOpen(true);
+    drawer?.querySelector('.chat-drawer__panel')?.focus();
+  }
+
+  function closeDrawer() {
+    var drawer = $('#chat-drawer');
+    drawer?.classList.remove('is-open');
+    drawer?.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('chat-drawer-open');
+    setFabOpen(false);
+    resetWizard();
+  }
+
+  function toggleDrawer() {
+    if ($('#chat-drawer')?.classList.contains('is-open')) closeDrawer();
+    else openDrawer();
   }
 
   function showSuccess() {
@@ -206,6 +274,10 @@
     if (success) success.hidden = false;
     var progress = $('#chat-wizard-progress');
     if (progress) progress.textContent = '';
+    $('#chat-drawer')?.querySelectorAll('[data-step-dot]').forEach(function (dot) {
+      dot.classList.add('is-done');
+      dot.classList.remove('is-active');
+    });
   }
 
   function bindWizard() {
@@ -273,32 +345,43 @@
         });
     });
 
-    $('#chat-wizard-close')?.addEventListener('click', closeModal);
+    $('#chat-wizard-close')?.addEventListener('click', closeDrawer);
+  }
+
+  function bindDrawer() {
+    var drawer = $('#chat-drawer');
+    if (!drawer || drawer.dataset.bound === '1') return;
+    drawer.dataset.bound = '1';
+
+    drawer.querySelectorAll('[data-chat-close]').forEach(function (btn) {
+      btn.addEventListener('click', closeDrawer);
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && drawer.classList.contains('is-open')) closeDrawer();
+    });
   }
 
   function init() {
     ensureWidgets();
     bindWizard();
+    bindDrawer();
 
     var fab = $('#chat-fab');
     if (fab && fab.dataset.chatFabBound !== '1') {
       fab.dataset.chatFabBound = '1';
-      fab.addEventListener('click', openModal);
+      fab.addEventListener('click', toggleDrawer);
     }
-
-    document.querySelectorAll('[data-close-modal="chat-modal"]').forEach(function (btn) {
-      if (btn.dataset.chatCloseBound === '1') return;
-      btn.dataset.chatCloseBound = '1';
-      btn.addEventListener('click', closeModal);
-    });
   }
 
   global.SiteChat = {
     fabHtml: fabHtml,
-    modalHtml: modalHtml,
+    modalHtml: drawerHtml,
+    drawerHtml: drawerHtml,
     ensureWidgets: ensureWidgets,
     init: init,
-    open: openModal,
-    close: closeModal,
+    open: openDrawer,
+    close: closeDrawer,
+    toggle: toggleDrawer,
   };
 })(window);
