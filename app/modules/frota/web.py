@@ -9,11 +9,13 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db_session
 from app.core.deps import require_web_permission
 from app.core.exceptions import AppError
+from app.core.logging import get_logger
 from app.core.pagination import PageParams
 from app.core.templating import render
 from app.modules.frota.dossier_veiculo import build_veiculo_dossier
@@ -71,6 +73,7 @@ from app.shared.enums import (
 
 router = APIRouter()
 SessionDep = Annotated[AsyncSession, Depends(get_db_session)]
+logger = get_logger(__name__)
 
 
 @router.get("/frota/modelos/json")
@@ -201,6 +204,30 @@ async def _veiculo_lookups(session: AsyncSession, tenant_id: uuid.UUID) -> dict[
 
 def _app_error_message(exc: AppError | ValueError) -> str:
     return exc.message if isinstance(exc, AppError) else str(exc)
+
+
+def _veiculo_db_error_message(exc: SQLAlchemyError) -> str:
+    orig = str(getattr(exc, "orig", exc))
+    if "does not exist" in orig or "foto_capa" in orig or "inline_data" in orig:
+        return (
+            "O banco de dados está desatualizado. No Easypanel, reinicie o serviço "
+            "erp-locadora (AUTO_MIGRATE=true) para aplicar as migrations pendentes."
+        )
+    return "Erro ao gravar no banco de dados. Tente novamente."
+
+
+def _veiculo_db_error_response(request: Request, exc: SQLAlchemyError) -> HTMLResponse:
+    logger.exception("Falha SQL no formulário de veículo: %s", exc)
+    return render(
+        request,
+        "error.html",
+        {
+            "status_code": 503,
+            "error_title": "Banco desatualizado",
+            "error_message": _veiculo_db_error_message(exc),
+        },
+        status_code=503,
+    )
 
 
 async def _process_veiculo_foto_uploads(
@@ -361,7 +388,7 @@ async def veiculo_create(
     publicar_site: Annotated[str, Form()] = "",
     exige_aprovacao_fornecedor: Annotated[str, Form()] = "",
     fotos: Annotated[list[UploadFile], File()] = [],
-    foto_capa: UploadFile | None = File(None),
+    foto_capa: Annotated[UploadFile | None, File()] = None,
 ) -> HTMLResponse:
     lookups = await _veiculo_lookups(session, current_user.tenant_id)
     ctx = {
@@ -413,6 +440,9 @@ async def veiculo_create(
         await session.rollback()
         ctx["error"] = _app_error_message(exc)
         return render(request, "frota/veiculo_form.html", ctx, status_code=400)
+    except SQLAlchemyError as exc:
+        await session.rollback()
+        return _veiculo_db_error_response(request, exc)
     return RedirectResponse(f"/frota/veiculos/{veiculo.id}/editar", status_code=303)
 
 
@@ -516,20 +546,20 @@ async def veiculo_update(
     publicar_site: Annotated[str, Form()] = "",
     exige_aprovacao_fornecedor: Annotated[str, Form()] = "",
     fotos: Annotated[list[UploadFile], File()] = [],
-    foto_capa: UploadFile | None = File(None),
+    foto_capa: Annotated[UploadFile | None, File()] = None,
     remover_fotos: Annotated[list[str], Form()] = [],
     remover_foto_capa: Annotated[str, Form()] = "",
 ) -> HTMLResponse:
     lookups = await _veiculo_lookups(session, current_user.tenant_id)
-    extras = await _veiculo_extras(session, veiculo_id)
-    foto_count = len(extras.get("fotos").items) if extras.get("fotos") else 0
-    ctx_base = {
-        "max_fotos": MAX_VEICULO_FOTOS,
-        "foto_slots": max(0, MAX_VEICULO_FOTOS - foto_count),
-        **lookups,
-        **extras,
-    }
     try:
+        extras = await _veiculo_extras(session, veiculo_id)
+        foto_count = len(extras.get("fotos").items) if extras.get("fotos") else 0
+        ctx_base = {
+            "max_fotos": MAX_VEICULO_FOTOS,
+            "foto_slots": max(0, MAX_VEICULO_FOTOS - foto_count),
+            **lookups,
+            **extras,
+        }
         data = VeiculoUpdate(
             placa=placa,
             renavam=renavam or None,
@@ -544,7 +574,7 @@ async def veiculo_update(
             propriedade=VeiculoPropriedade(propriedade),
             fornecedor_id=_uuid(fornecedor_id),
             contrato_fornecedor_id=_uuid(contrato_fornecedor_id),
-            publicar_site=bool(publicar_site) if publicar_site else None,
+            publicar_site=publicar_site == "1" if publicar_site else None,
             exige_aprovacao_fornecedor=exige_aprovacao_fornecedor != "0" if exige_aprovacao_fornecedor else None,
             data_compra=_date(data_compra),
             valor_aquisicao=_dec(valor_aquisicao) if valor_aquisicao.strip() else None,
@@ -612,6 +642,9 @@ async def veiculo_update(
             },
             status_code=400,
         )
+    except SQLAlchemyError as exc:
+        await session.rollback()
+        return _veiculo_db_error_response(request, exc)
     return RedirectResponse(f"/frota/veiculos/{veiculo_id}/editar", status_code=303)
 
 
