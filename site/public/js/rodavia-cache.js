@@ -1,11 +1,18 @@
 /**
- * Cache do catálogo ERP (empresa, filiais, slides) — evita flash de placeholders.
+ * Cache do catálogo ERP (empresa, filiais, slides) + imagens dos slides (IndexedDB).
  */
 (function (global) {
   var CACHE_KEY = 'rodavia_catalog_v3';
   var LEGACY_CACHE_KEY = 'rodavia_catalog_v1';
   var LEGACY_CACHE_KEY_V2 = 'rodavia_catalog_v2';
   var TTL_MS = 15 * 60 * 1000;
+
+  var IMG_DB_NAME = 'rodavia_slide_images_v1';
+  var IMG_STORE = 'blobs';
+  var IMG_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+  var slideBlobUrls = Object.create(null);
+  var slideImagesReady = null;
 
   function slimEmpresa(empresa) {
     if (!empresa || typeof empresa !== 'object') return null;
@@ -50,6 +57,142 @@
     }
   }
 
+  function openImageDb() {
+    if (!global.indexedDB) return Promise.reject(new Error('indexedDB unavailable'));
+    return new Promise(function (resolve, reject) {
+      var req = indexedDB.open(IMG_DB_NAME, 1);
+      req.onerror = function () {
+        reject(req.error || new Error('indexedDB open failed'));
+      };
+      req.onsuccess = function () {
+        resolve(req.result);
+      };
+      req.onupgradeneeded = function (e) {
+        var db = e.target.result;
+        if (!db.objectStoreNames.contains(IMG_STORE)) {
+          db.createObjectStore(IMG_STORE, { keyPath: 'id' });
+        }
+      };
+    });
+  }
+
+  function loadSlideImagesFromDb() {
+    if (slideImagesReady) return slideImagesReady;
+    slideImagesReady = openImageDb()
+      .then(function (db) {
+        return new Promise(function (resolve) {
+          var tx = db.transaction(IMG_STORE, 'readonly');
+          var store = tx.objectStore(IMG_STORE);
+          var req = store.getAll();
+          req.onsuccess = function () {
+            var now = Date.now();
+            var staleIds = [];
+            (req.result || []).forEach(function (row) {
+              if (!row || !row.id || !row.blob) return;
+              if (now - (row.savedAt || 0) > IMG_TTL_MS) {
+                staleIds.push(row.id);
+                return;
+              }
+              if (!slideBlobUrls[row.id]) {
+                slideBlobUrls[row.id] = URL.createObjectURL(row.blob);
+              }
+            });
+            if (staleIds.length) purgeStaleImages(staleIds);
+            resolve(slideBlobUrls);
+          };
+          req.onerror = function () {
+            resolve(slideBlobUrls);
+          };
+        });
+      })
+      .catch(function () {
+        return slideBlobUrls;
+      });
+    return slideImagesReady;
+  }
+
+  function purgeStaleImages(ids) {
+    openImageDb()
+      .then(function (db) {
+        var tx = db.transaction(IMG_STORE, 'readwrite');
+        var store = tx.objectStore(IMG_STORE);
+        ids.forEach(function (id) {
+          store.delete(id);
+        });
+      })
+      .catch(function () {});
+  }
+
+  function getSlideImageUrl(slideId, networkUrl) {
+    if (slideId && slideBlobUrls[slideId]) return slideBlobUrls[slideId];
+    return networkUrl;
+  }
+
+  function storeSlideImage(slideId, blob) {
+    if (!slideId || !blob) return;
+    if (slideBlobUrls[slideId]) {
+      try {
+        URL.revokeObjectURL(slideBlobUrls[slideId]);
+      } catch (_) {
+        /* ignore */
+      }
+    }
+    slideBlobUrls[slideId] = URL.createObjectURL(blob);
+    openImageDb()
+      .then(function (db) {
+        var tx = db.transaction(IMG_STORE, 'readwrite');
+        tx.objectStore(IMG_STORE).put({ id: slideId, blob: blob, savedAt: Date.now() });
+      })
+      .catch(function () {});
+  }
+
+  function slideNetworkUrl(slide) {
+    if (!slide || typeof slide !== 'object') return '';
+    var id = slide.id || slide.slide_id;
+    if (!id) return slide.imagem_url || '';
+    var rawUrl = slide.imagem_url || '';
+    var useBff =
+      !rawUrl || rawUrl.indexOf('/api/') === 0 || rawUrl.indexOf('/bff/') === 0;
+    if (useBff) {
+      var base =
+        (typeof global.RODAVIA_BFF_BASE === 'string' && global.RODAVIA_BFF_BASE) || '/bff';
+      return base.replace(/\/$/, '') + '/slides/' + encodeURIComponent(id) + '/imagem';
+    }
+    return rawUrl;
+  }
+
+  function prefetchSlideImages(slides) {
+    if (!slides || !slides.length) return Promise.resolve();
+    var tasks = slides.map(function (slide) {
+      var id = slide && (slide.id || slide.slide_id);
+      if (!id || slideBlobUrls[id]) return Promise.resolve();
+      var url = slideNetworkUrl(slide);
+      if (!url) return Promise.resolve();
+      return fetch(url, { credentials: 'same-origin' })
+        .then(function (res) {
+          if (!res.ok) return;
+          return res.blob().then(function (blob) {
+            storeSlideImage(id, blob);
+          });
+        })
+        .catch(function () {});
+    });
+    return Promise.all(tasks);
+  }
+
+  function preloadHeroImage(url) {
+    if (!url || typeof document === 'undefined') return;
+    var link = document.querySelector('link[data-hero-preload]');
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'preload';
+      link.as = 'image';
+      link.setAttribute('data-hero-preload', '1');
+      document.head.appendChild(link);
+    }
+    if (link.getAttribute('href') !== url) link.setAttribute('href', url);
+  }
+
   global.RodaviaCache = {
     key: CACHE_KEY,
     ttlMs: TTL_MS,
@@ -62,6 +205,11 @@
         /* ignore */
       }
     },
+    waitForSlideImages: loadSlideImagesFromDb,
+    getSlideImageUrl: getSlideImageUrl,
+    prefetchSlideImages: prefetchSlideImages,
+    preloadHeroImage: preloadHeroImage,
+    slideNetworkUrl: slideNetworkUrl,
   };
 
   if (typeof document !== 'undefined') {
@@ -70,5 +218,6 @@
     if (cached) {
       document.documentElement.classList.add('erp-cache-hit');
     }
+    loadSlideImagesFromDb();
   }
 })(typeof window !== 'undefined' ? window : globalThis);

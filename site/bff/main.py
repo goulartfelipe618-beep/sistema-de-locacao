@@ -158,7 +158,7 @@ async def bff_catalog() -> JSONResponse:
     }
     return JSONResponse(
         content=payload,
-        headers={"Cache-Control": "private, max-age=60"},
+        headers={"Cache-Control": "public, max-age=60, stale-while-revalidate=120"},
     )
 
 
@@ -187,7 +187,7 @@ async def bff_slide_imagem(slide_id: str) -> Response:
     return Response(
         content=response.content,
         media_type=response.headers.get("content-type", "image/jpeg"),
-        headers={"Cache-Control": "public, max-age=3600"},
+        headers={"Cache-Control": "public, max-age=604800, stale-while-revalidate=86400"},
     )
 
 

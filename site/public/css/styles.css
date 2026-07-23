@@ -615,35 +615,39 @@ a:hover {
   overflow: hidden;
 }
 
-/* Slides ERP: largura total, altura proporcional, sem cortar a imagem */
+/* Slides ERP: track horizontal com transição lateral */
 .hero__slides--erp {
   min-height: 0;
 }
 
-.hero__slides--erp .hero__slide--erp {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
+.hero__track {
+  display: flex;
   width: 100%;
-  height: 0;
+  transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+.hero__track.is-instant {
+  transition: none;
+}
+
+.hero__slides--erp .hero__slide--erp {
+  flex: 0 0 100%;
+  width: 100%;
+  position: relative;
+  height: auto;
   min-height: 0;
   margin: 0;
   padding: 0;
-  opacity: 0;
+  opacity: 1;
   overflow: hidden;
-  pointer-events: none;
+  pointer-events: auto;
   background: transparent;
   filter: none;
 }
 
 .hero__slides--erp .hero__slide--erp.is-active {
   position: relative;
-  height: auto;
-  min-height: 0;
-  opacity: 1;
-  overflow: hidden;
-  pointer-events: auto;
 }
 
 .hero__slides--erp .hero__slide--erp::after {

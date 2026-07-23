@@ -76,10 +76,21 @@ function initCarousels() {
   });
 }
 
+let heroCarouselTimer = null;
+
 function initHeroCarousel() {
   const root = $('[data-hero-carousel]');
   if (!root) return;
-  const slides = $$('.hero__slide', root);
+  if (root.dataset.heroBound === '1') return;
+  root.dataset.heroBound = '1';
+
+  if (heroCarouselTimer) {
+    clearInterval(heroCarouselTimer);
+    heroCarouselTimer = null;
+  }
+
+  const track = $('[data-hero-track]', root);
+  const slides = track ? $$('.hero__slide', track) : $$('.hero__slide', root);
   const dotsContainer = $('.hero__dots', root);
   const dots = $$('.hero__dot', root);
   const prev = $('[data-hero-prev]', root);
@@ -89,6 +100,7 @@ function initHeroCarousel() {
 
   if (slides.length <= 1) {
     slides[0].classList.add('is-active');
+    if (track) track.style.transform = 'translateX(0)';
     prev?.setAttribute('hidden', '');
     next?.setAttribute('hidden', '');
     dotsContainer?.setAttribute('hidden', '');
@@ -99,19 +111,37 @@ function initHeroCarousel() {
   next?.removeAttribute('hidden');
   dotsContainer?.removeAttribute('hidden');
 
-  let idx = 0;
-  const show = (i) => {
+  let idx = slides.findIndex((s) => s.classList.contains('is-active'));
+  if (idx < 0) idx = 0;
+
+  const moveTrack = (index, animate) => {
+    if (!track) return;
+    if (animate === false) {
+      track.classList.add('is-instant');
+      track.style.transform = `translateX(-${index * 100}%)`;
+      requestAnimationFrame(() => track.classList.remove('is-instant'));
+      return;
+    }
+    track.style.transform = `translateX(-${index * 100}%)`;
+  };
+
+  const show = (i, animate) => {
     idx = (i + slides.length) % slides.length;
     slides.forEach((s, j) => s.classList.toggle('is-active', j === idx));
+    moveTrack(idx, animate);
     dots.forEach((d, j) => {
       d.classList.toggle('is-active', j === idx);
       d.setAttribute('aria-selected', j === idx ? 'true' : 'false');
     });
   };
+
+  moveTrack(idx, false);
+  show(idx, false);
+
   dots.forEach((d, i) => d.addEventListener('click', () => show(i)));
   prev?.addEventListener('click', () => show(idx - 1));
   next?.addEventListener('click', () => show(idx + 1));
-  setInterval(() => show(idx + 1), 7000);
+  heroCarouselTimer = setInterval(() => show(idx + 1), 7000);
 }
 
 function getCookieConsent() {
@@ -468,7 +498,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     initSearchWidget();
     initFleetShowcase();
     initReserveModal();
-    document.addEventListener('rodavia:slides-ready', () => initHeroCarousel());
+    document.addEventListener('rodavia:slides-ready', () => {
+      const hero = $('[data-hero-carousel]');
+      if (hero) delete hero.dataset.heroBound;
+      initHeroCarousel();
+    });
     document.addEventListener('site:langchange', () => {
       const emptyText = $('#fleet-empty .fleet-empty__text');
       const showcase = $('#fleet-showcase');
