@@ -13,6 +13,7 @@ from app.modules.cadastros.models import Cliente
 from app.modules.cadastros.schemas import ClienteCreate
 from app.modules.cadastros.service import ClienteService
 from app.modules.frota.models import FrotaCategoria, FrotaModelo, FrotaVeiculo
+from app.modules.frota.veiculo_fotos import public_veiculo_capa_url, veiculo_tem_foto_capa
 from app.modules.frota.service import CategoriasService
 from app.modules.integracoes.public_schemas import (
     PublicClienteInput,
@@ -101,17 +102,20 @@ async def list_grupos_public(
 
     svc = IntermediacaoService(session)
     veiculos = await svc.list_veiculos_site(tenant_id, filial_id=filial_id)
+    capa_por_categoria: dict[uuid.UUID, str] = {}
     count_por_cat: dict[uuid.UUID, int] = {}
     for item in veiculos:
         cid = uuid.UUID(item["categoria_id"])
+        veiculo = await session.get(FrotaVeiculo, uuid.UUID(item["id"]))
+        if veiculo is None:
+            continue
         if retirada_em and devolucao_em:
-            veiculo = await session.get(FrotaVeiculo, uuid.UUID(item["id"]))
-            if veiculo is None:
-                continue
             ok, _ = await svc.veiculo_disponivel_periodo(veiculo, retirada_em, devolucao_em)
             if not ok:
                 continue
         count_por_cat[cid] = count_por_cat.get(cid, 0) + 1
+        if veiculo_tem_foto_capa(veiculo) and cid not in capa_por_categoria:
+            capa_por_categoria[cid] = public_veiculo_capa_url(veiculo.id)
 
     out: list[dict] = []
     for cat in cats.items:
@@ -123,12 +127,13 @@ async def list_grupos_public(
         if not retirada_em and qtd == 0:
             continue
         livres = disp_map.get(cat.id, qtd) if disp_map else qtd
+        imagem_url = capa_por_categoria.get(cat.id) or cat.imagem_url
         out.append(
             {
                 "id": str(cat.id),
                 "nome": cat.nome,
                 "descricao": cat.descricao,
-                "imagem_url": cat.imagem_url,
+                "imagem_url": imagem_url,
                 "capacidade_passageiros": cat.capacidade_passageiros,
                 "capacidade_porta_malas": cat.capacidade_porta_malas,
                 "transmissao_tipica": cat.transmissao_tipica,
@@ -191,6 +196,9 @@ async def list_veiculos_public(
                 "modelo_nome": await modelo_label(veiculo),
                 "ano_modelo": veiculo.ano_modelo,
                 "cor": veiculo.cor,
+                "imagem_url": public_veiculo_capa_url(veiculo.id)
+                if veiculo_tem_foto_capa(veiculo)
+                else None,
             }
         )
     return result

@@ -277,6 +277,10 @@ class FrotaVeiculo(TenantBaseModel):
     publicar_site: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     exige_aprovacao_fornecedor: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
+    foto_capa_storage_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    foto_capa_content_type: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    foto_capa_inline_data: Mapped[str | None] = mapped_column(Text, nullable=True)
+
 
 class FrotaVeiculoAcessorio(TenantBaseModel):
     """Vínculo de acessório instalado em um veículo."""

@@ -187,6 +187,29 @@ async def public_veiculos(
     )
 
 
+@public_router.get("/veiculos/{veiculo_id}/capa/imagem")
+async def public_veiculo_capa_imagem(
+    veiculo_id: uuid.UUID,
+    session: PublicSessionDep,
+    key: Annotated[IntApiKey, Depends(require_api_key_scope("veiculos:read"))],
+) -> Response:
+    """Foto de capa do veículo (destaque no site)."""
+    from app.modules.frota.service import VeiculoService
+    from app.modules.frota.veiculo_fotos import VeiculoCapaService
+
+    veiculo = await VeiculoService(session).get(veiculo_id)
+    if veiculo.tenant_id != key.tenant_id:
+        from app.core.exceptions import NotFoundError
+
+        raise NotFoundError("Veículo não encontrado.")
+    data, content_type = await VeiculoCapaService(session).resolve_capa_bytes(veiculo)
+    return Response(
+        content=data,
+        media_type=content_type,
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
+
+
 @public_router.post("/webhooks/atendimento", status_code=201)
 async def public_webhook_atendimento(
     payload: PublicContatoSiteCreate,

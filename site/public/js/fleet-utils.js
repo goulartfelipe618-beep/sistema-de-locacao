@@ -87,7 +87,7 @@ export function groupVeiculosByCategoria(veiculos, disponibilidade) {
         modelos: [],
         veiculosCount: 0,
         livres: livresMap.get(catId),
-        imagem_url: v.categoria?.imagem_url || v.imagem_url || null,
+        imagem_url: v.imagem_url || v.foto_url || v.categoria?.imagem_url || null,
         passageiros: v.passageiros ?? v.categoria?.passageiros,
         malas_grandes: v.malas_grandes ?? v.categoria?.malas_grandes,
         malas_pequenas: v.malas_pequenas ?? v.categoria?.malas_pequenas,

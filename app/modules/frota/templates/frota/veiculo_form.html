@@ -181,8 +181,28 @@
     </div>
 
     <fieldset class="form-fieldset">
-      <legend>Fotos do veículo</legend>
-      <p class="form-help">Envie até {{ max_fotos|default(8) }} imagens (JPG, PNG ou WebP, máx. 5 MB cada).</p>
+      <legend>Foto de capa (site)</legend>
+      <p class="form-help">Esta imagem aparece como <strong>primeira foto</strong> do veículo no site (destaque do grupo).</p>
+      {% if veiculo and tem_foto_capa %}
+      <figure class="veiculo-foto-capa-preview">
+        <img src="/frota/veiculos/{{ veiculo.id }}/capa/imagem" alt="Foto de capa do veículo">
+        <figcaption>
+          <label class="form-check-row veiculo-foto-remove">
+            <input type="checkbox" name="remover_foto_capa" value="1">
+            <span>Remover capa</span>
+          </label>
+        </figcaption>
+      </figure>
+      {% endif %}
+      <div class="veiculo-foto-upload-slot" style="max-width:360px;margin-top:12px">
+        <label class="form-label" for="foto_capa">{% if veiculo and tem_foto_capa %}Substituir capa{% else %}Enviar foto de capa{% endif %}</label>
+        <input class="form-input" type="file" id="foto_capa" name="foto_capa" accept="image/jpeg,image/png,image/webp">
+      </div>
+    </fieldset>
+
+    <fieldset class="form-fieldset">
+      <legend>Galeria de fotos</legend>
+      <p class="form-help">Até {{ max_fotos|default(8) }} imagens adicionais (JPG, PNG ou WebP, máx. 5 MB cada).</p>
       {% if foto_notice %}<div class="alert alert-warning">{{ foto_notice }}</div>{% endif %}
       {% if veiculo and fotos and fotos.items %}
       <div class="veiculo-foto-grid">

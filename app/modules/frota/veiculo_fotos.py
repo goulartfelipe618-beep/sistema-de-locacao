@@ -128,3 +128,94 @@ class VeiculoFotoUploadService:
             except Exception as exc:
                 raise NotFoundError("Imagem indisponível.") from exc
         raise NotFoundError("Imagem não encontrada.")
+
+
+def veiculo_tem_foto_capa(veiculo) -> bool:
+    return bool(
+        getattr(veiculo, "foto_capa_inline_data", None)
+        or getattr(veiculo, "foto_capa_storage_key", None)
+    )
+
+
+def public_veiculo_capa_url(veiculo_id: uuid.UUID) -> str:
+    return f"/api/v1/public/veiculos/{veiculo_id}/capa/imagem"
+
+
+class VeiculoCapaService:
+    """Upload da foto de capa (destaque no site)."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+
+    @staticmethod
+    def _purge_capa_storage(veiculo) -> None:
+        key = getattr(veiculo, "foto_capa_storage_key", None)
+        if not key or str(key).startswith("inline:"):
+            return
+        if storage_service.is_configured():
+            try:
+                storage_service.delete(key)
+            except Exception as exc:
+                logger.warning("Falha ao remover capa do R2 (%s): %s", key, exc)
+
+    async def upload_capa(
+        self,
+        tenant_id: uuid.UUID,
+        veiculo_id: uuid.UUID,
+        *,
+        file_bytes: bytes,
+        filename: str,
+        content_type: str,
+    ):
+        from app.modules.frota.service import VeiculoService
+
+        veiculo = await VeiculoService(self.session).get(veiculo_id)
+        safe_type = VeiculoFotoUploadService.validate_image(filename, content_type, len(file_bytes))
+        safe_name = (filename or "capa.jpg").replace("/", "_").replace("\\", "_")
+        self._purge_capa_storage(veiculo)
+
+        storage_key: str
+        inline_data: str | None = None
+        if storage_service.is_configured():
+            try:
+                storage_key = StorageService.build_key(
+                    tenant_id, "frota", "veiculo_capa", safe_name
+                )
+                storage_service.upload_bytes(storage_key, file_bytes, safe_type)
+            except Exception as exc:
+                logger.warning("Falha ao enviar capa ao R2, usando inline: %s", exc)
+                storage_key = f"inline:{uuid.uuid4().hex}"
+                inline_data = base64.b64encode(file_bytes).decode("ascii")
+        else:
+            storage_key = f"inline:{uuid.uuid4().hex}"
+            inline_data = base64.b64encode(file_bytes).decode("ascii")
+
+        veiculo.foto_capa_storage_key = storage_key
+        veiculo.foto_capa_content_type = safe_type
+        veiculo.foto_capa_inline_data = inline_data
+        await self.session.flush()
+        return veiculo
+
+    async def remove_capa(self, veiculo_id: uuid.UUID) -> None:
+        from app.modules.frota.service import VeiculoService
+
+        veiculo = await VeiculoService(self.session).get(veiculo_id)
+        self._purge_capa_storage(veiculo)
+        veiculo.foto_capa_storage_key = None
+        veiculo.foto_capa_content_type = None
+        veiculo.foto_capa_inline_data = None
+        await self.session.flush()
+
+    async def resolve_capa_bytes(self, veiculo) -> tuple[bytes, str]:
+        if not veiculo_tem_foto_capa(veiculo):
+            raise NotFoundError("Foto de capa não encontrada.")
+        content_type = veiculo.foto_capa_content_type or "image/jpeg"
+        if veiculo.foto_capa_inline_data:
+            return base64.b64decode(veiculo.foto_capa_inline_data.encode("ascii")), content_type
+        if veiculo.foto_capa_storage_key and storage_service.is_configured():
+            try:
+                data = storage_service.download_bytes(veiculo.foto_capa_storage_key)
+                return data, content_type
+            except Exception as exc:
+                raise NotFoundError("Imagem de capa indisponível.") from exc
+        raise NotFoundError("Foto de capa não encontrada.")
