@@ -1068,6 +1068,9 @@ class FotoService:
 
     async def remove(self, foto_id: uuid.UUID) -> None:
         item = await self.get(foto_id)
+        from app.modules.frota.veiculo_fotos import VeiculoFotoUploadService
+
+        VeiculoFotoUploadService.purge_storage(item)
         await self.repo.delete(item)
         await audit_service.record(
             AuditAction.DELETE, entity="frota_veiculo_foto", entity_id=item.id,

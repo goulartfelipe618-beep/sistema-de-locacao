@@ -322,6 +322,8 @@ class FrotaVeiculoFoto(TenantBaseModel):
         index=True,
     )
     storage_key: Mapped[str] = mapped_column(String(500), nullable=False)
+    content_type: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    inline_data: Mapped[str | None] = mapped_column(Text, nullable=True)
     legenda: Mapped[str | None] = mapped_column(String(255), nullable=True)
     tirada_em: Mapped[date | None] = mapped_column(Date, nullable=True)
     ordem: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

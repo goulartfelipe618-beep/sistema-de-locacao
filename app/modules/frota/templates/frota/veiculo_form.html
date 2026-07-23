@@ -9,7 +9,7 @@
   <p>Status: <span class="badge {% if veiculo.status.value == 'disponivel' %}badge-success{% elif veiculo.status.value in ['bloqueado','baixado'] %}badge-danger{% else %}badge-warning{% endif %}">{{ veiculo.status.value }}</span></p>
   {% endif %}
   {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
-  <form method="post" action="{{ action }}" class="erp-form">
+  <form method="post" action="{{ action }}" class="erp-form" enctype="multipart/form-data">
     <fieldset class="form-fieldset">
       <legend>Identificação do veículo</legend>
       <div class="form-grid">
@@ -180,6 +180,40 @@
       <textarea class="form-input" id="observacoes" name="observacoes" rows="3">{{ veiculo.observacoes if veiculo else '' }}</textarea>
     </div>
 
+    <fieldset class="form-fieldset">
+      <legend>Fotos do veículo</legend>
+      <p class="form-help">Envie até {{ max_fotos|default(8) }} imagens (JPG, PNG ou WebP, máx. 5 MB cada).</p>
+      {% if foto_notice %}<div class="alert alert-warning">{{ foto_notice }}</div>{% endif %}
+      {% if veiculo and fotos and fotos.items %}
+      <div class="veiculo-foto-grid">
+        {% for f in fotos.items %}
+        <figure class="veiculo-foto-item">
+          <img src="/frota/veiculos/{{ veiculo.id }}/fotos/{{ f.id }}/imagem" alt="{{ f.legenda or 'Foto do veículo' }}">
+          <figcaption>
+            <label class="form-check-row veiculo-foto-remove">
+              <input type="checkbox" name="remover_fotos" value="{{ f.id }}">
+              <span>Remover</span>
+            </label>
+          </figcaption>
+        </figure>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% set slots = foto_slots|default(max_fotos|default(8)) %}
+      {% if slots > 0 %}
+      <div class="veiculo-foto-upload-grid">
+        {% for i in range(slots) %}
+        <div class="veiculo-foto-upload-slot">
+          <label class="form-label" for="foto_{{ i }}">Imagem {{ i + 1 }}</label>
+          <input class="form-input" type="file" id="foto_{{ i }}" name="fotos" accept="image/jpeg,image/png,image/webp">
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="form-help">Limite de {{ max_fotos|default(8) }} fotos atingido. Marque fotos existentes para remover e salvar.</p>
+      {% endif %}
+    </fieldset>
+
     <div class="form-actions">
       <button class="btn btn-primary" type="submit">Salvar</button>
       {% if veiculo and (current_user.is_superuser or 'frota.veiculo.visualizar' in current_user.permissions) %}
@@ -189,11 +223,6 @@
     </div>
     {{ form_legend() }}
   </form>
-  {% if veiculo and (current_user.is_superuser or 'frota.veiculo.visualizar' in current_user.permissions) %}
-  <form method="post" action="/documentos/emitir/ficha_veiculo/{{ veiculo.id }}" style="display:inline;margin-top:8px">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn" type="submit">PDF Ficha</button>
-  </form>
-  {% endif %}
 
   {% if veiculo %}
   <div style="margin-top:24px;border-top:1px solid var(--border);padding-top:16px">
@@ -220,32 +249,6 @@
       </select>
       <input class="form-input" type="date" name="data_instalacao">
       <button class="btn btn-sm btn-primary" type="submit">Vincular</button>
-    </form>
-  </div>
-
-  <div style="margin-top:24px;border-top:1px solid var(--border);padding-top:16px">
-    <h3>Fotos</h3>
-    {% if fotos and fotos.items %}
-    <table class="table"><thead><tr><th>Arquivo</th><th>Legenda</th><th>Data</th><th></th></tr></thead><tbody>
-      {% for f in fotos.items %}
-      <tr>
-        <td><code>{{ f.storage_key }}</code></td>
-        <td>{{ f.legenda or '-' }}</td>
-        <td>{{ f.tirada_em or '-' }}</td>
-        <td class="num">
-          <form method="post" action="/frota/veiculos/{{ veiculo.id }}/fotos/{{ f.id }}/remover">
-            <button class="btn btn-sm" type="submit">Remover</button>
-          </form>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody></table>
-    {% else %}<div class="empty-state">Nenhuma foto cadastrada.</div>{% endif %}
-    <form method="post" action="/frota/veiculos/{{ veiculo.id }}/fotos" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
-      <input class="form-input" name="storage_key" placeholder="storage key / URL" required>
-      <input class="form-input" name="legenda" placeholder="Legenda">
-      <input class="form-input" type="date" name="tirada_em">
-      <button class="btn btn-sm btn-primary" type="submit">Adicionar</button>
     </form>
   </div>
 

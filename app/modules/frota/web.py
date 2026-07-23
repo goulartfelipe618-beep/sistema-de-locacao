@@ -7,8 +7,8 @@ from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db_session
@@ -17,6 +17,7 @@ from app.core.exceptions import AppError
 from app.core.pagination import PageParams
 from app.core.templating import render
 from app.modules.frota.dossier_veiculo import build_veiculo_dossier
+from app.modules.frota.veiculo_fotos import MAX_VEICULO_FOTOS, VeiculoFotoUploadService
 from app.modules.frota.schemas import (
     AcessorioCreate,
     AcessorioUpdate,
@@ -197,6 +198,48 @@ def _app_error_message(exc: AppError | ValueError) -> str:
     return exc.message if isinstance(exc, AppError) else str(exc)
 
 
+async def _process_veiculo_foto_uploads(
+    session: AsyncSession,
+    tenant_id: uuid.UUID,
+    veiculo_id: uuid.UUID,
+    uploads: list[UploadFile],
+    remover_ids: list[str] | None = None,
+) -> list[str]:
+    """Processa remoções e uploads de fotos; retorna lista de erros."""
+    erros: list[str] = []
+    foto_svc = FotoService(session)
+    upload_svc = VeiculoFotoUploadService(session)
+
+    for raw_id in remover_ids or []:
+        if not raw_id:
+            continue
+        try:
+            await foto_svc.remove(uuid.UUID(raw_id))
+        except (AppError, ValueError) as exc:
+            erros.append(_app_error_message(exc))
+
+    remaining = await upload_svc.count_active(veiculo_id)
+    for upload in uploads:
+        if upload is None or not upload.filename:
+            continue
+        if remaining >= MAX_VEICULO_FOTOS:
+            erros.append(f"Máximo de {MAX_VEICULO_FOTOS} fotos por veículo.")
+            break
+        try:
+            data = await upload.read()
+            await upload_svc.upload(
+                tenant_id,
+                veiculo_id,
+                file_bytes=data,
+                filename=upload.filename,
+                content_type=upload.content_type or "image/jpeg",
+            )
+            remaining += 1
+        except (AppError, ValueError) as exc:
+            erros.append(_app_error_message(exc))
+    return erros
+
+
 # ================================================================ Veículos
 @router.get("/frota/veiculos", response_class=HTMLResponse)
 async def veiculos_list(
@@ -241,6 +284,9 @@ async def veiculo_new_form(
         {
             "veiculo": None,
             "error": None,
+            "foto_notice": None,
+            "max_fotos": MAX_VEICULO_FOTOS,
+            "foto_slots": MAX_VEICULO_FOTOS,
             "title": "Novo Veículo",
             "action": "/frota/veiculos/novo",
             **lookups,
@@ -279,11 +325,14 @@ async def veiculo_create(
     contrato_fornecedor_id: Annotated[str, Form()] = "",
     publicar_site: Annotated[str, Form()] = "",
     exige_aprovacao_fornecedor: Annotated[str, Form()] = "",
+    fotos: Annotated[list[UploadFile], File()] = [],
 ) -> HTMLResponse:
     lookups = await _veiculo_lookups(session, current_user.tenant_id)
     ctx = {
         "veiculo": None,
         "error": None,
+        "foto_notice": None,
+        "max_fotos": MAX_VEICULO_FOTOS,
         "title": "Novo Veículo",
         "action": "/frota/veiculos/novo",
         **lookups,
@@ -315,12 +364,13 @@ async def veiculo_create(
             nivel_combustivel_atual=nivel_combustivel_atual,
             observacoes=observacoes or None,
         )
-        await VeiculoService(session).create(current_user.tenant_id, data)
+        veiculo = await VeiculoService(session).create(current_user.tenant_id, data)
+        await _process_veiculo_foto_uploads(session, current_user.tenant_id, veiculo.id, fotos)
     except (AppError, ValueError) as exc:
         await session.rollback()
         ctx["error"] = _app_error_message(exc)
         return render(request, "frota/veiculo_form.html", ctx, status_code=400)
-    return RedirectResponse("/frota/veiculos", status_code=303)
+    return RedirectResponse(f"/frota/veiculos/{veiculo.id}/editar", status_code=303)
 
 
 async def _veiculo_extras(session: AsyncSession, veiculo_id: uuid.UUID) -> dict[str, Any]:
@@ -371,12 +421,16 @@ async def veiculo_edit_form(
     veiculo = await VeiculoService(session).get(veiculo_id)
     lookups = await _veiculo_lookups(session, current_user.tenant_id)
     extras = await _veiculo_extras(session, veiculo_id)
+    foto_count = len(extras.get("fotos").items) if extras.get("fotos") else 0
     return render(
         request,
         "frota/veiculo_form.html",
         {
             "veiculo": veiculo,
             "error": None,
+            "foto_notice": None,
+            "max_fotos": MAX_VEICULO_FOTOS,
+            "foto_slots": max(0, MAX_VEICULO_FOTOS - foto_count),
             "title": "Editar Veículo",
             "action": f"/frota/veiculos/{veiculo_id}/editar",
             **lookups,
@@ -417,9 +471,18 @@ async def veiculo_update(
     contrato_fornecedor_id: Annotated[str, Form()] = "",
     publicar_site: Annotated[str, Form()] = "",
     exige_aprovacao_fornecedor: Annotated[str, Form()] = "",
+    fotos: Annotated[list[UploadFile], File()] = [],
+    remover_fotos: Annotated[list[str], Form()] = [],
 ) -> HTMLResponse:
     lookups = await _veiculo_lookups(session, current_user.tenant_id)
     extras = await _veiculo_extras(session, veiculo_id)
+    foto_count = len(extras.get("fotos").items) if extras.get("fotos") else 0
+    ctx_base = {
+        "max_fotos": MAX_VEICULO_FOTOS,
+        "foto_slots": max(0, MAX_VEICULO_FOTOS - foto_count),
+        **lookups,
+        **extras,
+    }
     try:
         data = VeiculoUpdate(
             placa=placa,
@@ -448,6 +511,33 @@ async def veiculo_update(
             observacoes=observacoes or None,
         )
         await VeiculoService(session).update(veiculo_id, data)
+        foto_erros = await _process_veiculo_foto_uploads(
+            session,
+            current_user.tenant_id,
+            veiculo_id,
+            fotos,
+            remover_fotos,
+        )
+        if foto_erros:
+            veiculo = await VeiculoService(session).get(veiculo_id)
+            extras = await _veiculo_extras(session, veiculo_id)
+            foto_count = len(extras.get("fotos").items) if extras.get("fotos") else 0
+            return render(
+                request,
+                "frota/veiculo_form.html",
+                {
+                    "veiculo": veiculo,
+                    "error": None,
+                    "foto_notice": "; ".join(foto_erros),
+                    "max_fotos": MAX_VEICULO_FOTOS,
+                    "foto_slots": max(0, MAX_VEICULO_FOTOS - foto_count),
+                    "title": "Editar Veículo",
+                    "action": f"/frota/veiculos/{veiculo_id}/editar",
+                    **lookups,
+                    **extras,
+                },
+                status_code=400,
+            )
     except (AppError, ValueError) as exc:
         await session.rollback()
         veiculo = await VeiculoService(session).get(veiculo_id)
@@ -457,10 +547,12 @@ async def veiculo_update(
             {
                 "veiculo": veiculo,
                 "error": _app_error_message(exc),
+                "foto_notice": None,
+                "max_fotos": MAX_VEICULO_FOTOS,
+                "foto_slots": max(0, MAX_VEICULO_FOTOS - foto_count),
                 "title": "Editar Veículo",
                 "action": f"/frota/veiculos/{veiculo_id}/editar",
-                **lookups,
-                **extras,
+                **ctx_base,
             },
             status_code=400,
         )
@@ -502,27 +594,22 @@ async def veiculo_unlink_acessorio(
     return RedirectResponse(f"/frota/veiculos/{veiculo_id}/editar", status_code=303)
 
 
-@router.post("/frota/veiculos/{veiculo_id}/fotos", response_class=HTMLResponse)
-async def veiculo_add_foto(
+@router.get("/frota/veiculos/{veiculo_id}/fotos/{foto_id}/imagem")
+async def veiculo_foto_imagem(
     session: SessionDep,
     veiculo_id: uuid.UUID,
-    current_user: Annotated[
-        AuthenticatedUser, Depends(require_web_permission("frota.veiculo.editar"))
+    foto_id: uuid.UUID,
+    _user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("frota.veiculo.visualizar"))
     ],
-    storage_key: Annotated[str, Form()],
-    legenda: Annotated[str, Form()] = "",
-    tirada_em: Annotated[str, Form()] = "",
-) -> RedirectResponse:
-    await FotoService(session).add(
-        current_user.tenant_id,
-        veiculo_id,
-        VeiculoFotoCreate(
-            storage_key=storage_key,
-            legenda=legenda or None,
-            tirada_em=_date(tirada_em),
-        ),
-    )
-    return RedirectResponse(f"/frota/veiculos/{veiculo_id}/editar", status_code=303)
+) -> Response:
+    foto = await FotoService(session).get(foto_id)
+    if foto.veiculo_id != veiculo_id:
+        from app.core.exceptions import NotFoundError
+
+        raise NotFoundError("Foto não encontrada.")
+    data, content_type = await VeiculoFotoUploadService(session).resolve_image_bytes(foto)
+    return Response(content=data, media_type=content_type)
 
 
 @router.post(
@@ -535,6 +622,11 @@ async def veiculo_remove_foto(
     foto_id: uuid.UUID,
     _user: Annotated[AuthenticatedUser, Depends(require_web_permission("frota.veiculo.editar"))],
 ) -> RedirectResponse:
+    foto = await FotoService(session).get(foto_id)
+    if foto.veiculo_id != veiculo_id:
+        from app.core.exceptions import NotFoundError
+
+        raise NotFoundError("Foto não encontrada.")
     await FotoService(session).remove(foto_id)
     return RedirectResponse(f"/frota/veiculos/{veiculo_id}/editar", status_code=303)
 
