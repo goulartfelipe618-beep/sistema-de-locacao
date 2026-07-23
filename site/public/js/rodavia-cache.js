@@ -3,6 +3,7 @@
  */
 (function (global) {
   var CACHE_KEY = 'rodavia_catalog_v3';
+  var THEME_KEY = 'rodavia_theme_v1';
   var LEGACY_CACHE_KEY = 'rodavia_catalog_v1';
   var LEGACY_CACHE_KEY_V2 = 'rodavia_catalog_v2';
   var TTL_MS = 15 * 60 * 1000;
@@ -41,6 +42,18 @@
     }
   }
 
+  function persistThemeCss(css) {
+    if (!css || typeof css !== 'object') return;
+    try {
+      localStorage.setItem(THEME_KEY, JSON.stringify(css));
+    } catch (_) {
+      /* ignore quota */
+    }
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.add('erp-theme-ready');
+    }
+  }
+
   function write(payload) {
     try {
       sessionStorage.setItem(
@@ -52,6 +65,8 @@
           slides: payload.slides || [],
         })
       );
+      var css = payload.empresa && payload.empresa.tema && payload.empresa.tema.css;
+      if (css) persistThemeCss(css);
     } catch (_) {
       /* ignore quota */
     }
@@ -210,6 +225,7 @@
     prefetchSlideImages: prefetchSlideImages,
     preloadHeroImage: preloadHeroImage,
     slideNetworkUrl: slideNetworkUrl,
+    persistThemeCss: persistThemeCss,
   };
 
   if (typeof document !== 'undefined') {

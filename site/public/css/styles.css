@@ -1,5 +1,4 @@
 /* LOCADORA RODAVIA — design system B&W */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
   --color-bg: #ffffff;
@@ -42,6 +41,22 @@
   --cookie-h: 0px;
 }
 
+/* Evita flash de cores/tema antes do ERP ou cache local */
+html.erp-loading:not(.erp-theme-ready):not(.erp-ready):not(.erp-boot-fallback) body {
+  visibility: hidden;
+}
+
+html.erp-theme-ready body,
+html.erp-ready body,
+html.erp-boot-fallback body {
+  visibility: visible;
+}
+
+html.erp-theme-ready,
+html.erp-ready {
+  background-color: var(--color-bg);
+}
+
 /* Oculta placeholders estáticos até o ERP responder (evita flash "Rodavia"/Unsplash). */
 html.erp-loading:not(.erp-ready) .logo__text[data-erp='nome_exibicao']:empty,
 html.erp-loading:not(.erp-ready) .logo__mark:empty {
@@ -50,7 +65,7 @@ html.erp-loading:not(.erp-ready) .logo__mark:empty {
 
 html.erp-loading:not(.erp-ready) .logo__mark:not(:empty) {
   color: transparent;
-  background-color: #e8e8e8;
+  background-color: var(--color-bg-muted);
   min-width: 2rem;
   min-height: 2rem;
   border-radius: 4px;
@@ -605,7 +620,7 @@ a:hover {
 .hero {
   position: relative;
   width: 100%;
-  background: #ddd;
+  background: var(--color-bg-muted);
   overflow: hidden;
 }
 
@@ -691,17 +706,17 @@ a:hover {
 }
 
 .hero__slide--loading {
-  background-color: #e0e0e0;
+  background-color: var(--color-bg-muted);
   filter: none;
 }
 
 .hero__slides--loading {
-  background-color: #e8e8e8;
+  background-color: var(--color-bg);
 }
 
 /* Imagens do hero vêm da API (inline style) ou fallback neutro */
 .hero__slide--fallback {
-  background-color: #e0e0e0;
+  background-color: var(--color-bg-muted);
 }
 
 .hero__slide--erp {

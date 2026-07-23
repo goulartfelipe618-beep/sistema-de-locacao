@@ -68,6 +68,7 @@
     if (isReady) {
       root.classList.add('erp-ready');
       root.classList.remove('erp-loading');
+      root.classList.remove('erp-boot-fallback');
     } else {
       root.classList.add('erp-loading');
       root.classList.remove('erp-ready');
@@ -106,6 +107,16 @@
         root.style.setProperty(key, value);
       }
     });
+    root.classList.add('erp-theme-ready');
+    if (global.RodaviaCache && typeof global.RodaviaCache.persistThemeCss === 'function') {
+      global.RodaviaCache.persistThemeCss(tema.css);
+    } else {
+      try {
+        localStorage.setItem('rodavia_theme_v1', JSON.stringify(tema.css));
+      } catch (_) {
+        /* ignore */
+      }
+    }
   }
 
   function applyEmpresa(empresa) {
