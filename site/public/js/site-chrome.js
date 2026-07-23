@@ -194,15 +194,10 @@
       '</div>' +
       '</div>' +
       '</aside>' +
-      '<button type="button" class="chat-fab" id="chat-fab" data-i18n-aria="chat.open" aria-label="Abrir chat">💬</button>' +
-      '<div class="modal" id="chat-modal" aria-hidden="true" role="dialog" aria-labelledby="chat-modal-title">' +
-      '<div class="modal__backdrop" data-close-modal="chat-modal"></div>' +
-      '<div class="modal__panel">' +
-      '<button type="button" class="modal__close" data-close-modal="chat-modal" data-i18n-aria="modal.close" aria-label="Fechar">×</button>' +
-      '<h2 class="modal__title" id="chat-modal-title" data-i18n="chat.title">Atendimento Rodavia</h2>' +
-      '<p data-i18n-html="chat.text">Chat em breve. Enquanto isso, ligue para <strong>0800 123 4567</strong> ou envie e-mail para contato@rodavia.com.br.</p>' +
-      '</div>' +
-      '</div>' +
+      (global.SiteChat ? global.SiteChat.fabHtml() + global.SiteChat.modalHtml() : (
+      '<button type="button" class="chat-fab" id="chat-fab" data-i18n-aria="chat.open" aria-label="Abrir atendimento"></button>' +
+      '<div class="modal" id="chat-modal" aria-hidden="true" role="dialog" aria-labelledby="chat-modal-title"></div>'
+      )) +
       '<div class="modal" id="cookie-prefs-modal" aria-hidden="true" role="dialog" aria-labelledby="prefs-title">' +
       '<div class="modal__backdrop" data-close-modal="cookie-prefs-modal"></div>' +
       '<div class="modal__panel">' +
@@ -370,14 +365,12 @@
   }
 
   function initModals() {
-    var chatBtn = $('#chat-fab');
-    var chatModal = $('#chat-modal');
-    chatBtn?.addEventListener('click', function () {
-      chatModal?.classList.add('is-open');
-      chatModal?.setAttribute('aria-hidden', 'false');
-    });
+    if (global.SiteChat && typeof global.SiteChat.init === 'function') {
+      global.SiteChat.init();
+    }
 
     $$('[data-close-modal]').forEach(function (btn) {
+      if (btn.getAttribute('data-close-modal') === 'chat-modal') return;
       btn.addEventListener('click', function () {
         var id = btn.getAttribute('data-close-modal');
         var el = id ? document.getElementById(id) : btn.closest('.modal');

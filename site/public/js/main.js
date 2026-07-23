@@ -168,13 +168,11 @@ function initCookieBanner() {
 }
 
 function initModals() {
-  const chatBtn = $('#chat-fab');
-  const chatModal = $('#chat-modal');
-  chatBtn?.addEventListener('click', () => {
-    chatModal?.classList.add('is-open');
-    chatModal?.setAttribute('aria-hidden', 'false');
-  });
+  if (window.SiteChat && typeof window.SiteChat.init === 'function') {
+    window.SiteChat.init();
+  }
   $$('[data-close-modal]').forEach((btn) => {
+    if (btn.getAttribute('data-close-modal') === 'chat-modal') return;
     btn.addEventListener('click', () => {
       const id = btn.getAttribute('data-close-modal');
       const el = id ? document.getElementById(id) : btn.closest('.modal');

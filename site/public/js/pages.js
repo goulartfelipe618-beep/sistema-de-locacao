@@ -262,6 +262,10 @@
     initAgencyList();
     initGroupFilters();
 
+    if (global.SiteChat && typeof global.SiteChat.init === 'function') {
+      global.SiteChat.init();
+    }
+
     bootChrome();
   }
 

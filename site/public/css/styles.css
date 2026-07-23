@@ -1757,7 +1757,7 @@ a:hover {
   }
 }
 
-/* Chat FAB */
+/* Chat FAB — quadrado com ícone de telefone */
 .chat-fab {
   position: fixed;
   bottom: calc(1.5rem + var(--cookie-h));
@@ -1765,21 +1765,82 @@ a:hover {
   z-index: 150;
   width: 56px;
   height: 56px;
-  border-radius: 50%;
+  border-radius: 0;
   background: var(--color-primary);
   color: var(--color-on-primary);
   border: none;
   box-shadow: var(--shadow-md);
   cursor: pointer;
-  font-size: 1.5rem;
   display: grid;
   place-items: center;
+  padding: 0;
   transition: transform var(--transition), background var(--transition);
+}
+
+.chat-fab__icon {
+  width: 26px;
+  height: 26px;
+  display: block;
 }
 
 .chat-fab:hover {
   transform: scale(1.05);
   background: var(--color-primary-hover);
+}
+
+.modal__panel--chat {
+  max-width: 420px;
+}
+
+.chat-wizard__progress {
+  margin: 0 0 1.25rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.chat-wizard__step[hidden] {
+  display: none !important;
+}
+
+.chat-wizard__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.chat-wizard__actions .btn--primary {
+  flex: 1;
+  min-width: 8rem;
+}
+
+.chat-wizard__error {
+  margin: 0 0 1rem;
+}
+
+.chat-wizard__success {
+  text-align: center;
+  padding: 1rem 0 0.5rem;
+}
+
+.chat-wizard__success-text {
+  margin: 0 0 1.25rem;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--color-text);
+}
+
+.chat-wizard textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font: inherit;
+  resize: vertical;
+  min-height: 6rem;
 }
 
 /* Modals */
