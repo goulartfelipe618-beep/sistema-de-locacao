@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import make_transient
 
 from app.core.database import get_db_session
 from app.core.deps import require_web_permission
@@ -231,10 +232,16 @@ def _veiculo_db_error_response(request: Request, exc: SQLAlchemyError) -> HTMLRe
 
 
 async def _prepare_veiculo_for_template(session: AsyncSession, veiculo) -> None:
-    """Evita lazy-load síncrono no Jinja (async SQLAlchemy → MissingGreenlet)."""
+    """Carrega scalars no async e detach — evita MissingGreenlet no Jinja."""
     await session.refresh(veiculo)
     _ = (
+        veiculo.id,
         veiculo.placa,
+        veiculo.renavam,
+        veiculo.chassi,
+        veiculo.ano_fabricacao,
+        veiculo.ano_modelo,
+        veiculo.cor,
         veiculo.marca_id,
         veiculo.modelo_id,
         veiculo.combustivel_id,
@@ -246,7 +253,22 @@ async def _prepare_veiculo_for_template(session: AsyncSession, veiculo) -> None:
         veiculo.exige_aprovacao_fornecedor,
         veiculo.contrato_fornecedor_id,
         veiculo.fornecedor_id,
+        veiculo.data_compra,
+        veiculo.valor_aquisicao,
+        veiculo.valor_fipe,
+        veiculo.valor_mercado,
+        veiculo.proprietario_nome,
+        veiculo.km_inicial,
+        veiculo.km_atual,
+        veiculo.nivel_combustivel_atual,
+        veiculo.observacoes,
+        veiculo.motivo_bloqueio,
+        veiculo.motivo_baixa,
+        getattr(veiculo, "foto_capa_storage_key", None),
+        getattr(veiculo, "foto_capa_inline_data", None),
+        getattr(veiculo, "foto_capa_content_type", None),
     )
+    make_transient(veiculo)
 
 
 async def _veiculo_form_context(
@@ -286,6 +308,18 @@ async def _veiculo_form_context(
     }
 
 
+async def _read_nonempty_upload(
+    upload: UploadFile | None,
+) -> tuple[bytes, str, str] | None:
+    """Retorna (bytes, filename, content_type) ou None se o campo estiver vazio."""
+    if upload is None or not (upload.filename or "").strip():
+        return None
+    data = await upload.read()
+    if not data:
+        return None
+    return data, upload.filename, upload.content_type or "image/jpeg"
+
+
 async def _process_veiculo_foto_uploads(
     session: AsyncSession,
     tenant_id: uuid.UUID,
@@ -308,19 +342,20 @@ async def _process_veiculo_foto_uploads(
 
     remaining = await upload_svc.count_active(veiculo_id)
     for upload in uploads:
-        if upload is None or not upload.filename:
+        parsed = await _read_nonempty_upload(upload)
+        if parsed is None:
             continue
         if remaining >= MAX_VEICULO_FOTOS:
             erros.append(f"Máximo de {MAX_VEICULO_FOTOS} fotos por veículo.")
             break
+        data, filename, content_type = parsed
         try:
-            data = await upload.read()
             await upload_svc.upload(
                 tenant_id,
                 veiculo_id,
                 file_bytes=data,
-                filename=upload.filename,
-                content_type=upload.content_type or "image/jpeg",
+                filename=filename,
+                content_type=content_type,
             )
             remaining += 1
         except (AppError, ValueError) as exc:
@@ -342,15 +377,16 @@ async def _process_veiculo_capa(
             await capa_svc.remove_capa(veiculo_id)
         except (AppError, ValueError) as exc:
             erros.append(_app_error_message(exc))
-    if upload is not None and upload.filename:
+    parsed = await _read_nonempty_upload(upload)
+    if parsed is not None:
+        data, filename, content_type = parsed
         try:
-            data = await upload.read()
             await capa_svc.upload_capa(
                 tenant_id,
                 veiculo_id,
                 file_bytes=data,
-                filename=upload.filename,
-                content_type=upload.content_type or "image/jpeg",
+                filename=filename,
+                content_type=content_type,
             )
         except (AppError, ValueError) as exc:
             erros.append(_app_error_message(exc))
@@ -480,13 +516,18 @@ async def veiculo_create(
         )
         foto_erros = await _process_veiculo_foto_uploads(session, current_user.tenant_id, veiculo.id, fotos)
         if capa_erros or foto_erros:
-            ctx["foto_notice"] = "; ".join(capa_erros + foto_erros)
+            request.session["_flash"] = {
+                "type": "warning",
+                "message": "; ".join(capa_erros + foto_erros),
+            }
     except (AppError, ValueError) as exc:
         await session.rollback()
+        msg = _app_error_message(exc)
+        logger.warning("Falha ao criar veículo: %s", msg)
         ctx = await _veiculo_form_context(
             session,
             current_user.tenant_id,
-            error=_app_error_message(exc),
+            error=msg,
             foto_notice=None,
             title="Novo Veículo",
             action="/frota/veiculos/novo",
@@ -634,25 +675,20 @@ async def veiculo_update(
             fotos,
             remover_fotos,
         )
-        all_erros = capa_erros + foto_erros
-        if all_erros:
-            ctx = await _veiculo_form_context(
-                session,
-                current_user.tenant_id,
-                veiculo_id=veiculo_id,
-                error=None,
-                foto_notice="; ".join(all_erros),
-                title="Editar Veículo",
-                action=f"/frota/veiculos/{veiculo_id}/editar",
-            )
-            return render(request, "frota/veiculo_form.html", ctx, status_code=400)
+        if capa_erros or foto_erros:
+            request.session["_flash"] = {
+                "type": "warning",
+                "message": "; ".join(capa_erros + foto_erros),
+            }
     except (AppError, ValueError) as exc:
         await session.rollback()
+        msg = _app_error_message(exc)
+        logger.warning("Falha ao salvar veículo %s: %s", veiculo_id, msg)
         ctx = await _veiculo_form_context(
             session,
             current_user.tenant_id,
             veiculo_id=veiculo_id,
-            error=_app_error_message(exc),
+            error=msg,
             foto_notice=None,
             title="Editar Veículo",
             action=f"/frota/veiculos/{veiculo_id}/editar",
