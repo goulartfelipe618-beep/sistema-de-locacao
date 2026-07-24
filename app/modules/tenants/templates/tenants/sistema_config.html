@@ -162,14 +162,33 @@
                 placeholder="Opcional — ex.: informações legais ou aviso comercial">{{ tenant.document_footer_text or '' }}</textarea>
     </div>
 
+    <h3 style="margin-top:24px">Emissão fiscal (NFS-e / NF-e)</h3>
+    <div class="alert {% if tenant.fiscal_emissao_habilitada %}alert-warning{% else %}alert-info{% endif %}">
+      {% if tenant.fiscal_emissao_habilitada %}
+      <strong>Emissão fiscal ativa.</strong> O módulo Fiscal fica visível e o sistema pode criar e emitir notas (simulador ou governo, conforme certificado).
+      {% else %}
+      <strong>Emissão fiscal desativada (padrão seguro).</strong> Nenhuma NFS-e ou NF-e será criada ou emitida por este sistema — manualmente ou automaticamente.
+      {% endif %}
+    </div>
+    <div class="form-group">
+      <label class="form-label">
+        <input type="checkbox" name="fiscal_emissao_habilitada" value="on"
+               {% if tenant.fiscal_emissao_habilitada %}checked{% endif %}>
+        Habilitar emissão fiscal neste sistema
+      </label>
+      <p class="form-help">Deixe desmarcado se você ainda não trabalha com notas fiscais eletrônicas ou prefere emitir fora do ERP.</p>
+    </div>
+
     <h3 style="margin-top:24px">Certificado digital A1 (NF-e / NFS-e)</h3>
     {% if tenant.cert_configured %}
     <div class="alert alert-info">
       Certificado configurado{% if tenant.cert_a1_subject %}: {{ tenant.cert_a1_subject }}{% endif %}
       {% if tenant.cert_a1_valid_until %} · válido até {{ tenant.cert_a1_valid_until|date }}{% endif %}
     </div>
+    {% elif tenant.fiscal_emissao_habilitada %}
+    <p class="form-help">Sem certificado, as notas usam apenas o simulador interno (não vão ao governo).</p>
     {% else %}
-    <p class="form-help">Opcional nesta etapa. A emissão fiscal usa simulador até configurar.</p>
+    <p class="form-help">Disponível quando a emissão fiscal estiver habilitada acima.</p>
     {% endif %}
     <div class="form-grid">
       <div class="form-group">
@@ -237,6 +256,15 @@
       <h3>Documentos</h3>
       <dl class="detail-list">
         <dt>Rodapé personalizado</dt><dd>{{ tenant.document_footer_text or '—' }}</dd>
+      </dl>
+    </div>
+    <div>
+      <h3>Emissão fiscal</h3>
+      <dl class="detail-list">
+        <dt>Status</dt>
+        <dd>{% if tenant.fiscal_emissao_habilitada %}<span class="badge badge-warning">Habilitada</span>{% else %}<span class="badge badge-success">Desativada</span>{% endif %}</dd>
+        <dt>NFS-e automática</dt>
+        <dd>{% if tenant.fiscal_emissao_habilitada %}Configurável em Fiscal → Impostos{% else %}Bloqueada enquanto emissão fiscal estiver desativada{% endif %}</dd>
       </dl>
     </div>
     <div>

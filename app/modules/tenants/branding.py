@@ -40,6 +40,7 @@ def branding_session_payload(tenant: Tenant, *, include_logo_url: bool = True) -
         "logo_url": logo,
         "has_logo": tenant.has_logo,
         "setup_complete": tenant.setup_complete,
+        "fiscal_emissao_habilitada": bool(tenant.fiscal_emissao_habilitada),
     }
 
 
@@ -59,6 +60,7 @@ def branding_pdf_context(tenant: Tenant) -> dict[str, Any]:
         "cert_configured": bool(tenant.cert_a1_encrypted),
         "cert_valid_until": tenant.cert_a1_valid_until,
         "cert_subject": tenant.cert_a1_subject,
+        "fiscal_emissao_habilitada": bool(tenant.fiscal_emissao_habilitada),
     }
 
 

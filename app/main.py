@@ -117,6 +117,9 @@ def _register_exception_handlers(app: FastAPI) -> None:
         if isinstance(exc, AuthenticationError):
             request.session["_flash"] = {"type": "danger", "message": exc.message}
             return RedirectResponse(url="/login", status_code=303)
+        if exc.code == "fiscal_emissao_disabled":
+            request.session["_flash"] = {"type": "warning", "message": exc.message}
+            return RedirectResponse(url="/configuracoes/sistema", status_code=303)
         return render(
             request,
             "error.html",

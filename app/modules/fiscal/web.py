@@ -13,7 +13,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db_session
-from app.core.deps import require_web_permission
+from app.core.deps import require_web_permission, require_web_user
 from app.core.exceptions import AppError
 from app.core.pagination import PageParams
 from app.core.templating import render
@@ -34,6 +34,7 @@ from app.modules.fiscal.service import (
     NfseService,
     XmlService,
 )
+from app.modules.fiscal.guards import assert_fiscal_emissao_habilitada
 from app.modules.frota.service import VeiculoService
 from app.modules.identity.service import AuthenticatedUser
 from app.modules.tenants.service import FilialService
@@ -48,8 +49,18 @@ from app.shared.enums import (
     RegimeTributario,
 )
 
-router = APIRouter()
 SessionDep = Annotated[AsyncSession, Depends(get_db_session)]
+
+
+async def _require_fiscal_emissao_web(
+    session: SessionDep,
+    user: Annotated[AuthenticatedUser, Depends(require_web_user)],
+) -> AuthenticatedUser:
+    await assert_fiscal_emissao_habilitada(session, user.tenant_id)
+    return user
+
+
+router = APIRouter(dependencies=[Depends(_require_fiscal_emissao_web)])
 
 
 def _dec(raw: str | None, default: str = "0") -> Decimal:

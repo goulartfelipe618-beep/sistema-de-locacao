@@ -1001,9 +1001,12 @@ class CheckinService:
                     pass
             # Hook §10.1: emite NFS-e automaticamente quando configurado na filial.
             try:
+                from app.modules.fiscal.guards import fiscal_emissao_habilitada
                 from app.modules.fiscal.service import ImpostoService, NfseService
 
-                if await ImpostoService(self.session).nfse_automatica(
+                if not await fiscal_emissao_habilitada(self.session, contrato.tenant_id):
+                    pass
+                elif await ImpostoService(self.session).nfse_automatica(
                     contrato.filial_retirada_id
                 ):
                     nfse = await NfseService(self.session).create_from_contrato(

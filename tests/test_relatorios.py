@@ -44,7 +44,7 @@ def test_permissoes_relatorios_registradas() -> None:
 
 
 def test_menu_relatorios_completo() -> None:
-    menu = build_menu(_make_user(REL_PERMS))
+    menu = build_menu(_make_user(REL_PERMS), fiscal_emissao_habilitada=True)
     rel = next(s for s in menu if s["label"] == "Relatórios")
     labels = {item["label"] for item in rel["children"]}
     assert labels >= {"Frota", "Locação", "Financeiro", "Fiscal", "Gerencial", "Histórico", "Agendamentos"}

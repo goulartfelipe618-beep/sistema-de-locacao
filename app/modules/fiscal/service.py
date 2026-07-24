@@ -21,6 +21,7 @@ from app.core.exceptions import (
 from app.core.pagination import Page, PageParams
 from app.modules.audit.service import audit_service
 from app.modules.fiscal.adapters.factory import get_nfe_provider, get_nfse_provider
+from app.modules.fiscal.guards import assert_fiscal_emissao_habilitada, fiscal_emissao_habilitada
 from app.modules.fiscal.adapters.nfe_port import NfeItemPayload
 from app.modules.fiscal.models import (
     FisAliquota,
@@ -399,7 +400,11 @@ class ImpostoService:
 
     async def nfse_automatica(self, filial_id: uuid.UUID | None) -> bool:
         config = await self.get_config_vigente(filial_id)
-        return bool(config and config.nfse_automatica)
+        if config is None:
+            return False
+        if not await fiscal_emissao_habilitada(self.session, config.tenant_id):
+            return False
+        return bool(config.nfse_automatica)
 
     async def apuracao(self, periodo_inicio: date, periodo_fim: date) -> list[dict]:
         inicio = datetime.combine(periodo_inicio, datetime.min.time(), tzinfo=UTC)
@@ -868,6 +873,7 @@ class NfseService:
     async def create(
         self, tenant_id: uuid.UUID, data: NfseCreate, *, automatica: bool = False
     ) -> FisNfse:
+        await assert_fiscal_emissao_habilitada(self.session, tenant_id)
         valor = _money(data.valor_servico)
         aliquota_iss, valor_iss, valor_iss_retido, retencao = await self._calcular_iss(
             valor, data.filial_id, aliquota_iss=data.aliquota_iss, retencao=data.retencao_iss
@@ -946,6 +952,7 @@ class NfseService:
 
     async def emitir(self, nfse_id: uuid.UUID) -> FisNfse:
         nfse = await self.get(nfse_id)
+        await assert_fiscal_emissao_habilitada(self.session, nfse.tenant_id)
         if nfse.status not in {NfseStatus.A_EMITIR, NfseStatus.REJEITADA}:
             raise BusinessRuleError(
                 f"NFS-e {nfse.serie}-{nfse.numero} não está apta para emissão "
@@ -1037,6 +1044,11 @@ class NfseService:
 
     async def reprocessar_rejeitadas(self) -> int:
         """Reenvia NFS-e rejeitadas ao provedor; retorna quantas foram autorizadas."""
+        from app.core import context
+
+        tenant_id = context.get_tenant_id()
+        if tenant_id is None or not await fiscal_emissao_habilitada(self.session, tenant_id):
+            return 0
         stmt = self.repo.list_query(status=NfseStatus.REJEITADA)
         rows = list((await self.session.execute(stmt)).scalars().all())
         autorizadas = 0
@@ -1111,6 +1123,7 @@ class NfeService:
         return list((await self.session.execute(stmt)).scalars().all())
 
     async def create(self, tenant_id: uuid.UUID, data: NfeCreate) -> FisNfe:
+        await assert_fiscal_emissao_habilitada(self.session, tenant_id)
         nfe = FisNfe(
             tenant_id=tenant_id,
             numero=await self.next_numero(tenant_id),
@@ -1201,6 +1214,7 @@ class NfeService:
 
     async def emitir(self, nfe_id: uuid.UUID) -> FisNfe:
         nfe = await self.get(nfe_id)
+        await assert_fiscal_emissao_habilitada(self.session, nfe.tenant_id)
         if nfe.status not in {NfeStatus.A_EMITIR, NfeStatus.REJEITADA}:
             raise BusinessRuleError(
                 f"NF-e {nfe.serie}-{nfe.numero} não está apta para emissão "
@@ -1300,6 +1314,11 @@ class NfeService:
 
     async def reprocessar_rejeitadas(self) -> int:
         """Reenvia NF-e rejeitadas à SEFAZ; retorna quantas foram autorizadas."""
+        from app.core import context
+
+        tenant_id = context.get_tenant_id()
+        if tenant_id is None or not await fiscal_emissao_habilitada(self.session, tenant_id):
+            return 0
         stmt = self.repo.list_query(status=NfeStatus.REJEITADA)
         rows = list((await self.session.execute(stmt)).scalars().all())
         autorizadas = 0

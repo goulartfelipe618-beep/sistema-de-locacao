@@ -1400,8 +1400,11 @@ class FaturamentoService:
         )
         # Hook §10.1: emite NFS-e automaticamente quando configurado na filial.
         try:
+            from app.modules.fiscal.guards import fiscal_emissao_habilitada
             from app.modules.fiscal.service import ImpostoService, NfseService
 
+            if not await fiscal_emissao_habilitada(self.session, fatura.tenant_id):
+                return fatura
             if await ImpostoService(self.session).nfse_automatica(filial_id):
                 nfse = await NfseService(self.session).create_from_fatura(
                     fatura.id, automatica=True

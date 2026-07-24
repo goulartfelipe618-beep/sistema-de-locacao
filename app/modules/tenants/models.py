@@ -92,6 +92,7 @@ class Tenant(BaseModel):
     cert_a1_password_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
     cert_a1_valid_until: Mapped[date | None] = mapped_column(Date, nullable=True)
     cert_a1_subject: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    fiscal_emissao_habilitada: Mapped[bool] = mapped_column(nullable=False, default=False, server_default="false")
 
     filiais: Mapped[list[Filial]] = relationship(
         back_populates="tenant",

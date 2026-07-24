@@ -202,7 +202,7 @@ def test_fiscal_permissions_registradas() -> None:
 
 
 def test_menu_fiscal_enabled() -> None:
-    menu = build_menu(_make_user(FISCAL_PERMS))
+    menu = build_menu(_make_user(FISCAL_PERMS), fiscal_emissao_habilitada=True)
     section = next(s for s in menu if s["label"] == "Fiscal")
     by_label = {i["label"]: i for i in section["children"]}
     for label, url in (
@@ -217,7 +217,21 @@ def test_menu_fiscal_enabled() -> None:
 
 
 def test_menu_fiscal_partial_permissions() -> None:
-    menu = build_menu(_make_user({"fiscal.nfse.visualizar"}))
+    menu = build_menu(_make_user({"fiscal.nfse.visualizar"}), fiscal_emissao_habilitada=True)
     section = next(s for s in menu if s["label"] == "Fiscal")
     labels = {i["label"] for i in section["children"]}
     assert labels == {"NFS-e"}
+
+
+def test_menu_fiscal_hidden_when_emissao_disabled() -> None:
+    perms = FISCAL_PERMS | {
+        "dashboard.painel.visualizar",
+        "relatorios.frota.visualizar",
+        "relatorios.fiscal.visualizar",
+    }
+    menu = build_menu(_make_user(perms), fiscal_emissao_habilitada=False)
+    labels = [s["label"] for s in menu]
+    assert "Fiscal" not in labels
+    rel = next(s for s in menu if s["label"] == "Relatórios")
+    rel_labels = {item["label"] for item in rel["children"]}
+    assert "Fiscal" not in rel_labels

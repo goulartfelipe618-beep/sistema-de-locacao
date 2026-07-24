@@ -114,6 +114,23 @@ class TenantService:
         )
         return tenant
 
+    async def set_fiscal_emissao_habilitada(
+        self, tenant_id: uuid.UUID, enabled: bool
+    ) -> Tenant:
+        tenant = await self.get_tenant(tenant_id)
+        tenant.fiscal_emissao_habilitada = enabled
+        await audit_service.record(
+            AuditAction.UPDATE,
+            entity="tenant",
+            entity_id=tenant.id,
+            description=(
+                "Emissão fiscal habilitada no sistema."
+                if enabled
+                else "Emissão fiscal desativada no sistema."
+            ),
+        )
+        return tenant
+
     async def update_site_theme(
         self,
         tenant_id: uuid.UUID,

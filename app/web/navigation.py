@@ -714,13 +714,19 @@ def resolve_active_menu_url(path: str, menu: list[dict]) -> str | None:
     return max(candidates, key=len)
 
 
-def build_menu(user: AuthenticatedUser | None) -> list[dict]:
+def build_menu(
+    user: AuthenticatedUser | None,
+    *,
+    fiscal_emissao_habilitada: bool = False,
+) -> list[dict]:
     """Constrói a árvore de menu já filtrada/anotada para o usuário atual."""
     if user is None:
         return []
 
     sections: list[dict] = []
     for section in NAVIGATION:
+        if section.label == "Fiscal" and not fiscal_emissao_habilitada:
+            continue
         # Seção com link direto (sem submenu), ex.: Dashboard.
         if not section.items:
             allowed = section.permission is None or has_permission(
@@ -741,6 +747,8 @@ def build_menu(user: AuthenticatedUser | None) -> list[dict]:
             continue
 
         children = [state for item in section.items if (state := _item_state(item, user))]
+        if section.label == "Relatórios" and not fiscal_emissao_habilitada:
+            children = [c for c in children if c.get("url") != "/relatorios/fiscal"]
         if not children:
             continue
         sections.append(

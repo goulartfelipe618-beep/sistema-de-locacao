@@ -161,6 +161,10 @@ def _hub(categoria: RelCategoria):
             Depends(require_web_permission(f"relatorios.{slug}.visualizar")),
         ],
     ) -> Any:
+        if categoria == RelCategoria.FISCAL:
+            from app.modules.fiscal.guards import assert_fiscal_emissao_habilitada
+
+            await assert_fiscal_emissao_habilitada(session, current_user.tenant_id)
         relatorios = list_by_categoria(categoria)
         return render(
             request,
@@ -202,6 +206,10 @@ async def emitir_form(
     perm = f"{_CATEGORIA_PERM[categoria]}.visualizar"
     if not current_user.is_superuser and perm not in current_user.permissions:
         raise AppError("Sem permissão.")
+    if categoria == RelCategoria.FISCAL:
+        from app.modules.fiscal.guards import assert_fiscal_emissao_habilitada
+
+        await assert_fiscal_emissao_habilitada(session, current_user.tenant_id)
 
     from app.modules.relatorios.catalog import get_report
 
@@ -247,6 +255,10 @@ async def emitir_submit(
     export_perm = f"{_CATEGORIA_PERM[categoria]}.exportar"
     if not current_user.is_superuser and export_perm not in current_user.permissions:
         raise AppError("Sem permissão para exportar.")
+    if categoria == RelCategoria.FISCAL:
+        from app.modules.fiscal.guards import assert_fiscal_emissao_habilitada
+
+        await assert_fiscal_emissao_habilitada(session, current_user.tenant_id)
 
     params: dict[str, Any] = {
         "periodo_inicio": periodo_inicio,

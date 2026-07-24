@@ -26,6 +26,7 @@ async def _tenant_ids() -> list:
             select(Tenant.id).where(
                 Tenant.status == TenantStatus.ACTIVE,
                 Tenant.deleted_at.is_(None),
+                Tenant.fiscal_emissao_habilitada.is_(True),
             )
         )
         return list(result.scalars().all())

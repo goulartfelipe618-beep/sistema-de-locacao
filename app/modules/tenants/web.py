@@ -165,6 +165,7 @@ async def sistema_config_save(
     remove_cert: Annotated[str, Form()] = "",
     logo_file: UploadFile | None = File(None),
     cert_file: UploadFile | None = File(None),
+    fiscal_emissao_habilitada: Annotated[str, Form()] = "",
 ) -> HTMLResponse:
     """Salva configurações do sistema e conclui onboarding quando aplicável."""
     svc = TenantService(session)
@@ -207,6 +208,10 @@ async def sistema_config_save(
             current_user.tenant_id,
             data,
             complete_setup=setup_mode or complete_setup == "on",
+        )
+        tenant = await svc.set_fiscal_emissao_habilitada(
+            current_user.tenant_id,
+            fiscal_emissao_habilitada == "on",
         )
 
         if remove_cert == "on":
