@@ -26,7 +26,9 @@ from app.modules.integracoes.public_schemas import (
 from app.modules.intermediacao.service import IntermediacaoService
 from app.modules.reservas.schemas import ReservaCreate
 from app.modules.reservas.service import DisponibilidadeService, ReservaService
+from app.modules.comercial.site_fidelidade import fidelidade_programa_public
 from app.modules.tenants.branding import resolve_logo_url
+from app.modules.tenants.filial_address import filial_public_row
 from app.modules.tenants.site_theme import site_theme_payload
 from app.modules.tenants.models import Tenant
 from app.modules.tenants.setup import format_tenant_address
@@ -75,11 +77,12 @@ async def get_catalog_public(session: AsyncSession, tenant_id: uuid.UUID) -> dic
     if tenant is None:
         raise NotFoundError("Empresa não encontrada.")
     empresa = _empresa_dict_from_tenant(tenant)
-    filiais, slides = await asyncio.gather(
+    filiais, slides, fidelidade = await asyncio.gather(
         list_filiais_public(session, tenant_id),
         list_slides_public(session, tenant_id),
+        fidelidade_programa_public(session, tenant_id),
     )
-    return {"empresa": empresa, "filiais": filiais, "slides": slides}
+    return {"empresa": empresa, "filiais": filiais, "slides": slides, "fidelidade": fidelidade}
 
 
 async def list_filiais_public(session: AsyncSession, tenant_id: uuid.UUID) -> list[dict]:
@@ -90,15 +93,8 @@ async def list_filiais_public(session: AsyncSession, tenant_id: uuid.UUID) -> li
             continue
         if f.tenant_id != tenant_id:
             continue
-        items.append(
-            {
-                "id": str(f.id),
-                "codigo": f.code,
-                "nome": f.name,
-                "cidade": f.city,
-                "uf": f.state,
-            }
-        )
+        items.append(filial_public_row(f))
+    items.sort(key=lambda row: (not row.get("matriz"), row.get("nome") or ""))
     return items
 
 
@@ -239,8 +235,11 @@ async def _resolve_cliente_site(
     svc = ClienteService(session)
     existing = await svc.repo.get_by_cpf(data.cpf)
     if existing:
+        from app.modules.comercial.service import FidelidadeService
+
+        await FidelidadeService(session).ensure_conta(tenant_id, existing.id)
         return existing
-    return await svc.create(
+    created = await svc.create(
         tenant_id,
         ClienteCreate(
             person_type=PersonType.NATURAL,
@@ -251,6 +250,10 @@ async def _resolve_cliente_site(
             celular=data.telefone,
         ),
     )
+    from app.modules.comercial.service import FidelidadeService
+
+    await FidelidadeService(session).ensure_conta(tenant_id, created.id)
+    return created
 
 
 async def criar_reserva_site(

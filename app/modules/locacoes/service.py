@@ -990,8 +990,14 @@ class CheckinService:
                     valor_total=contrato.valor_final or contrato.valor_total,
                     dias=contrato.dias,
                 )
-            except Exception:  # noqa: BLE001 - fidelidade não deve bloquear o check-in
-                pass
+            except Exception as exc:  # noqa: BLE001 - fidelidade não deve bloquear o check-in
+                from app.core.logging import get_logger
+
+                get_logger(__name__).warning(
+                    "Falha ao creditar fidelidade no contrato %s: %s",
+                    contrato.id,
+                    exc,
+                )
             if contrato.intermediacao_status != IntermediacaoStatus.NAO_APLICAVEL:
                 try:
                     from app.modules.intermediacao.service import IntermediacaoService

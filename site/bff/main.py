@@ -284,6 +284,9 @@ async def bff_catalog() -> JSONResponse:
         "empresa": _normalize_empresa_payload(catalog_raw.get("empresa")),
         "filiais": catalog_raw.get("filiais") if isinstance(catalog_raw.get("filiais"), list) else [],
         "slides": _normalize_slides_payload(catalog_raw.get("slides")),
+        "fidelidade": catalog_raw.get("fidelidade")
+        if isinstance(catalog_raw.get("fidelidade"), dict)
+        else {"ativo": False, "regra": None, "tiers": []},
     }
     return JSONResponse(
         content=payload,

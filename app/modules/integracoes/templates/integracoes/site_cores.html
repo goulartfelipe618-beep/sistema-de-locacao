@@ -209,6 +209,21 @@
     </fieldset>
 
     <fieldset style="border:none;padding:0;margin:0 0 24px">
+      <legend style="font-weight:700;font-size:15px;margin-bottom:12px">Mapa — Rede de agências</legend>
+      <p class="form-help">
+        Token público Mapbox (<code>pk.</code>) usado no site para autocomplete de endereços e mapa interativo
+        na página <strong>Rede de Agências</strong>. Ao salvar, as filiais são geocodificadas automaticamente.
+      </p>
+      <div class="form-group">
+        {{ field_label('Token de acesso Mapbox', false, 'site_mapbox_access_token') }}
+        <input class="form-input" type="text" id="site_mapbox_access_token" name="site_mapbox_access_token"
+               maxlength="200" autocomplete="off" spellcheck="false"
+               value="{{ tema.mapbox.access_token or '' }}"
+               placeholder="pk.eyJ1Ijoi…">
+      </div>
+    </fieldset>
+
+    <fieldset style="border:none;padding:0;margin:0 0 24px">
       <legend style="font-weight:700;font-size:15px;margin-bottom:12px">Vitrine da home (3 imagens)</legend>
       <p class="form-help">
         Três imagens exibidas abaixo dos cards de serviços na página inicial.

@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import uuid
 from datetime import UTC, datetime
+from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,6 +20,8 @@ from app.modules.tenants.branding import (
     encrypt_pfx,
     parse_pfx_metadata,
 )
+from app.modules.tenants.filial_address import format_filial_address
+from app.modules.tenants.mapbox_geocoding import geocode_address
 from app.modules.tenants.models import Filial, Tenant
 from app.modules.tenants.repository import FilialRepository, TenantRepository
 from app.modules.tenants.schemas import FilialCreate, FilialUpdate, SiteThemeUpdate, TenantSystemUpdate, TenantUpdate
@@ -203,6 +206,8 @@ class TenantService:
                     setattr(tenant, model_field, raw or "_self")
                 else:
                     setattr(tenant, model_field, raw)
+            if data.site_mapbox_access_token is not None:
+                tenant.site_mapbox_access_token = data.site_mapbox_access_token
         await audit_service.record(
             AuditAction.UPDATE,
             entity="tenant",
@@ -446,6 +451,7 @@ class FilialService:
         filial = Filial(tenant_id=tenant_id, **data.model_dump())
         self.filiais.add(filial)
         await self.filiais.flush()
+        await self._geocode_filial(filial)
         await audit_service.record(
             AuditAction.CREATE,
             entity="filial",
@@ -465,6 +471,7 @@ class FilialService:
         for field, value in payload.items():
             setattr(filial, field, value)
 
+        await self._geocode_filial(filial)
         await audit_service.record(
             AuditAction.UPDATE,
             entity="filial",
@@ -472,6 +479,51 @@ class FilialService:
             description=f"Filial atualizada: {filial.code}",
         )
         return filial
+
+    async def _geocode_filial(self, filial: Filial) -> None:
+        tenant = await self.session.get(Tenant, filial.tenant_id)
+        token = (tenant.site_mapbox_access_token or "").strip() if tenant else ""
+        if not token:
+            return
+        query = format_filial_address(filial)
+        if not query:
+            return
+        coords = await geocode_address(token, query)
+        if coords is None:
+            return
+        filial.latitude, filial.longitude = coords
+        await self.filiais.flush()
+
+    async def sync_matriz_from_tenant(self, tenant: Tenant) -> Filial | None:
+        """Copia endereço da empresa para a filial matriz e geocodifica."""
+        stmt = self.filiais._base_query().where(
+            Filial.tenant_id == tenant.id,
+            Filial.is_headquarters.is_(True),
+        )
+        filial = (await self.session.execute(stmt)).scalar_one_or_none()
+        if filial is None:
+            return None
+        filial.zip_code = tenant.zip_code
+        filial.address = tenant.address
+        filial.number = tenant.number
+        filial.complement = tenant.complement
+        filial.district = tenant.district
+        filial.city = tenant.city
+        filial.state = tenant.state
+        filial.phone = tenant.phone or filial.phone
+        await self._geocode_filial(filial)
+        return filial
+
+    async def regeocode_all_filiais(self, tenant_id: uuid.UUID) -> int:
+        """Geocodifica todas as filiais ativas quando o token Mapbox é configurado."""
+        page = await self.list_filiais(PageParams(page=1, size=500))
+        count = 0
+        for filial in page.items:
+            if filial.tenant_id != tenant_id:
+                continue
+            await self._geocode_filial(filial)
+            count += 1
+        return count
 
     async def delete_filial(self, filial_id: uuid.UUID) -> None:
         """Aplica *soft delete* em uma filial."""

@@ -210,4 +210,7 @@ def site_theme_payload(tenant: Tenant) -> dict[str, Any]:
         "transicao": site_transition_payload(tenant),
         "vitrine": site_showcase_payload(tenant),
         "grupos_promo": site_groups_promo_payload(tenant),
+        "mapbox": {
+            "access_token": (tenant.site_mapbox_access_token or "").strip() or None,
+        },
     }

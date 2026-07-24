@@ -193,10 +193,19 @@ async def funil_detalhe(
     request: Request,
     session: SessionDep,
     oportunidade_id: uuid.UUID,
-    _user: Annotated[AuthenticatedUser, Depends(require_web_permission("comercial.funil.visualizar"))],
+    current_user: Annotated[AuthenticatedUser, Depends(require_web_permission("comercial.funil.visualizar"))],
 ) -> HTMLResponse:
     svc = FunilService(session)
     opp = await svc.get(oportunidade_id)
+    from app.modules.notificacoes.service import NotificationService
+
+    notif_svc = NotificationService(session)
+    await notif_svc.marcar_lidas_por_referencia(
+        current_user.id,
+        referencia_tipo="crm_oportunidade",
+        referencia_id=oportunidade_id,
+    )
+    request.state.notificacoes_nao_lidas = await notif_svc.count_nao_lidas(current_user.id)
     interacoes = await svc.list_interacoes(oportunidade_id)
     lookups = await _lookups(session)
     return render(

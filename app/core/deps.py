@@ -53,6 +53,18 @@ async def get_optional_web_user(
         return None
     authenticated = await RBACService(session).load_by_id(user_id)
     request.state.current_user = authenticated
+    if authenticated is not None and has_permission(
+        authenticated.permissions,
+        "notificacoes.inbox.visualizar",
+        is_superuser=authenticated.is_superuser,
+    ):
+        from app.modules.notificacoes.service import NotificationService
+
+        request.state.notificacoes_nao_lidas = await NotificationService(session).count_nao_lidas(
+            authenticated.id
+        )
+    else:
+        request.state.notificacoes_nao_lidas = 0
     return authenticated
 
 

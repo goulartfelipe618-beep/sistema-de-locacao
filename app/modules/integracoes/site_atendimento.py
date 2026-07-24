@@ -14,6 +14,8 @@ from app.modules.cadastros.models import Cliente
 from app.modules.comercial.schemas import InteracaoCreate, OportunidadeCreate
 from app.modules.comercial.service import FunilService
 from app.modules.integracoes.public_schemas import PublicContatoSiteCreate
+from app.modules.notificacoes.schemas import NotificacaoSendInput
+from app.modules.notificacoes.service import NotificationService
 from app.modules.tenants.models import Tenant
 from app.shared.enums import CrmEstagio, CrmInteracaoTipo, CrmOrigemLead
 
@@ -63,6 +65,35 @@ class SiteAtendimentoService:
         if tenant_id is None:
             raise AuthenticationError("Token de webhook inválido.", code="invalid_webhook_token")
         return tenant_id
+
+    async def _notificar_equipe(
+        self,
+        tenant_id: uuid.UUID,
+        opp: object,
+        payload: PublicContatoSiteCreate,
+        origem_label: str,
+    ) -> None:
+        preview = payload.mensagem.strip().replace("\n", " ")
+        if len(preview) > 180:
+            preview = preview[:177] + "…"
+        mensagem = (
+            f"{origem_label} de {payload.nome.strip()}.\n"
+            f"E-mail: {payload.email}\n"
+            f"Telefone: {payload.telefone.strip()}\n\n"
+            f"{preview}"
+        )
+        await NotificationService(self.session).notify_users_with_permission(
+            tenant_id,
+            "comercial.funil.visualizar",
+            NotificacaoSendInput(
+                titulo=f"Nova solicitação — {payload.nome.strip()}"[:200],
+                mensagem=mensagem,
+                link=f"/comercial/funil/{opp.id}",
+                evento="contato.site",
+                referencia_tipo="crm_oportunidade",
+                referencia_id=opp.id,
+            ),
+        )
 
     async def _find_cliente_by_email(
         self, tenant_id: uuid.UUID, email: str
@@ -119,6 +150,8 @@ class SiteAtendimentoService:
             ),
         )
         await self.session.flush()
+
+        await self._notificar_equipe(tenant_id, opp, payload, origem_label)
 
         return {
             "ok": True,

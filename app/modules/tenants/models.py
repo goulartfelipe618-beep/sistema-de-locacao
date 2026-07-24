@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from datetime import date, datetime
 
-from sqlalchemy import Date, DateTime, Enum as SAEnum
+from sqlalchemy import Date, DateTime, Enum as SAEnum, Numeric
 from sqlalchemy import ForeignKey, Index, String, Text, text
 from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -127,6 +127,7 @@ class Tenant(BaseModel):
         String(10), nullable=False, default="_self", server_default="_self"
     )
     site_atendimento_webhook_token: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    site_mapbox_access_token: Mapped[str | None] = mapped_column(String(200), nullable=True)
 
     zip_code: Mapped[str | None] = mapped_column(String(8), nullable=True)
     address: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -207,6 +208,8 @@ class Filial(BaseModel):
     city: Mapped[str | None] = mapped_column(String(100), nullable=True)
     state: Mapped[str | None] = mapped_column(String(2), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    latitude: Mapped[float | None] = mapped_column(Numeric(10, 7), nullable=True)
+    longitude: Mapped[float | None] = mapped_column(Numeric(10, 7), nullable=True)
 
     tenant: Mapped[Tenant] = relationship(back_populates="filiais")
 

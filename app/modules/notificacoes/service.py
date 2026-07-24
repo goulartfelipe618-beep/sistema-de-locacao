@@ -113,6 +113,62 @@ class NotificationService:
         await self.session.flush()
         return len(items)
 
+    async def marcar_lidas_por_referencia(
+        self,
+        user_id: uuid.UUID,
+        *,
+        referencia_tipo: str,
+        referencia_id: uuid.UUID,
+    ) -> int:
+        result = await self.session.execute(
+            select(Notificacao).where(
+                Notificacao.deleted_at.is_(None),
+                Notificacao.user_id == user_id,
+                Notificacao.lida.is_(False),
+                Notificacao.referencia_tipo == referencia_tipo,
+                Notificacao.referencia_id == referencia_id,
+            )
+        )
+        items = list(result.scalars().all())
+        now = _now()
+        for item in items:
+            item.lida = True
+            item.lida_em = now
+        await self.session.flush()
+        return len(items)
+
+    async def notify_users_with_permission(
+        self,
+        tenant_id: uuid.UUID,
+        permission_code: str,
+        payload: NotificacaoSendInput,
+    ) -> int:
+        from app.modules.identity.repository import UserRepository
+        from app.shared.enums import NotificacaoCanal
+
+        user_ids = await UserRepository(self.session).list_active_ids_by_permission(
+            tenant_id, permission_code
+        )
+        sent = 0
+        for user_id in user_ids:
+            item = await self.send(
+                tenant_id,
+                NotificacaoSendInput(
+                    titulo=payload.titulo,
+                    mensagem=payload.mensagem,
+                    canais=[NotificacaoCanal.IN_APP],
+                    user_id=user_id,
+                    link=payload.link,
+                    evento=payload.evento,
+                    referencia_tipo=payload.referencia_tipo,
+                    referencia_id=payload.referencia_id,
+                    async_send=False,
+                ),
+            )
+            if item is not None:
+                sent += 1
+        return sent
+
     async def _resolve_user_email(self, user_id: uuid.UUID) -> str | None:
         result = await self.session.execute(
             select(User.email).where(User.id == user_id, User.deleted_at.is_(None))

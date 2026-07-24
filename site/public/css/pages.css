@@ -435,6 +435,70 @@
   overflow: hidden;
 }
 
+.agency-geocoder .mapboxgl-ctrl-geocoder {
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  box-shadow: none;
+  font-family: inherit;
+}
+
+.agency-geocoder .mapboxgl-ctrl-geocoder--input {
+  padding: 0.75rem 2.5rem 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+}
+
+.agency-marker {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #fff;
+  border-radius: 50% 50% 50% 0;
+  background: var(--color-primary, #111);
+  transform: rotate(-45deg);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  padding: 0;
+}
+
+.agency-marker--matriz {
+  width: 36px;
+  height: 36px;
+  border-width: 4px;
+  background: #c9a227;
+}
+
+.agency-card__badge {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+  color: var(--color-on-primary, #fff);
+  background: var(--color-primary, #111);
+  border-radius: var(--radius-sm, 4px);
+}
+
+.loyalty-regra-summary {
+  margin-top: 0.75rem;
+  font-weight: 500;
+}
+
+.loyalty-cta-wrap {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.tier-table__loading,
+.tier-table__empty {
+  text-align: center;
+  color: var(--color-text-soft);
+  padding: 2rem 1rem;
+}
+
 .agency-map__placeholder {
   display: grid;
   place-items: center;

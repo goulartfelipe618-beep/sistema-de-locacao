@@ -140,6 +140,10 @@ def render(
     ctx.setdefault("menu", menu)
     ctx.setdefault("active_menu_url", resolve_active_menu_url(request.url.path, menu))
     ctx.setdefault("csrf_token", ensure_csrf_token(request))
+    ctx.setdefault(
+        "notificacoes_nao_lidas",
+        getattr(request.state, "notificacoes_nao_lidas", 0),
+    )
     display_name = (branding or {}).get("display_name")
     ctx["app_name"] = display_name if display_name else settings.app_name
     ctx.setdefault("ui_theme", read_ui_theme(request))

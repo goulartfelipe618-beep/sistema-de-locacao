@@ -133,7 +133,20 @@ class SiteThemeUpdate(BaseModel):
     groups_promo_cta_url: str | None = Field(default=None, max_length=500)
     groups_promo_cta_target: str | None = Field(default="_self", max_length=10)
     remove_groups_promo_image: bool = False
+    site_mapbox_access_token: str | None = Field(default=None, max_length=200)
     reset_defaults: bool = False
+
+    @field_validator("site_mapbox_access_token")
+    @classmethod
+    def _validate_mapbox_token(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        token = value.strip()
+        if not token:
+            return None
+        if not token.startswith("pk."):
+            raise ValueError("Informe um token público Mapbox (começa com pk.).")
+        return token
 
     @field_validator(
         "site_primary_color",

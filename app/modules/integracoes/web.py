@@ -578,10 +578,14 @@ async def site_cores_salvar(
             groups_promo_cta_url=(form.get("groups_promo_cta_url") or "").strip() or None,
             groups_promo_cta_target=(form.get("groups_promo_cta_target") or "_self").strip() or "_self",
             remove_groups_promo_image=form.get("remove_groups_promo_image") == "on",
+            site_mapbox_access_token=(form.get("site_mapbox_access_token") or "").strip() or None,
             reset_defaults=form.get("reset_defaults") == "on",
             **showcase_fields,
         )
         await svc.update_site_theme(current_user.tenant_id, data)
+        mapbox_token = (form.get("site_mapbox_access_token") or "").strip()
+        if mapbox_token:
+            await FilialService(session).regeocode_all_filiais(current_user.tenant_id)
         if groups_promo_image and groups_promo_image.filename:
             image_bytes = await groups_promo_image.read()
             if image_bytes:

@@ -121,10 +121,12 @@
 
   document.addEventListener("DOMContentLoaded", function () {
     initLayout(document);
+    refreshNotificationBadge();
   });
 
   document.addEventListener("htmx:afterSwap", function (event) {
     if (event.detail.target) initLayout(event.detail.target);
+    refreshNotificationBadge();
   });
 
   window.addEventListener("resize", function () {
@@ -135,9 +137,42 @@
     if (event.key === "Escape") closeSidebar();
   });
 
+  function refreshNotificationBadge() {
+    var sidebarBadge = document.getElementById("nav-badge-notificacoes");
+    var navbarBadge = document.getElementById("navbar-badge-notificacoes");
+    if (!sidebarBadge && !navbarBadge) return;
+    fetch("/notificacoes/badge-count", { credentials: "same-origin", headers: { Accept: "application/json" } })
+      .then(function (response) {
+        if (!response.ok) return null;
+        return response.json();
+      })
+      .then(function (data) {
+        if (!data) return;
+        var total = Number(data.total) || 0;
+        [sidebarBadge, navbarBadge].forEach(function (el) {
+          if (!el) return;
+          if (total > 0) {
+            el.textContent = String(total);
+            el.hidden = false;
+            el.removeAttribute("hidden");
+            el.classList.remove("nav-badge--hidden");
+            el.setAttribute("aria-label", total + " não lidas");
+          } else {
+            el.textContent = "0";
+            el.hidden = true;
+            el.setAttribute("hidden", "");
+            el.classList.add("nav-badge--hidden");
+            el.removeAttribute("aria-label");
+          }
+        });
+      })
+      .catch(function () {});
+  }
+
   window.erpLayout = {
     closeSidebar: closeSidebar,
     openSidebar: openSidebar,
     wrapTables: wrapTables,
+    refreshNotificationBadge: refreshNotificationBadge,
   };
 })();

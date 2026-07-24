@@ -115,6 +115,35 @@ class UserRepository(BaseRepository[User]):
         )
         return set((await self.session.execute(stmt)).scalars().all())
 
+    async def list_active_ids_by_permission(
+        self, tenant_id: uuid.UUID, permission_code: str
+    ) -> list[uuid.UUID]:
+        """Usuários ativos do tenant com a permissão (inclui superusuários)."""
+        perm_stmt = (
+            select(User.id)
+            .join(UserRole, UserRole.user_id == User.id)
+            .join(Role, Role.id == UserRole.role_id)
+            .join(RolePermission, RolePermission.role_id == Role.id)
+            .join(Permission, Permission.id == RolePermission.permission_id)
+            .where(
+                User.tenant_id == tenant_id,
+                User.deleted_at.is_(None),
+                User.is_active.is_(True),
+                Role.deleted_at.is_(None),
+                Permission.deleted_at.is_(None),
+                Permission.code == permission_code,
+            )
+        )
+        super_stmt = select(User.id).where(
+            User.tenant_id == tenant_id,
+            User.deleted_at.is_(None),
+            User.is_active.is_(True),
+            User.is_superuser.is_(True),
+        )
+        ids = set((await self.session.execute(perm_stmt)).scalars().all())
+        ids.update((await self.session.execute(super_stmt)).scalars().all())
+        return list(ids)
+
     async def get_role_slugs(self, user_id: uuid.UUID) -> list[str]:
         stmt = (
             select(Role.slug)

@@ -209,6 +209,7 @@ async def sistema_config_save(
             data,
             complete_setup=setup_mode or complete_setup == "on",
         )
+        await FilialService(session).sync_matriz_from_tenant(tenant)
         tenant = await svc.set_fiscal_emissao_habilitada(
             current_user.tenant_id,
             fiscal_emissao_habilitada == "on",
@@ -339,6 +340,11 @@ async def filial_create(
     code: Annotated[str, Form()],
     name: Annotated[str, Form()],
     cnpj: Annotated[str, Form()] = "",
+    zip_code: Annotated[str, Form()] = "",
+    address: Annotated[str, Form()] = "",
+    number: Annotated[str, Form()] = "",
+    complement: Annotated[str, Form()] = "",
+    district: Annotated[str, Form()] = "",
     city: Annotated[str, Form()] = "",
     state: Annotated[str, Form()] = "",
     phone: Annotated[str, Form()] = "",
@@ -350,6 +356,11 @@ async def filial_create(
             code=code,
             name=name,
             cnpj=cnpj or None,
+            zip_code=zip_code or None,
+            address=address or None,
+            number=number or None,
+            complement=complement or None,
+            district=district or None,
             city=city or None,
             state=state or None,
             phone=phone or None,
@@ -407,6 +418,11 @@ async def filial_update(
         AuthenticatedUser, Depends(require_web_permission("configuracoes.filial.editar"))
     ],
     name: Annotated[str, Form()],
+    zip_code: Annotated[str, Form()] = "",
+    address: Annotated[str, Form()] = "",
+    number: Annotated[str, Form()] = "",
+    complement: Annotated[str, Form()] = "",
+    district: Annotated[str, Form()] = "",
     city: Annotated[str, Form()] = "",
     state: Annotated[str, Form()] = "",
     phone: Annotated[str, Form()] = "",
@@ -416,6 +432,11 @@ async def filial_update(
     try:
         data = FilialUpdate(
             name=name,
+            zip_code=zip_code or None,
+            address=address or None,
+            number=number or None,
+            complement=complement or None,
+            district=district or None,
             city=city or None,
             state=state or None,
             phone=phone or None,

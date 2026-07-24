@@ -18,7 +18,9 @@
     {% for n in notificacoes %}
     <tr class="{% if not n.lida %}row-highlight{% endif %}">
       <td>
-        {% if n.link %}<a href="{{ n.link }}">{{ n.titulo }}</a>{% else %}{{ n.titulo }}{% endif %}
+        {% if n.link %}
+        <a href="/notificacoes/{{ n.id }}/abrir">{{ n.titulo }}</a>
+        {% else %}{{ n.titulo }}{% endif %}
       </td>
       <td>{{ n.mensagem[:120] }}{% if n.mensagem|length > 120 %}…{% endif %}</td>
       <td><span class="badge {% if n.lida %}badge-muted{% else %}badge-info{% endif %}">{% if n.lida %}Lida{% else %}Nova{% endif %}</span></td>

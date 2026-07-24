@@ -6,6 +6,16 @@
     <h1 class="page-title">{{ title|default('Painel') }}</h1>
   </div>
   <div class="navbar-right">
+    {% if current_user and (current_user.is_superuser or 'notificacoes.inbox.visualizar' in current_user.permissions) %}
+    <a href="/notificacoes" class="navbar-notifications" id="navbar-notifications" aria-label="Notificações">
+      <span class="navbar-notifications__icon" aria-hidden="true">🔔</span>
+      {% if notificacoes_nao_lidas|default(0) > 0 %}
+      <span class="nav-badge nav-badge--navbar" id="navbar-badge-notificacoes">{{ notificacoes_nao_lidas }}</span>
+      {% else %}
+      <span class="nav-badge nav-badge--navbar nav-badge--hidden" id="navbar-badge-notificacoes" hidden aria-hidden="true">0</span>
+      {% endif %}
+    </a>
+    {% endif %}
     <div class="theme-switcher" x-data="{ open: false }" @erp-theme-change.window="open = false">
       <button type="button" class="theme-btn" @click.stop="open = !open" aria-label="Alternar tema" title="Tema da interface" aria-haspopup="true" :aria-expanded="open ? 'true' : 'false'">
         <span class="theme-btn-icon">◐</span>

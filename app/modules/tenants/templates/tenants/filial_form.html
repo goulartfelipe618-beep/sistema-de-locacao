@@ -7,7 +7,7 @@
   {{ form_page_header(title, "tenants.filial") }}
   {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
 
-  <form method="post" action="{{ action }}" class="erp-form"
+  <form method="post" action="{{ action }}" class="erp-form" id="filial-form"
         hx-post="{{ action }}"
         hx-target="#app-content"
         hx-select="#app-content"
@@ -34,16 +34,6 @@
         </div>
         {% endif %}
         <div class="form-group">
-          {{ field_label('UF', false, 'state') }}
-          <input class="form-input" id="state" name="state" maxlength="2" placeholder="SP"
-                 value="{{ filial.state if filial else '' }}">
-        </div>
-        <div class="form-group">
-          {{ field_label('Cidade', false, 'city') }}
-          <input class="form-input" id="city" name="city"
-                 value="{{ filial.city if filial else '' }}">
-        </div>
-        <div class="form-group">
           {{ field_label('Telefone', false, 'phone') }}
           <input class="form-input" id="phone" name="phone" placeholder="(00) 0000-0000"
                  value="{{ filial.phone if filial else '' }}">
@@ -55,6 +45,54 @@
         </div>
       </div>
     </fieldset>
+
+    <fieldset class="form-fieldset">
+      <legend>Endereço</legend>
+      <p class="form-help">O endereço completo aparece no site (Rede de Agências) e no mapa quando o token Mapbox estiver configurado em Integrações → Cores do site.</p>
+      <div class="form-grid">
+        <div class="form-group">
+          {{ field_label('CEP', false, 'zip_code') }}
+          <input class="form-input" id="zip_code" name="zip_code" data-mask="cep" maxlength="9"
+                 value="{{ filial.zip_code if filial else '' }}" placeholder="00000-000">
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          {{ field_label('Logradouro', false, 'address') }}
+          <input class="form-input" id="address" name="address" maxlength="255"
+                 value="{{ filial.address if filial else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Número', false, 'number') }}
+          <input class="form-input" id="number" name="number" maxlength="20"
+                 value="{{ filial.number if filial else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Complemento', false, 'complement') }}
+          <input class="form-input" id="complement" name="complement" maxlength="100"
+                 value="{{ filial.complement if filial else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Bairro', false, 'district') }}
+          <input class="form-input" id="district" name="district" maxlength="100"
+                 value="{{ filial.district if filial else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Cidade', false, 'city') }}
+          <input class="form-input" id="city" name="city" maxlength="100"
+                 value="{{ filial.city if filial else '' }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('UF', false, 'state') }}
+          <input class="form-input" id="state" name="state" maxlength="2" placeholder="SP"
+                 value="{{ filial.state if filial else '' }}">
+        </div>
+        {% if filial and filial.latitude and filial.longitude %}
+        <div class="form-group" style="grid-column:1/-1">
+          <p class="form-help">Coordenadas: {{ filial.latitude }}, {{ filial.longitude }} (atualizadas ao salvar via Mapbox)</p>
+        </div>
+        {% endif %}
+      </div>
+    </fieldset>
+
     <div class="form-actions">
       <button type="submit" class="btn btn-primary">Salvar</button>
       <a href="/configuracoes/filiais" class="btn">Cancelar</a>
@@ -62,4 +100,31 @@
     {{ form_legend() }}
   </form>
 </div>
+
+<script>
+(function () {
+  var cepInput = document.getElementById('zip_code');
+  if (!cepInput) return;
+  cepInput.addEventListener('blur', function () {
+    var digits = (cepInput.value || '').replace(/\D/g, '');
+    if (digits.length !== 8) return;
+    fetch('/cadastros/cep/' + digits, { headers: { Accept: 'application/json' } })
+      .then(function (res) { return res.ok ? res.json() : null; })
+      .then(function (data) {
+        if (!data) return;
+        var map = {
+          address: 'logradouro',
+          district: 'bairro',
+          city: 'localidade',
+          state: 'uf'
+        };
+        Object.keys(map).forEach(function (id) {
+          var el = document.getElementById(id);
+          if (el && data[map[id]]) el.value = data[map[id]];
+        });
+      })
+      .catch(function () {});
+  });
+})();
+</script>
 {% endblock %}

@@ -1085,7 +1085,15 @@ class FidelidadeService:
     async def ensure_regra(self, tenant_id: uuid.UUID) -> CrmFidelidadeRegra:
         regra = await self.regra_repo.get_ativa()
         if regra is None:
-            regra = CrmFidelidadeRegra(tenant_id=tenant_id)
+            regra = CrmFidelidadeRegra(
+                tenant_id=tenant_id,
+                nome="Programa de Fidelidade",
+                pontos_por_real=Decimal("1"),
+                pontos_por_diaria=Decimal("10"),
+                valor_por_ponto=Decimal("0.10"),
+                validade_meses=24,
+                ativo=True,
+            )
             self.regra_repo.add(regra)
             await self.regra_repo.flush()
         return regra
