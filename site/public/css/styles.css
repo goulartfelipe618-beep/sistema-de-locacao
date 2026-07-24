@@ -692,6 +692,10 @@ body:not(.page-home) .site-header--brand {
   object-position: center center;
 }
 
+.hero__slide-img.hero__slide-img--broken {
+  visibility: hidden;
+}
+
 .hero__slide {
   position: absolute;
   inset: 0;

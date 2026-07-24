@@ -192,25 +192,43 @@
     return slide.id || slide.slide_id || '';
   }
 
+  function slideImgTag(networkUrl, label, isActive) {
+    var safeUrl = escapeHtml(networkUrl);
+    var safeLabel = escapeHtml(label);
+    return (
+      '<img class="hero__slide-img" src="' +
+      safeUrl +
+      '" data-network-src="' +
+      safeUrl +
+      '" alt="' +
+      safeLabel +
+      '" decoding="async"' +
+      (isActive ? ' loading="eager" fetchpriority="high"' : ' loading="lazy"') +
+      ' onerror="window.__rodaviaHeroImgFallback&&window.__rodaviaHeroImgFallback(this)" />'
+    );
+  }
+
+  if (typeof global !== 'undefined') {
+    global.__rodaviaHeroImgFallback = function (img) {
+      if (!img) return;
+      var fallback = img.getAttribute('data-network-src');
+      if (fallback && img.src !== fallback) {
+        img.src = fallback;
+        return;
+      }
+      img.classList.add('hero__slide-img--broken');
+    };
+  }
+
   function heroSlideMarkup(slide, isActive) {
     var id = slideId(slide);
     if (!global.RodaviaAPI || !id) return '';
     var networkUrl = slideNetworkUrl(slide);
-    var imgUrl =
-      global.RodaviaCache && typeof global.RodaviaCache.getSlideImageUrl === 'function'
-        ? global.RodaviaCache.getSlideImageUrl(id, networkUrl)
-        : networkUrl;
-    var label = escapeHtml(slide.titulo || i18n('hero.promo'));
+    if (!networkUrl) return '';
+    var label = slide.titulo || i18n('hero.promo');
     var activeClass = isActive ? ' is-active' : '';
     var erpClass = ' hero__slide--erp';
-    var img =
-      '<img class="hero__slide-img" src="' +
-      escapeHtml(imgUrl) +
-      '" alt="' +
-      label +
-      '" decoding="async"' +
-      (isActive ? ' loading="eager" fetchpriority="high"' : ' loading="lazy"') +
-      ' />';
+    var img = slideImgTag(networkUrl, label, isActive);
     if (slide.link_url) {
       return (
         '<a href="' +
@@ -221,7 +239,7 @@
         '" data-slide-id="' +
         escapeHtml(id) +
         '" aria-label="' +
-        label +
+        escapeHtml(label) +
         '">' +
         img +
         '</a>'
@@ -234,7 +252,7 @@
       '" data-slide-id="' +
       escapeHtml(id) +
       '" role="img" aria-label="' +
-      label +
+      escapeHtml(label) +
       '">' +
       img +
       '</div>'
@@ -323,8 +341,8 @@
     if (slides.length && global.RodaviaCache) {
       var first = slides[0];
       var firstId = slideId(first);
-      var firstUrl = global.RodaviaCache.getSlideImageUrl(firstId, slideNetworkUrl(first));
-      if (typeof global.RodaviaCache.preloadHeroImage === 'function') {
+      var firstUrl = slideNetworkUrl(first);
+      if (typeof global.RodaviaCache.preloadHeroImage === 'function' && firstUrl) {
         global.RodaviaCache.preloadHeroImage(firstUrl);
       }
       scheduleSlideImagePrefetch(slides);

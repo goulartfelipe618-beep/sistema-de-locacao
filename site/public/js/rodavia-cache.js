@@ -2,7 +2,7 @@
  * Cache do catálogo ERP (empresa, filiais, slides) + imagens dos slides (IndexedDB).
  */
 (function (global) {
-  var CACHE_KEY = 'rodavia_catalog_v3';
+  var CACHE_KEY = 'rodavia_catalog_v4';
   var THEME_KEY = 'rodavia_theme_v1';
   var LEGACY_CACHE_KEY = 'rodavia_catalog_v1';
   var LEGACY_CACHE_KEY_V2 = 'rodavia_catalog_v2';
@@ -139,20 +139,34 @@
   }
 
   function getSlideImageUrl(slideId, networkUrl) {
+    /* URL de rede no DOM — blob revogado após prefetch quebrava o carrossel (ERR_FILE_NOT_FOUND). */
+    if (networkUrl) return networkUrl;
     if (slideId && slideBlobUrls[slideId]) return slideBlobUrls[slideId];
-    return networkUrl;
+    return '';
   }
 
   function storeSlideImage(slideId, blob) {
     if (!slideId || !blob) return;
-    if (slideBlobUrls[slideId]) {
+    var oldUrl = slideBlobUrls[slideId];
+    slideBlobUrls[slideId] = URL.createObjectURL(blob);
+    if (typeof document !== 'undefined' && oldUrl) {
+      document.querySelectorAll('.hero__slide-img').forEach(function (img) {
+        if (img.getAttribute('src') === oldUrl) {
+          img.setAttribute('src', slideBlobUrls[slideId]);
+        }
+      });
       try {
-        URL.revokeObjectURL(slideBlobUrls[slideId]);
+        URL.revokeObjectURL(oldUrl);
+      } catch (_) {
+        /* ignore */
+      }
+    } else if (oldUrl) {
+      try {
+        URL.revokeObjectURL(oldUrl);
       } catch (_) {
         /* ignore */
       }
     }
-    slideBlobUrls[slideId] = URL.createObjectURL(blob);
     openImageDb()
       .then(function (db) {
         var tx = db.transaction(IMG_STORE, 'readwrite');
@@ -197,6 +211,7 @@
 
   function preloadHeroImage(url) {
     if (!url || typeof document === 'undefined') return;
+    if (String(url).indexOf('blob:') === 0) return;
     var link = document.querySelector('link[data-hero-preload]');
     if (!link) {
       link = document.createElement('link');
