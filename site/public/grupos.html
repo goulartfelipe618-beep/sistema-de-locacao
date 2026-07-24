@@ -9,7 +9,7 @@
     />
     <title>Grupos de Carros | LOCADORA RODAVIA</title>
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="css/styles.css?v=31" />
+    <link rel="stylesheet" href="css/styles.css?v=32" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
@@ -17,45 +17,14 @@
     <link rel="stylesheet" href="css/pages.css?v=18" />
     <link rel="stylesheet" href="css/grupos.css?v=2" />
   </head>
-  <body class="page-grupos has-cookie-banner" data-site-chrome="footer" data-topbar="rental" data-nav="groups">
+  <body class="page-grupos has-cookie-banner" data-site-chrome="footer" data-nav="groups">
     <a href="#main-content" class="skip-link" data-i18n="skip.main">Ir para conteúdo principal</a>
-
-    <div class="topbar">
-      <nav class="topbar__tabs" data-i18n-aria="topbar.business" aria-label="Negócios Rodavia">
-        <a href="index.html" class="topbar__tab is-active" data-i18n="topbar.rental">Aluguel de carros</a>
-        <a href="assinatura.html" class="topbar__tab" data-i18n="topbar.subscription">Carro por assinatura</a>
-        <a href="app-motoristas.html" class="topbar__tab" data-i18n="topbar.app">Carro para app</a>
-      </nav>
-      <div class="topbar__locale topbar__locale--flags" id="locale-selector" role="group" data-i18n-aria="locale.choose" aria-label="Escolher idioma">
-        <button type="button" class="topbar__lang-btn is-active" data-lang-option="pt-BR" aria-pressed="true" aria-label="Português (Brasil)" title="Português (Brasil)">
-          <img src="assets/flags/br.svg" alt="" class="topbar__flag-img" width="28" height="20" />
-        </button>
-        <button type="button" class="topbar__lang-btn" data-lang-option="en-US" aria-pressed="false" aria-label="English (USA)" title="English (USA)">
-          <img src="assets/flags/us.svg" alt="" class="topbar__flag-img" width="28" height="20" />
-        </button>
-        <button type="button" class="topbar__lang-btn" data-lang-option="es-ES" aria-pressed="false" aria-label="Español (ESP)" title="Español (ESP)">
-          <img src="assets/flags/es.svg" alt="" class="topbar__flag-img" width="28" height="20" />
-        </button>
-      </div>
-    </div>
 
     <header class="site-header site-header--brand">
       <div class="site-header__inner">
         <a href="index.html" class="logo logo--brand" aria-label="Página inicial">
           <span class="logo__text" data-erp="nome_exibicao"></span>
         </a>
-
-        <button
-          type="button"
-          class="nav-toggle nav-toggle--light"
-          id="nav-toggle"
-          aria-expanded="false"
-          aria-controls="primary-nav"
-          data-i18n-aria="nav.toggle"
-          aria-label="Abrir menu"
-        >
-          <span></span><span></span><span></span>
-        </button>
 
         <nav class="primary-nav primary-nav--brand" id="primary-nav" data-i18n-aria="nav.main" aria-label="Menu principal">
           <ul>
@@ -66,6 +35,32 @@
             <li><a href="duvidas.html" data-i18n="nav.faq">Dúvidas</a></li>
           </ul>
         </nav>
+
+        <div class="site-header__actions">
+          <div class="topbar__locale topbar__locale--flags site-header__locale" id="locale-selector" role="group" data-i18n-aria="locale.choose" aria-label="Escolher idioma">
+            <button type="button" class="topbar__lang-btn is-active" data-lang-option="pt-BR" aria-pressed="true" aria-label="Português (Brasil)" title="Português (Brasil)">
+              <img src="assets/flags/br.svg" alt="" class="topbar__flag-img" width="28" height="20" />
+            </button>
+            <button type="button" class="topbar__lang-btn" data-lang-option="en-US" aria-pressed="false" aria-label="English (USA)" title="English (USA)">
+              <img src="assets/flags/us.svg" alt="" class="topbar__flag-img" width="28" height="20" />
+            </button>
+            <button type="button" class="topbar__lang-btn" data-lang-option="es-ES" aria-pressed="false" aria-label="Español (ESP)" title="Español (ESP)">
+              <img src="assets/flags/es.svg" alt="" class="topbar__flag-img" width="28" height="20" />
+            </button>
+          </div>
+
+          <button
+            type="button"
+            class="nav-toggle nav-toggle--light"
+            id="nav-toggle"
+            aria-expanded="false"
+            aria-controls="primary-nav"
+            data-i18n-aria="nav.toggle"
+            aria-label="Abrir menu"
+          >
+            <span></span><span></span><span></span>
+          </button>
+        </div>
       </div>
     </header>
 
@@ -225,7 +220,7 @@
     <script src="js/rodavia-api.js?v=21"></script>
     <script src="js/rodavia-bind.js?v=27"></script>
     <script src="js/site-chat.js?v=23"></script>
-    <script src="js/site-chrome.js?v=22"></script>
+    <script src="js/site-chrome.js?v=23"></script>
     <script src="js/pages.js?v=20"></script>
     <script type="module" src="js/grupos.js?v=21"></script>
   </body>

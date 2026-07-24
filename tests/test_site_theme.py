@@ -135,6 +135,50 @@ def test_site_showcase_custom() -> None:
     assert showcase["imagens"][0]["cta_target"] == "_blank"
 
 
+def test_site_groups_promo_defaults_empty() -> None:
+    tenant = Tenant(slug="matriz", legal_name="Teste", plan="standard")
+    from app.modules.tenants.site_groups_promo import site_groups_promo_payload
+
+    payload = site_groups_promo_payload(tenant)
+    assert payload["imagem_url"] is None
+    assert payload["titulo"] is None
+    assert payload["subtitulo"] is None
+    assert payload["texto"] is None
+    assert payload["cta_texto"] is None
+    assert payload["cta_url"] is None
+    assert payload["cta_target"] == "_self"
+    assert payload["largura_px"] == 560
+    assert payload["altura_px"] == 420
+
+
+def test_site_groups_promo_custom() -> None:
+    tenant = Tenant(
+        slug="matriz",
+        legal_name="Teste",
+        plan="standard",
+        site_groups_promo_url="data:image/svg+xml;base64,abc",
+        site_groups_promo_titulo="Grupos de Carros",
+        site_groups_promo_subtitulo="Do compacto ao SUV",
+        site_groups_promo_texto="Compare capacidade e conforto.",
+        site_groups_promo_cta_texto="Explorar grupos",
+        site_groups_promo_cta_url="grupos.html",
+        site_groups_promo_cta_target="_blank",
+    )
+    from app.modules.tenants.site_groups_promo import site_groups_promo_payload
+
+    payload = site_theme_payload(tenant)
+    gp = payload["grupos_promo"]
+    assert gp["imagem_url"] == "data:image/svg+xml;base64,abc"
+    assert gp["titulo"] == "Grupos de Carros"
+    assert gp["subtitulo"] == "Do compacto ao SUV"
+    assert gp["texto"] == "Compare capacidade e conforto."
+    assert gp["cta_texto"] == "Explorar grupos"
+    assert gp["cta_url"] == "grupos.html"
+    assert gp["cta_target"] == "_blank"
+    assert gp["cta_nova_aba"] is True
+    assert site_groups_promo_payload(tenant)["cta_target"] == "_blank"
+
+
 def test_site_theme_topbar_tab_colors() -> None:
     tenant = Tenant(
         slug="matriz",

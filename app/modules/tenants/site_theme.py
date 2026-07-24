@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from app.modules.tenants.models import Tenant
+from app.modules.tenants.site_groups_promo import site_groups_promo_payload
 from app.modules.tenants.site_showcase import site_showcase_payload
 from app.modules.tenants.site_transition import site_transition_payload
 
@@ -208,4 +209,5 @@ def site_theme_payload(tenant: Tenant) -> dict[str, Any]:
         "customizado": site_theme_is_customized(tenant),
         "transicao": site_transition_payload(tenant),
         "vitrine": site_showcase_payload(tenant),
+        "grupos_promo": site_groups_promo_payload(tenant),
     }

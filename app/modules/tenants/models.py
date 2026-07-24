@@ -115,6 +115,17 @@ class Tenant(BaseModel):
     site_showcase_3_cta_target: Mapped[str] = mapped_column(
         String(10), nullable=False, default="_self", server_default="_self"
     )
+    site_groups_promo_storage_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    site_groups_promo_content_type: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    site_groups_promo_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    site_groups_promo_titulo: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    site_groups_promo_subtitulo: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    site_groups_promo_texto: Mapped[str | None] = mapped_column(Text, nullable=True)
+    site_groups_promo_cta_texto: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    site_groups_promo_cta_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    site_groups_promo_cta_target: Mapped[str] = mapped_column(
+        String(10), nullable=False, default="_self", server_default="_self"
+    )
     site_atendimento_webhook_token: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     zip_code: Mapped[str | None] = mapped_column(String(8), nullable=True)

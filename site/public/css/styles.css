@@ -491,6 +491,29 @@ body:not(.page-home) .site-header--brand {
   min-height: 64px;
 }
 
+.site-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-shrink: 0;
+}
+
+.site-header--brand .site-header__locale {
+  border-left: none;
+  background: transparent;
+  min-height: auto;
+  padding: 0;
+}
+
+.site-header--brand .topbar__lang-btn.is-active {
+  border-color: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25);
+}
+
+.site-header--brand .topbar__lang-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
 .logo--brand {
   display: inline-flex;
   align-items: center;
@@ -687,6 +710,10 @@ body:not(.page-home) .site-header--brand {
     align-items: center;
     min-height: 72px;
     gap: 1.5rem;
+  }
+
+  .site-header--brand .site-header__actions {
+    justify-self: end;
   }
 
   .site-header--brand .nav-toggle {

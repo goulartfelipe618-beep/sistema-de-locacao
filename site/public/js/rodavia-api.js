@@ -84,7 +84,7 @@
       return request('GET', '/slides');
     },
     catalog: function () {
-      return request('GET', '/catalog');
+      return request('GET', '/catalog', { cache: 'default' });
     },
     slideImagemUrl: function (slideId) {
       return apiUrl('/slides/' + encodeURIComponent(slideId) + '/imagem');

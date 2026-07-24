@@ -153,38 +153,58 @@
     </fieldset>
 
     <fieldset style="border:none;padding:0;margin:0 0 24px">
-      <legend style="font-weight:700;font-size:15px;margin-bottom:12px">Transição de carregamento</legend>
-      <p class="form-help">Tela exibida ao abrir o site enquanto os dados carregam. Desativada por padrão.</p>
+      <legend style="font-weight:700;font-size:15px;margin-bottom:12px">Grupos de Carros (home)</legend>
+      <p class="form-help">
+        Seção com imagem à esquerda e textos à direita na página inicial
+        (título, subtítulo, descrição e botão).
+      </p>
       <div class="form-group">
-        <label class="form-label">
-          <input type="checkbox" name="site_transition_enabled" value="on"
-                 {% if transition.ativo %}checked{% endif %}>
-          Exibir transição de carregamento no site
-        </label>
-      </div>
-      <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
-        <div class="form-group">
-          {{ field_label('Cor de fundo da transição', true, 'site_transition_bg_color') }}
-          <input class="form-input" type="color" id="site_transition_bg_color" name="site_transition_bg_color"
-                 value="{{ transition.fundo or colors.background }}">
-        </div>
-        <div class="form-group">
-          {{ field_label('Tamanho da imagem (px)', true, 'site_transition_image_size_px') }}
-          <input class="form-input" type="number" id="site_transition_image_size_px" name="site_transition_image_size_px"
-                 min="48" max="400" step="1" value="{{ transition.tamanho_px or 120 }}">
-        </div>
-      </div>
-      <div class="form-group">
-        {{ field_label('Imagem da transição (PNG/JPG/SVG)', false, 'site_transition_image') }}
-        <input class="form-input" type="file" id="site_transition_image" name="site_transition_image"
+        {{ field_label('Imagem (PNG/JPG/WebP/SVG)', false, 'groups_promo_image') }}
+        <input class="form-input" type="file" id="groups_promo_image" name="groups_promo_image"
                accept="image/png,image/jpeg,image/webp,image/svg+xml">
-        {% if has_transition_image %}
+        {% if has_groups_promo_image %}
         <p class="form-help">Imagem atual configurada. Envie outra para substituir.</p>
         <label class="form-label" style="margin-top:8px">
-          <input type="checkbox" name="remove_transition_image" value="on">
+          <input type="checkbox" name="remove_groups_promo_image" value="on">
           Remover imagem atual
         </label>
         {% endif %}
+      </div>
+      <div class="form-group">
+        {{ field_label('Título', false, 'groups_promo_titulo') }}
+        <input class="form-input" type="text" id="groups_promo_titulo" name="groups_promo_titulo"
+               maxlength="200" value="{{ groups_promo.titulo or '' }}"
+               placeholder="Ex.: Grupos de Carros">
+      </div>
+      <div class="form-group">
+        {{ field_label('Subtítulo', false, 'groups_promo_subtitulo') }}
+        <input class="form-input" type="text" id="groups_promo_subtitulo" name="groups_promo_subtitulo"
+               maxlength="300" value="{{ groups_promo.subtitulo or '' }}"
+               placeholder="Ex.: Do compacto ao SUV: a categoria certa para cada viagem">
+      </div>
+      <div class="form-group">
+        {{ field_label('Texto', false, 'groups_promo_texto') }}
+        <textarea class="form-input" id="groups_promo_texto" name="groups_promo_texto"
+                  rows="3" maxlength="2000" placeholder="Descrição da seção">{{ groups_promo.texto or '' }}</textarea>
+      </div>
+      <div class="form-group">
+        {{ field_label('Texto do botão (CTA)', false, 'groups_promo_cta_texto') }}
+        <input class="form-input" type="text" id="groups_promo_cta_texto" name="groups_promo_cta_texto"
+               maxlength="120" value="{{ groups_promo.cta_texto or '' }}"
+               placeholder="Ex.: Explorar grupos">
+      </div>
+      <div class="form-group">
+        {{ field_label('Link do CTA', false, 'groups_promo_cta_url') }}
+        <input class="form-input" type="url" id="groups_promo_cta_url" name="groups_promo_cta_url"
+               maxlength="500" value="{{ groups_promo.cta_url or '' }}"
+               placeholder="https://… ou grupos.html">
+      </div>
+      <div class="form-group">
+        {{ field_label('Abrir link', false, 'groups_promo_cta_target') }}
+        <select class="form-input" id="groups_promo_cta_target" name="groups_promo_cta_target">
+          <option value="_self" {% if (groups_promo.cta_target or '_self') == '_self' %}selected{% endif %}>Mesma página</option>
+          <option value="_blank" {% if groups_promo.cta_target == '_blank' %}selected{% endif %}>Nova aba</option>
+        </select>
       </div>
     </fieldset>
 
@@ -193,49 +213,58 @@
       <p class="form-help">
         Três imagens exibidas abaixo dos cards de serviços na página inicial.
         Proporção recomendada: <strong>1080 × 1350 px</strong> (retrato).
+        Clique em <strong>Editar</strong> em cada item para alterar imagem, textos e CTA.
       </p>
       {% for slot in [1, 2, 3] %}
-      <div class="form-group" style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border-color,#eee)">
-        <p style="font-weight:600;margin:0 0 12px">Imagem {{ slot }}</p>
-        {{ field_label('Arquivo (PNG/JPG/WebP/SVG)', false, 'site_showcase_image_' ~ slot) }}
-        <input class="form-input" type="file" id="site_showcase_image_{{ slot }}" name="showcase_image_{{ slot }}"
-               accept="image/png,image/jpeg,image/webp,image/svg+xml">
-        {% if showcase_flags.get(slot) %}
-        <p class="form-help">Imagem {{ slot }} configurada. Envie outra para substituir.</p>
-        <label class="form-label" style="margin-top:8px">
-          <input type="checkbox" name="remove_showcase_image_{{ slot }}" value="on">
-          Remover imagem {{ slot }}
-        </label>
-        {% endif %}
-        <div class="form-group" style="margin-top:12px">
-          {{ field_label('Título', false, 'showcase_' ~ slot ~ '_titulo') }}
-          <input class="form-input" type="text" id="showcase_{{ slot }}_titulo" name="showcase_{{ slot }}_titulo"
-                 maxlength="200" value="{{ showcase_items[slot].titulo or '' }}"
-                 placeholder="Ex.: Encontre a agência mais próxima">
+      <div class="site-editor-card" data-editor-card style="margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border-color,#eee)">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px">
+          <p style="font-weight:600;margin:0">Imagem {{ slot }}</p>
+          <button type="button" class="btn btn-secondary site-editor-toggle" data-editor-toggle
+                  aria-expanded="false" aria-controls="showcase-editor-{{ slot }}">
+            Editar
+          </button>
         </div>
-        <div class="form-group">
-          {{ field_label('Descrição', false, 'showcase_' ~ slot ~ '_descricao') }}
-          <textarea class="form-input" id="showcase_{{ slot }}_descricao" name="showcase_{{ slot }}_descricao"
-                    rows="2" maxlength="2000" placeholder="Texto curto abaixo da imagem">{{ showcase_items[slot].descricao or '' }}</textarea>
-        </div>
-        <div class="form-group">
-          {{ field_label('Texto do botão (CTA)', false, 'showcase_' ~ slot ~ '_cta_texto') }}
-          <input class="form-input" type="text" id="showcase_{{ slot }}_cta_texto" name="showcase_{{ slot }}_cta_texto"
-                 maxlength="120" value="{{ showcase_items[slot].cta_texto or '' }}"
-                 placeholder="Ex.: Saiba mais">
-        </div>
-        <div class="form-group">
-          {{ field_label('Link do CTA', false, 'showcase_' ~ slot ~ '_cta_url') }}
-          <input class="form-input" type="url" id="showcase_{{ slot }}_cta_url" name="showcase_{{ slot }}_cta_url"
-                 maxlength="500" value="{{ showcase_items[slot].cta_url or '' }}"
-                 placeholder="https://… ou agencias.html">
-        </div>
-        <div class="form-group">
-          {{ field_label('Abrir link', false, 'showcase_' ~ slot ~ '_cta_target') }}
-          <select class="form-input" id="showcase_{{ slot }}_cta_target" name="showcase_{{ slot }}_cta_target">
-            <option value="_self" {% if (showcase_items[slot].cta_target or '_self') == '_self' %}selected{% endif %}>Mesma página</option>
-            <option value="_blank" {% if showcase_items[slot].cta_target == '_blank' %}selected{% endif %}>Nova aba</option>
-          </select>
+        <div id="showcase-editor-{{ slot }}" class="site-editor-panel" data-editor-panel hidden>
+          {{ field_label('Arquivo (PNG/JPG/WebP/SVG)', false, 'site_showcase_image_' ~ slot) }}
+          <input class="form-input" type="file" id="site_showcase_image_{{ slot }}" name="showcase_image_{{ slot }}"
+                 accept="image/png,image/jpeg,image/webp,image/svg+xml">
+          {% if showcase_flags.get(slot) %}
+          <p class="form-help">Imagem {{ slot }} configurada. Envie outra para substituir.</p>
+          <label class="form-label" style="margin-top:8px">
+            <input type="checkbox" name="remove_showcase_image_{{ slot }}" value="on">
+            Remover imagem {{ slot }}
+          </label>
+          {% endif %}
+          <div class="form-group" style="margin-top:12px">
+            {{ field_label('Título', false, 'showcase_' ~ slot ~ '_titulo') }}
+            <input class="form-input" type="text" id="showcase_{{ slot }}_titulo" name="showcase_{{ slot }}_titulo"
+                   maxlength="200" value="{{ showcase_items[slot].titulo or '' }}"
+                   placeholder="Ex.: Encontre a agência mais próxima">
+          </div>
+          <div class="form-group">
+            {{ field_label('Descrição', false, 'showcase_' ~ slot ~ '_descricao') }}
+            <textarea class="form-input" id="showcase_{{ slot }}_descricao" name="showcase_{{ slot }}_descricao"
+                      rows="2" maxlength="2000" placeholder="Texto curto abaixo da imagem">{{ showcase_items[slot].descricao or '' }}</textarea>
+          </div>
+          <div class="form-group">
+            {{ field_label('Texto do botão (CTA)', false, 'showcase_' ~ slot ~ '_cta_texto') }}
+            <input class="form-input" type="text" id="showcase_{{ slot }}_cta_texto" name="showcase_{{ slot }}_cta_texto"
+                   maxlength="120" value="{{ showcase_items[slot].cta_texto or '' }}"
+                   placeholder="Ex.: Saiba mais">
+          </div>
+          <div class="form-group">
+            {{ field_label('Link do CTA', false, 'showcase_' ~ slot ~ '_cta_url') }}
+            <input class="form-input" type="url" id="showcase_{{ slot }}_cta_url" name="showcase_{{ slot }}_cta_url"
+                   maxlength="500" value="{{ showcase_items[slot].cta_url or '' }}"
+                   placeholder="https://… ou agencias.html">
+          </div>
+          <div class="form-group">
+            {{ field_label('Abrir link', false, 'showcase_' ~ slot ~ '_cta_target') }}
+            <select class="form-input" id="showcase_{{ slot }}_cta_target" name="showcase_{{ slot }}_cta_target">
+              <option value="_self" {% if (showcase_items[slot].cta_target or '_self') == '_self' %}selected{% endif %}>Mesma página</option>
+              <option value="_blank" {% if showcase_items[slot].cta_target == '_blank' %}selected{% endif %}>Nova aba</option>
+            </select>
+          </div>
         </div>
       </div>
       {% endfor %}
@@ -333,6 +362,21 @@
     if (el) el.addEventListener('input', paint);
   });
   paint();
+})();
+
+(function () {
+  document.querySelectorAll('[data-editor-toggle]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var card = btn.closest('[data-editor-card]');
+      if (!card) return;
+      var panel = card.querySelector('[data-editor-panel]');
+      if (!panel) return;
+      var open = panel.hidden;
+      panel.hidden = !open;
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      btn.textContent = open ? 'Fechar' : 'Editar';
+    });
+  });
 })();
 </script>
 {% endblock %}

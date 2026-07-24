@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import uuid
 from datetime import datetime
 from decimal import Decimal
@@ -40,10 +41,7 @@ def _format_cnpj(raw: str | None) -> str | None:
     return f"{raw[:2]}.{raw[2:5]}.{raw[5:8]}/{raw[8:12]}-{raw[12:]}"
 
 
-async def get_empresa_public(session: AsyncSession, tenant_id: uuid.UUID) -> dict:
-    tenant = await session.get(Tenant, tenant_id)
-    if tenant is None:
-        raise NotFoundError("Empresa não encontrada.")
+def _empresa_dict_from_tenant(tenant: Tenant) -> dict:
     return {
         "slug": tenant.slug,
         "razao_social": tenant.legal_name,
@@ -62,6 +60,26 @@ async def get_empresa_public(session: AsyncSession, tenant_id: uuid.UUID) -> dic
         "rodape_documentos": tenant.document_footer_text,
         "tema": site_theme_payload(tenant),
     }
+
+
+async def get_empresa_public(session: AsyncSession, tenant_id: uuid.UUID) -> dict:
+    tenant = await session.get(Tenant, tenant_id)
+    if tenant is None:
+        raise NotFoundError("Empresa não encontrada.")
+    return _empresa_dict_from_tenant(tenant)
+
+
+async def get_catalog_public(session: AsyncSession, tenant_id: uuid.UUID) -> dict:
+    """Empresa + filiais + slides em uma única sessão (menos round-trips para o site)."""
+    tenant = await session.get(Tenant, tenant_id)
+    if tenant is None:
+        raise NotFoundError("Empresa não encontrada.")
+    empresa = _empresa_dict_from_tenant(tenant)
+    filiais, slides = await asyncio.gather(
+        list_filiais_public(session, tenant_id),
+        list_slides_public(session, tenant_id),
+    )
+    return {"empresa": empresa, "filiais": filiais, "slides": slides}
 
 
 async def list_filiais_public(session: AsyncSession, tenant_id: uuid.UUID) -> list[dict]:

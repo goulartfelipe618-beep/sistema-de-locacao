@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import asyncio
+from contextlib import asynccontextmanager
 from typing import Any
 
 import httpx
@@ -12,12 +12,31 @@ from fastapi.responses import JSONResponse
 
 from config import settings
 
+_erp_http: httpx.AsyncClient | None = None
+
+
+@asynccontextmanager
+async def _lifespan(_app: FastAPI):
+    global _erp_http
+    _erp_http = httpx.AsyncClient(
+        timeout=settings.bff_request_timeout_seconds,
+        limits=httpx.Limits(max_keepalive_connections=10, max_connections=20),
+    )
+    try:
+        yield
+    finally:
+        if _erp_http is not None:
+            await _erp_http.aclose()
+        _erp_http = None
+
+
 app = FastAPI(
     title="Site BFF",
     description="Backend-for-Frontend entre o site institucional e o ERP (white-label).",
     version="2.0.0",
     docs_url="/bff/docs" if "localhost" in settings.site_public_url else None,
     openapi_url="/bff/openapi.json" if "localhost" in settings.site_public_url else None,
+    lifespan=_lifespan,
 )
 
 app.add_middleware(
@@ -49,8 +68,18 @@ async def _erp_request(
     json_body: dict[str, Any] | None = None,
 ) -> Any:
     url = settings.erp_api_base + path
+    client = _erp_http
     try:
-        async with httpx.AsyncClient(timeout=settings.bff_request_timeout_seconds) as client:
+        if client is None:
+            async with httpx.AsyncClient(timeout=settings.bff_request_timeout_seconds) as tmp:
+                response = await tmp.request(
+                    method,
+                    url,
+                    params=params,
+                    json=json_body,
+                    headers=_erp_headers(scope),
+                )
+        else:
             response = await client.request(
                 method,
                 url,
@@ -138,6 +167,13 @@ def _normalize_tema_payload(tema: Any) -> Any:
                 normalized_imagens.append(img_row)
             row["imagens"] = normalized_imagens
         normalized["vitrine"] = row
+    grupos_promo = normalized.get("grupos_promo")
+    if isinstance(grupos_promo, dict):
+        gp = dict(grupos_promo)
+        url = gp.get("imagem_url")
+        if url == "/api/v1/public/grupos-promo/imagem":
+            gp["imagem_url"] = "/bff/grupos-promo/imagem"
+        normalized["grupos_promo"] = gp
     return normalized
 
 
@@ -241,25 +277,46 @@ def _normalize_slides_payload(payload: Any) -> list[dict[str, Any]]:
 @app.get("/bff/catalog")
 async def bff_catalog() -> JSONResponse:
     """Empresa + filiais + slides em uma única ida ao ERP (menos latência no boot do site)."""
-    empresa, filiais, slides_raw = await asyncio.gather(
-        _erp_request("GET", "/api/v1/public/empresa"),
-        _erp_request("GET", "/api/v1/public/filiais"),
-        _erp_request("GET", "/api/v1/public/slides"),
-    )
+    catalog_raw = await _erp_request("GET", "/api/v1/public/catalog")
+    if not isinstance(catalog_raw, dict):
+        raise HTTPException(status_code=502, detail="Resposta inválida do ERP.")
     payload = {
-        "empresa": _normalize_empresa_payload(empresa),
-        "filiais": filiais,
-        "slides": _normalize_slides_payload(slides_raw),
+        "empresa": _normalize_empresa_payload(catalog_raw.get("empresa")),
+        "filiais": catalog_raw.get("filiais") if isinstance(catalog_raw.get("filiais"), list) else [],
+        "slides": _normalize_slides_payload(catalog_raw.get("slides")),
     }
     return JSONResponse(
         content=payload,
-        headers={"Cache-Control": "public, max-age=60, stale-while-revalidate=120"},
+        headers={"Cache-Control": "public, max-age=120, stale-while-revalidate=300"},
     )
 
 
 @app.get("/bff/transicao/imagem")
 async def bff_transicao_imagem() -> Response:
     url = f"{settings.erp_api_base}/api/v1/public/transicao/imagem"
+    headers = _erp_headers("catalogo:read")
+    headers["Accept"] = "*/*"
+    try:
+        async with httpx.AsyncClient(timeout=settings.bff_request_timeout_seconds) as client:
+            response = await client.get(url, headers=headers)
+    except httpx.TimeoutException as exc:
+        raise HTTPException(status_code=504, detail="ERP demorou para responder.") from exc
+    except httpx.RequestError as exc:
+        raise HTTPException(status_code=502, detail="Não foi possível contactar o ERP.") from exc
+
+    if response.status_code >= 400:
+        raise HTTPException(status_code=response.status_code, detail="Imagem indisponível")
+
+    return Response(
+        content=response.content,
+        media_type=response.headers.get("content-type", "image/png"),
+        headers={"Cache-Control": "public, max-age=3600, stale-while-revalidate=86400"},
+    )
+
+
+@app.get("/bff/grupos-promo/imagem")
+async def bff_grupos_promo_imagem() -> Response:
+    url = f"{settings.erp_api_base}/api/v1/public/grupos-promo/imagem"
     headers = _erp_headers("catalogo:read")
     headers["Accept"] = "*/*"
     try:

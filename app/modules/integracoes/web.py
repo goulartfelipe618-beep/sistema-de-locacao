@@ -43,6 +43,10 @@ from app.modules.integracoes.service import (
 from app.modules.integracoes.site_slides import SiteSlideService, resolve_slide_image_url
 from app.modules.tenants.schemas import SiteThemeUpdate
 from app.modules.tenants.service import FilialService, TenantService
+from app.modules.tenants.site_groups_promo import (
+    site_groups_promo_payload,
+    tenant_has_groups_promo_image,
+)
 from app.modules.tenants.site_showcase import site_showcase_payload, tenant_showcase_flags
 from app.modules.tenants.site_theme import resolved_site_colors, site_theme_payload
 from app.modules.tenants.site_transition import site_transition_payload, tenant_has_transition_image
@@ -492,6 +496,7 @@ async def site_cores_list(
     transition = site_transition_payload(tenant)
     showcase_flags = tenant_showcase_flags(tenant)
     showcase_items = {row["slot"]: row for row in site_showcase_payload(tenant)["imagens"]}
+    groups_promo = site_groups_promo_payload(tenant)
     return render(
         request,
         "integracoes/site_cores.html",
@@ -504,6 +509,8 @@ async def site_cores_list(
             "has_transition_image": tenant_has_transition_image(tenant),
             "showcase_flags": showcase_flags,
             "showcase_items": showcase_items,
+            "groups_promo": groups_promo,
+            "has_groups_promo_image": tenant_has_groups_promo_image(tenant),
             "can_edit": can_edit,
         },
     )
@@ -516,16 +523,14 @@ async def site_cores_salvar(
     current_user: Annotated[
         AuthenticatedUser, Depends(require_web_permission("integracoes.site.editar"))
     ],
-    transition_image: UploadFile | None = File(None),
     showcase_image_1: UploadFile | None = File(None),
     showcase_image_2: UploadFile | None = File(None),
     showcase_image_3: UploadFile | None = File(None),
+    groups_promo_image: UploadFile | None = File(None),
 ) -> HTMLResponse:
     svc = TenantService(session)
     form = await request.form()
     try:
-        size_raw = (form.get("site_transition_image_size_px") or "").strip()
-        size_px = int(size_raw) if size_raw.isdigit() else None
         showcase_fields: dict[str, str | None] = {}
         for slot in (1, 2, 3):
             showcase_fields[f"showcase_{slot}_titulo"] = (
@@ -562,25 +567,29 @@ async def site_cores_salvar(
             site_text_muted_color=(form.get("site_text_muted_color") or "").strip() or None,
             site_footer_bg_color=(form.get("site_footer_bg_color") or "").strip() or None,
             site_footer_text_color=(form.get("site_footer_text_color") or "").strip() or None,
-            site_transition_enabled=form.get("site_transition_enabled") == "on",
-            site_transition_bg_color=(form.get("site_transition_bg_color") or "").strip() or None,
-            site_transition_image_size_px=size_px,
-            remove_transition_image=form.get("remove_transition_image") == "on",
+            site_transition_enabled=False,
             remove_showcase_image_1=form.get("remove_showcase_image_1") == "on",
             remove_showcase_image_2=form.get("remove_showcase_image_2") == "on",
             remove_showcase_image_3=form.get("remove_showcase_image_3") == "on",
+            groups_promo_titulo=(form.get("groups_promo_titulo") or "").strip() or None,
+            groups_promo_subtitulo=(form.get("groups_promo_subtitulo") or "").strip() or None,
+            groups_promo_texto=(form.get("groups_promo_texto") or "").strip() or None,
+            groups_promo_cta_texto=(form.get("groups_promo_cta_texto") or "").strip() or None,
+            groups_promo_cta_url=(form.get("groups_promo_cta_url") or "").strip() or None,
+            groups_promo_cta_target=(form.get("groups_promo_cta_target") or "_self").strip() or "_self",
+            remove_groups_promo_image=form.get("remove_groups_promo_image") == "on",
             reset_defaults=form.get("reset_defaults") == "on",
             **showcase_fields,
         )
         await svc.update_site_theme(current_user.tenant_id, data)
-        if transition_image and transition_image.filename:
-            image_bytes = await transition_image.read()
+        if groups_promo_image and groups_promo_image.filename:
+            image_bytes = await groups_promo_image.read()
             if image_bytes:
-                await svc.upload_site_transition_image(
+                await svc.upload_site_groups_promo_image(
                     current_user.tenant_id,
                     image_bytes,
-                    transition_image.filename,
-                    transition_image.content_type or "image/png",
+                    groups_promo_image.filename,
+                    groups_promo_image.content_type or "image/png",
                 )
         for slot, upload in (
             (1, showcase_image_1),
@@ -610,6 +619,7 @@ async def site_cores_salvar(
         transition = site_transition_payload(tenant)
         showcase_flags = tenant_showcase_flags(tenant)
         showcase_items = {row["slot"]: row for row in site_showcase_payload(tenant)["imagens"]}
+        groups_promo = site_groups_promo_payload(tenant)
         message = exc.message if isinstance(exc, AppError) else str(exc.errors()[0].get("msg", exc))
         return render(
             request,
@@ -623,6 +633,8 @@ async def site_cores_salvar(
                 "has_transition_image": tenant_has_transition_image(tenant),
                 "showcase_flags": showcase_flags,
                 "showcase_items": showcase_items,
+                "groups_promo": groups_promo,
+                "has_groups_promo_image": tenant_has_groups_promo_image(tenant),
                 "can_edit": True,
                 "error": message,
             },

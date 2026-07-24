@@ -22,6 +22,7 @@ from app.modules.integracoes.public_schemas import (
 from app.modules.integracoes.public_site_service import (
     cotacao_site,
     criar_reserva_site,
+    get_catalog_public,
     get_empresa_public,
     list_filiais_public,
     list_grupos_public,
@@ -31,6 +32,7 @@ from app.modules.integracoes.public_site_service import (
 from app.modules.integracoes.site_atendimento import SiteAtendimentoService, build_atendimento_webhook_url
 from app.modules.integracoes.outbound import notify_outbound_event
 from app.modules.integracoes.site_slides import SiteSlideService, decode_slide_image_bytes
+from app.modules.tenants.site_groups_promo import resolve_groups_promo_image_bytes
 from app.modules.tenants.site_showcase import resolve_showcase_image_bytes
 from app.modules.tenants.site_transition import resolve_transition_image_bytes
 from app.modules.locacoes.service import ContratoService
@@ -48,6 +50,15 @@ async def public_ping(
 ) -> dict:
     """Health check para o site (indicador “API conectada”)."""
     return {"ok": True, "tenant_id": str(key.tenant_id), "api_version": __version__}
+
+
+@public_router.get("/catalog")
+async def public_catalog(
+    session: PublicSessionDep,
+    key: Annotated[IntApiKey, Depends(require_api_key_scope("catalogo:read"))],
+) -> dict:
+    """Empresa, filiais e slides em uma única resposta (boot rápido do site)."""
+    return await get_catalog_public(session, key.tenant_id)
 
 
 @public_router.get("/empresa")
@@ -111,6 +122,28 @@ async def public_transicao_imagem(
     resolved = resolve_transition_image_bytes(tenant)
     if resolved is None:
         raise NotFoundError("Imagem da transição indisponível.")
+    data, content_type = resolved
+    return Response(
+        content=data,
+        media_type=content_type,
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
+
+
+@public_router.get("/grupos-promo/imagem")
+async def public_grupos_promo_imagem(
+    session: PublicSessionDep,
+    key: Annotated[IntApiKey, Depends(require_api_key_scope("catalogo:read"))],
+) -> Response:
+    """Imagem da seção Grupos de Carros na home (configurável no ERP)."""
+    from app.core.exceptions import NotFoundError
+
+    tenant = await session.get(Tenant, key.tenant_id)
+    if tenant is None:
+        raise NotFoundError("Imagem indisponível.")
+    resolved = resolve_groups_promo_image_bytes(tenant)
+    if resolved is None:
+        raise NotFoundError("Imagem indisponível.")
     data, content_type = resolved
     return Response(
         content=data,

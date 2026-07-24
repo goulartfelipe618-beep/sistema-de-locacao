@@ -126,6 +126,13 @@ class SiteThemeUpdate(BaseModel):
     showcase_3_cta_texto: str | None = Field(default=None, max_length=120)
     showcase_3_cta_url: str | None = Field(default=None, max_length=500)
     showcase_3_cta_target: str | None = Field(default="_self", max_length=10)
+    groups_promo_titulo: str | None = Field(default=None, max_length=200)
+    groups_promo_subtitulo: str | None = Field(default=None, max_length=300)
+    groups_promo_texto: str | None = Field(default=None, max_length=2000)
+    groups_promo_cta_texto: str | None = Field(default=None, max_length=120)
+    groups_promo_cta_url: str | None = Field(default=None, max_length=500)
+    groups_promo_cta_target: str | None = Field(default="_self", max_length=10)
+    remove_groups_promo_image: bool = False
     reset_defaults: bool = False
 
     @field_validator(
@@ -157,6 +164,7 @@ class SiteThemeUpdate(BaseModel):
         "showcase_1_cta_target",
         "showcase_2_cta_target",
         "showcase_3_cta_target",
+        "groups_promo_cta_target",
     )
     @classmethod
     def _validate_showcase_cta_target(cls, value: str | None) -> str:

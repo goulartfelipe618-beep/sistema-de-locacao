@@ -1,10 +1,9 @@
 /**
- * Shared site shell for static pages (topbar, header, footer, cookie banner, chat).
+ * Shared site shell for static pages (header, footer, cookie banner, chat).
  * Exposes window.SiteChrome.init()
  *
  * Body attributes:
  *   data-site-chrome="auto"  — inject chrome when absent
- *   data-topbar="rental|subscription|app"
  *   data-nav="groups|agencies|about|loyalty|faq" (omit for no active nav)
  */
 (function (global) {
@@ -12,12 +11,6 @@
 
   var COOKIE_CONSENT_KEY = 'rodavia_cookie_consent';
   var SITE_VERSION = 'v1.1.0';
-
-  var TOPBAR_TABS = {
-    rental: { href: 'index.html', i18n: 'topbar.rental', label: 'Aluguel de carros' },
-    subscription: { href: 'assinatura.html', i18n: 'topbar.subscription', label: 'Carro por assinatura' },
-    app: { href: 'app-motoristas.html', i18n: 'topbar.app', label: 'Carro para app' },
-  };
 
   var NAV_LINKS = {
     groups: { href: 'grupos.html', i18n: 'nav.groups', label: 'Grupos de carros' },
@@ -41,7 +34,7 @@
 
   function buildLangButtonsHtml() {
     return (
-      '<div class="topbar__locale topbar__locale--flags" id="locale-selector" role="group" data-i18n-aria="locale.choose" aria-label="Escolher idioma">' +
+      '<div class="topbar__locale topbar__locale--flags site-header__locale" id="locale-selector" role="group" data-i18n-aria="locale.choose" aria-label="Escolher idioma">' +
       '<button type="button" class="topbar__lang-btn is-active" data-lang-option="pt-BR" aria-pressed="true" aria-label="Português (Brasil)" title="Português (Brasil)">' +
       '<img src="assets/flags/br.svg" alt="" class="topbar__flag-img" width="28" height="20" />' +
       '</button>' +
@@ -51,35 +44,6 @@
       '<button type="button" class="topbar__lang-btn" data-lang-option="es-ES" aria-pressed="false" aria-label="Español (ESP)" title="Español (ESP)">' +
       '<img src="assets/flags/es.svg" alt="" class="topbar__flag-img" width="28" height="20" />' +
       '</button>' +
-      '</div>'
-    );
-  }
-
-  function buildTopbarHtml(activeTopbar) {
-    var tabs = Object.keys(TOPBAR_TABS)
-      .map(function (key) {
-        var tab = TOPBAR_TABS[key];
-        var active = key === activeTopbar ? ' is-active' : '';
-        return (
-          '<a href="' +
-          tab.href +
-          '" class="topbar__tab' +
-          active +
-          '" data-i18n="' +
-          tab.i18n +
-          '">' +
-          tab.label +
-          '</a>'
-        );
-      })
-      .join('');
-
-    return (
-      '<div class="topbar">' +
-      '<nav class="topbar__tabs" data-i18n-aria="topbar.business" aria-label="Negócios Rodavia">' +
-      tabs +
-      '</nav>' +
-      buildLangButtonsHtml() +
       '</div>'
     );
   }
@@ -109,23 +73,25 @@
       '<a href="index.html" class="logo logo--brand" aria-label="Página inicial">' +
       '<span class="logo__text" data-erp="nome_exibicao"></span>' +
       '</a>' +
-      '<button type="button" class="nav-toggle nav-toggle--light" id="nav-toggle" aria-expanded="false" aria-controls="primary-nav" aria-label="Abrir menu" data-i18n-aria="nav.toggle">' +
-      '<span></span><span></span><span></span>' +
-      '</button>' +
       '<nav class="primary-nav primary-nav--brand" id="primary-nav" data-i18n-aria="nav.main" aria-label="Menu principal">' +
       '<ul>' +
       navItems +
       '</ul>' +
       '</nav>' +
+      '<div class="site-header__actions">' +
+      buildLangButtonsHtml() +
+      '<button type="button" class="nav-toggle nav-toggle--light" id="nav-toggle" aria-expanded="false" aria-controls="primary-nav" aria-label="Abrir menu" data-i18n-aria="nav.toggle">' +
+      '<span></span><span></span><span></span>' +
+      '</button>' +
+      '</div>' +
       '</div>' +
       '</header>'
     );
   }
 
-  function buildShellHtml(activeTopbar, activeNav) {
+  function buildShellHtml(activeNav) {
     return (
       '<a href="#main-content" class="skip-link" data-i18n="skip.main">Ir para conteúdo principal</a>' +
-      buildTopbarHtml(activeTopbar) +
       buildHeaderHtml(activeNav)
     );
   }
@@ -242,9 +208,6 @@
   function injectShell() {
     if ($('#site-chrome-shell')) return;
 
-    var activeTopbar = readBodyAttr('data-topbar') || 'rental';
-    if (!TOPBAR_TABS[activeTopbar]) activeTopbar = 'rental';
-
     var activeNav = readBodyAttr('data-nav');
     if (activeNav === 'null' || activeNav === '') activeNav = null;
     else if (activeNav && !NAV_LINKS[activeNav]) activeNav = null;
@@ -254,7 +217,7 @@
 
     var wrap = document.createElement('div');
     wrap.id = 'site-chrome-shell';
-    wrap.innerHTML = buildShellHtml(activeTopbar, activeNav);
+    wrap.innerHTML = buildShellHtml(activeNav);
     anchor.parentNode.insertBefore(wrap, anchor);
   }
 

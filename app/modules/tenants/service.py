@@ -23,6 +23,7 @@ from app.modules.tenants.models import Filial, Tenant
 from app.modules.tenants.repository import FilialRepository, TenantRepository
 from app.modules.tenants.schemas import FilialCreate, FilialUpdate, SiteThemeUpdate, TenantSystemUpdate, TenantUpdate
 from app.modules.tenants.site_theme import SITE_THEME_COLOR_FIELDS, resolved_site_colors, site_theme_payload
+from app.modules.tenants.site_groups_promo import GROUPS_PROMO_META_SUFFIXES
 from app.modules.tenants.site_showcase import SHOWCASE_META_SUFFIXES, SHOWCASE_SLOTS
 from app.modules.tenants.setup import setup_missing_fields
 from app.shared.enums import AuditAction
@@ -157,13 +158,18 @@ class TenantService:
                         setattr(tenant, f"site_showcase_{slot}_{suffix}", "_self")
                     else:
                         setattr(tenant, f"site_showcase_{slot}_{suffix}", None)
+            tenant.site_groups_promo_storage_key = None
+            tenant.site_groups_promo_content_type = None
+            tenant.site_groups_promo_url = None
+            for suffix in GROUPS_PROMO_META_SUFFIXES:
+                if suffix == "cta_target":
+                    setattr(tenant, f"site_groups_promo_{suffix}", "_self")
+                else:
+                    setattr(tenant, f"site_groups_promo_{suffix}", None)
         else:
             for field in SITE_THEME_COLOR_FIELDS:
                 setattr(tenant, field, getattr(data, field))
-            tenant.site_transition_enabled = data.site_transition_enabled
-            tenant.site_transition_bg_color = data.site_transition_bg_color
-            if data.site_transition_image_size_px is not None:
-                tenant.site_transition_image_size_px = data.site_transition_image_size_px
+            tenant.site_transition_enabled = False
             if data.remove_transition_image:
                 tenant.site_transition_image_storage_key = None
                 tenant.site_transition_image_content_type = None
@@ -183,6 +189,20 @@ class TenantService:
                         setattr(tenant, model_field, raw or "_self")
                     else:
                         setattr(tenant, model_field, raw)
+            if data.remove_groups_promo_image:
+                tenant.site_groups_promo_storage_key = None
+                tenant.site_groups_promo_content_type = None
+                tenant.site_groups_promo_url = None
+            for suffix in GROUPS_PROMO_META_SUFFIXES:
+                schema_field = f"groups_promo_{suffix}"
+                model_field = f"site_groups_promo_{suffix}"
+                raw = getattr(data, schema_field, None)
+                if isinstance(raw, str):
+                    raw = raw.strip() or None
+                if suffix == "cta_target":
+                    setattr(tenant, model_field, raw or "_self")
+                else:
+                    setattr(tenant, model_field, raw)
         await audit_service.record(
             AuditAction.UPDATE,
             entity="tenant",
@@ -269,6 +289,45 @@ class TenantService:
             entity="tenant",
             entity_id=tenant.id,
             description=f"Imagem {slot} da vitrine da home atualizada",
+        )
+        return tenant
+
+    async def upload_site_groups_promo_image(
+        self,
+        tenant_id: uuid.UUID,
+        file_bytes: bytes,
+        filename: str,
+        content_type: str,
+    ) -> Tenant:
+        if not file_bytes:
+            raise ValidationError("Arquivo de imagem vazio.")
+        tenant = await self.get_tenant(tenant_id)
+        safe_type = content_type or "image/png"
+        uploaded = False
+        if storage_service.is_configured():
+            try:
+                key = storage_service.build_key(
+                    tenant_id, "tenants", "site-groups-promo", filename or "groups-promo.png"
+                )
+                storage_service.upload_bytes(key, file_bytes, safe_type)
+                tenant.site_groups_promo_storage_key = key
+                tenant.site_groups_promo_content_type = safe_type
+                tenant.site_groups_promo_url = None
+                uploaded = True
+            except Exception as exc:
+                logger.warning(
+                    "Falha ao enviar imagem da seção Grupos ao R2, usando inline: %s", exc
+                )
+        if not uploaded:
+            encoded = base64.b64encode(file_bytes).decode("ascii")
+            tenant.site_groups_promo_url = f"data:{safe_type};base64,{encoded}"
+            tenant.site_groups_promo_storage_key = None
+            tenant.site_groups_promo_content_type = safe_type
+        await audit_service.record(
+            AuditAction.UPDATE,
+            entity="tenant",
+            entity_id=tenant.id,
+            description="Imagem da seção Grupos de Carros na home atualizada",
         )
         return tenant
 

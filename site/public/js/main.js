@@ -46,10 +46,6 @@ function i18n(key, vars) {
   return window.SiteI18n?.t(key, vars) ?? key;
 }
 
-function initTopBarCountry() {
-  /* Seletor de idioma em site-i18n.js */
-}
-
 function initMobileNav() {
   const toggle = $('#nav-toggle');
   const nav = $('#primary-nav');
@@ -729,7 +725,6 @@ function initReserveModal() {
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     initSkipLink();
-    initTopBarCountry();
     initMobileNav();
     initCarousels();
     initGlobalWidgets();
