@@ -67,17 +67,38 @@
     }
   }
 
+  function ensureTransitionHost() {
+    return document.body || document.documentElement;
+  }
+
+  function ensureTransitionOverlay() {
+    var overlay = document.getElementById('site-page-transition');
+    if (overlay) return overlay;
+    var host = ensureTransitionHost();
+    if (!host) return null;
+    overlay = document.createElement('div');
+    overlay.id = 'site-page-transition';
+    overlay.className = 'site-page-transition';
+    overlay.innerHTML =
+      '<img class="site-page-transition__logo" id="site-page-transition-logo" alt="" decoding="async" />';
+    host.appendChild(overlay);
+    return overlay;
+  }
+
   function showCachedTransition(transicao) {
     if (!transicao || !transicao.ativo) return;
-    var overlay = document.getElementById('site-page-transition');
-    if (!overlay) {
-      overlay = document.createElement('div');
-      overlay.id = 'site-page-transition';
-      overlay.className = 'site-page-transition';
-      overlay.innerHTML =
-        '<img class="site-page-transition__logo" id="site-page-transition-logo" alt="" decoding="async" />';
-      document.body.appendChild(overlay);
+    if (!ensureTransitionHost()) {
+      document.addEventListener(
+        'DOMContentLoaded',
+        function () {
+          showCachedTransition(transicao);
+        },
+        { once: true }
+      );
+      return;
     }
+    var overlay = ensureTransitionOverlay();
+    if (!overlay) return;
     overlay.hidden = false;
     overlay.style.backgroundColor = transicao.fundo || 'var(--color-bg)';
     var img = document.getElementById('site-page-transition-logo');
