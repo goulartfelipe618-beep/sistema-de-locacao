@@ -10,6 +10,7 @@ import {
   fleetGroupLetter,
   parseSearchFromUrl,
   searchParamsToQuery,
+  resolveDefaultFilialId,
 } from './fleet-utils.js';
 
 const bind = () => {
@@ -419,7 +420,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       /* ignore */
     }
   }
+  if (!params?.filial_id) {
+    const filial_id = resolveDefaultFilialId($('#pickup-location'));
+    if (filial_id) {
+      params = { ...(params || {}), ...readSearchForm(), filial_id };
+    }
+  }
   if (params?.filial_id) {
+    if (!params.retirada_em || !params.devolucao_em) {
+      Object.assign(params, readSearchForm());
+    }
     lastSearch = params;
     fillSearchFormFromParams(params);
     loadGroups(params);

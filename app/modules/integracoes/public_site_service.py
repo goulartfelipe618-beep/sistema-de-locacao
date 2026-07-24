@@ -131,6 +131,7 @@ async def list_grupos_public(
         out.append(
             {
                 "id": str(cat.id),
+                "categoria_id": str(cat.id),
                 "nome": cat.nome,
                 "descricao": cat.descricao,
                 "imagem_url": imagem_url,
@@ -138,6 +139,7 @@ async def list_grupos_public(
                 "capacidade_porta_malas": cat.capacidade_porta_malas,
                 "transmissao_tipica": cat.transmissao_tipica,
                 "grupo_tarifario": cat.grupo_tarifario,
+                "segmento": cat.grupo_tarifario,
                 "ordem": cat.ordem,
                 "veiculos_disponiveis": livres,
             }

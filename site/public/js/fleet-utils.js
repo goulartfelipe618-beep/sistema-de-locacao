@@ -59,12 +59,30 @@ export function fleetGroupLetter(group) {
 }
 
 export function fleetGroupTag(group) {
-  return (
-    group.segmento ||
-    group.categoria_segmento ||
-    group.nome?.split(' - ')[0]?.toUpperCase() ||
-    'CATEGORIA'
-  );
+  if (group.segmento || group.categoria_segmento) {
+    return String(group.segmento || group.categoria_segmento).toUpperCase();
+  }
+  if (group.grupo_tarifario) {
+    return String(group.grupo_tarifario).toUpperCase();
+  }
+  const parts = group.nome?.split(' - ');
+  if (parts && parts.length > 1) {
+    return parts[parts.length - 1].trim().toUpperCase();
+  }
+  return group.nome?.toUpperCase() || 'CATEGORIA';
+}
+
+/** Seleciona a primeira filial disponível quando o usuário ainda não escolheu. */
+export function resolveDefaultFilialId(selectEl) {
+  if (!selectEl) return '';
+  const current = selectEl.value?.trim();
+  if (current) return current;
+  const first = selectEl.querySelector('option[value]:not([value=""])');
+  if (first) {
+    selectEl.value = first.value;
+    return first.value;
+  }
+  return '';
 }
 
 export function groupVeiculosByCategoria(veiculos, disponibilidade) {

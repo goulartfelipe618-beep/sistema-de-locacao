@@ -4,7 +4,8 @@ import {
   validateSearch,
   fleetGroupTitle,
   fleetGroupDescription,
-  searchParamsToQuery
+  searchParamsToQuery,
+  resolveDefaultFilialId,
 } from './fleet-utils.js';
 
 function bind() {
@@ -84,6 +85,25 @@ function resetHeroAutoplay(advance) {
   heroCarouselTimer = setInterval(advance, HERO_AUTOPLAY_MS);
 }
 
+function copyHeroSlideImage(fromSlide, toSlide) {
+  if (!fromSlide || !toSlide) return;
+  const fromImg = fromSlide.querySelector('.hero__slide-img');
+  const toImg = toSlide.querySelector('.hero__slide-img');
+  if (fromImg && toImg && fromImg.getAttribute('src')) {
+    toImg.setAttribute('src', fromImg.getAttribute('src'));
+    toImg.setAttribute('alt', fromImg.getAttribute('alt') || '');
+  }
+}
+
+function syncHeroCloneImages(track) {
+  if (!track) return;
+  const reals = $$('.hero__slide:not(.hero__slide--clone)', track);
+  const clones = $$('.hero__slide--clone', track);
+  if (reals.length <= 1 || clones.length < 2) return;
+  copyHeroSlideImage(reals[reals.length - 1], clones[0]);
+  copyHeroSlideImage(reals[0], clones[clones.length - 1]);
+}
+
 function setupInfiniteHeroTrack(track, slides) {
   if (!track || slides.length <= 1) {
     return { allSlides: slides, realCount: slides.length, startIndex: 0 };
@@ -110,6 +130,7 @@ function setupInfiniteHeroTrack(track, slides) {
   track.appendChild(firstClone);
   track.dataset.infiniteReady = '1';
   track.dataset.realCount = String(realCount);
+  syncHeroCloneImages(track);
 
   return {
     allSlides: $$('.hero__slide', track),
@@ -233,6 +254,51 @@ function initHeroCarousel() {
   prev?.addEventListener('click', () => showPrev(true));
   next?.addEventListener('click', () => showNext(true));
   resetHeroAutoplay(() => showNext(false));
+}
+
+function initStickySearch() {
+  const bridge = $('.search-bridge');
+  const heroBlock = $('.hero-block');
+  if (!bridge || !heroBlock) return;
+
+  let placeholder = $('#search-bridge-placeholder');
+  if (!placeholder) {
+    placeholder = document.createElement('div');
+    placeholder.id = 'search-bridge-placeholder';
+    placeholder.hidden = true;
+    placeholder.setAttribute('aria-hidden', 'true');
+    bridge.after(placeholder);
+  }
+
+  const update = () => {
+    const heroRect = heroBlock.getBoundingClientRect();
+    const bridgeHeight = bridge.offsetHeight;
+    const shouldStick = heroRect.bottom <= bridgeHeight + 8;
+    bridge.classList.toggle('is-sticky', shouldStick);
+    if (shouldStick) {
+      placeholder.hidden = false;
+      placeholder.style.height = `${bridgeHeight}px`;
+    } else {
+      placeholder.hidden = true;
+      placeholder.style.height = '';
+    }
+  };
+
+  window.addEventListener('scroll', update, { passive: true });
+  window.addEventListener('resize', update, { passive: true });
+  update();
+}
+
+async function tryAutoFleetSearch() {
+  const params = readSearchForm();
+  if (!params.filial_id) {
+    params.filial_id = resolveDefaultFilialId($('#pickup-location'));
+  }
+  if (!params.filial_id) return;
+  const err = validateSearch(params.retirada_em, params.devolucao_em);
+  if (err) return;
+  lastSearch = params;
+  await runFleetSearch(params);
 }
 
 function getCookieConsent() {
@@ -587,6 +653,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initCookieBanner();
     initModals();
     initSearchWidget();
+    initStickySearch();
     initFleetShowcase();
     initReserveModal();
     document.addEventListener('rodavia:slides-ready', () => {
@@ -598,6 +665,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         delete track.dataset.realCount;
       }
       initHeroCarousel();
+      if (track) syncHeroCloneImages(track);
     });
     document.addEventListener('site:langchange', () => {
       const emptyText = $('#fleet-empty .fleet-empty__text');
@@ -609,6 +677,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     await bind().boot();
     initHeroCarousel();
+    await tryAutoFleetSearch();
   } catch (err) {
     const statusEl = $('#bff-status');
     if (statusEl) {

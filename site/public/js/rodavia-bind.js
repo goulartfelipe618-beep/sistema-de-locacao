@@ -259,10 +259,26 @@
       if (!id) return;
       var cachedUrl = global.RodaviaCache.getSlideImageUrl(id, '');
       if (!cachedUrl || cachedUrl.indexOf('blob:') !== 0) return;
-      var node = document.querySelector('.hero__slide--erp[data-slide-id="' + id + '"]');
-      var img = node && node.querySelector('.hero__slide-img');
-      if (img && img.getAttribute('src') !== cachedUrl) img.setAttribute('src', cachedUrl);
+      document
+        .querySelectorAll('.hero__slide--erp[data-slide-id="' + id + '"] .hero__slide-img')
+        .forEach(function (img) {
+          img.setAttribute('src', cachedUrl);
+        });
     });
+    var track = document.querySelector('[data-hero-track]');
+    if (!track) return;
+    var reals = track.querySelectorAll('.hero__slide:not(.hero__slide--clone)');
+    var clones = track.querySelectorAll('.hero__slide--clone');
+    if (!reals.length || clones.length < 2) return;
+    function copyImg(fromSlide, toSlide) {
+      var fromImg = fromSlide && fromSlide.querySelector('.hero__slide-img');
+      var toImg = toSlide && toSlide.querySelector('.hero__slide-img');
+      if (fromImg && toImg && fromImg.getAttribute('src')) {
+        toImg.setAttribute('src', fromImg.getAttribute('src'));
+      }
+    }
+    copyImg(reals[reals.length - 1], clones[0]);
+    copyImg(reals[0], clones[clones.length - 1]);
   }
 
   function scheduleSlideImagePrefetch(slides) {
@@ -366,7 +382,12 @@
           imagem_url: g.imagem_url,
           veiculosCount: g.veiculos_disponiveis != null ? g.veiculos_disponiveis : g.disponiveis,
           passageiros: g.capacidade_passageiros != null ? g.capacidade_passageiros : g.passageiros,
-          codigo: g.codigo || g.sigla,
+          codigo: g.codigo || g.sigla || g.grupo_tarifario,
+          segmento: g.grupo_tarifario || g.segmento,
+          categoria_segmento: g.grupo_tarifario || g.categoria_segmento,
+          grupo_tarifario: g.grupo_tarifario,
+          cambio: g.transmissao_tipica || g.cambio,
+          transmissao_tipica: g.transmissao_tipica,
         };
       })
       .filter(function (g) {
@@ -462,6 +483,11 @@
         setApiStatus(true);
         setReady(true);
         global.RodaviaBind._booted = true;
+        try {
+          document.dispatchEvent(new CustomEvent('rodavia:catalog-ready'));
+        } catch (_) {
+          /* ignore */
+        }
         return { erpOk: true, catalog: catalog };
       } catch (err) {
         console.warn('[Rodavia] Falha ao carregar catálogo:', err && err.message ? err.message : err);

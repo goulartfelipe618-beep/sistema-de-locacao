@@ -348,6 +348,13 @@ a:hover {
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
 }
 
+/* Cabeçalho fixo em todas as páginas exceto a inicial */
+body:not(.page-home) .site-header--brand {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
 .site-header--brand .site-header__inner {
   width: 100%;
   max-width: 1440px;
@@ -651,14 +658,18 @@ a:hover {
   width: 100%;
   position: relative;
   height: auto;
-  min-height: 0;
+  min-height: var(--hero-min-h);
   margin: 0;
   padding: 0;
   opacity: 1;
   overflow: hidden;
   pointer-events: auto;
-  background: transparent;
+  background: #101010;
   filter: none;
+}
+
+.hero__slides--erp .hero__track {
+  min-height: var(--hero-min-h);
 }
 
 .hero__slides--erp .hero__slide--erp.is-active {
@@ -673,11 +684,12 @@ a:hover {
   position: static;
   display: block;
   width: 100%;
-  max-width: 100%;
-  height: auto;
+  max-width: none;
+  height: 100%;
+  min-height: var(--hero-min-h);
   margin: 0;
-  object-fit: contain;
-  object-position: center top;
+  object-fit: cover;
+  object-position: center center;
 }
 
 .hero__slide {
@@ -955,6 +967,30 @@ a:hover {
 .search-bridge .bff-status.is-off::before {
   content: '● ';
   color: #999;
+}
+
+.page-home .search-bridge.is-sticky {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: auto;
+  transform: none;
+  z-index: 95;
+  padding: 0.45rem clamp(0.5rem, 2.5vw, 1.25rem);
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+  pointer-events: auto;
+}
+
+.page-home .search-bridge.is-sticky .search-widget {
+  box-shadow: var(--shadow-sm);
+}
+
+#search-bridge-placeholder {
+  width: 100%;
+  flex-shrink: 0;
 }
 
 .section--after-hero {
@@ -1454,19 +1490,23 @@ a:hover {
   position: relative;
   margin: 0 auto 1rem;
   width: 100%;
-  max-width: 300px;
-  aspect-ratio: 16 / 10;
+  max-width: none;
+  height: clamp(140px, 22vw, 200px);
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-muted);
   display: flex;
-  align-items: flex-end;
+  align-items: stretch;
   justify-content: center;
 }
 
 .fleet-showcase__img {
   width: 100%;
-  height: auto;
-  max-height: 180px;
-  object-fit: contain;
-  filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.18));
+  height: 100%;
+  max-height: none;
+  object-fit: cover;
+  object-position: center center;
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.14));
 }
 
 .fleet-showcase__img--placeholder {

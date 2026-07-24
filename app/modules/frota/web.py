@@ -204,6 +204,22 @@ async def _veiculo_lookups(session: AsyncSession, tenant_id: uuid.UUID) -> dict[
 
 
 def _app_error_message(exc: AppError | ValueError) -> str:
+    try:
+        from pydantic import ValidationError as PydanticValidationError
+
+        if isinstance(exc, PydanticValidationError):
+            for err in exc.errors():
+                msg = err.get("msg", "")
+                if isinstance(msg, str) and msg.startswith("Value error, "):
+                    msg = msg[len("Value error, ") :]
+                loc = err.get("loc") or ()
+                field = loc[-1] if loc else None
+                if field == "placa" and msg:
+                    return msg
+                if msg:
+                    return msg
+    except ImportError:
+        pass
     return exc.message if isinstance(exc, AppError) else str(exc)
 
 
