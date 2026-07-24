@@ -113,6 +113,7 @@
       'cookie.prefs_text':
         'Sua escolha \u00e9 salva no navegador (localStorage). Voc\u00ea pode alter\u00e1-la limpando os dados do site.',
       'chat.open': 'Abrir atendimento',
+      'chat.fab_label': 'Reserve direto conosco',
       'chat.title': 'Atendimento Rodavia',
       'chat.subtitle': 'Online · respondemos em breve',
       'chat.prompt_name': 'Para começar, informe seu nome completo.',
@@ -293,6 +294,7 @@
       'cookie.prefs_text':
         'Your choice is saved in the browser (localStorage). You can change it by clearing site data.',
       'chat.open': 'Open support',
+      'chat.fab_label': 'Book directly with us',
       'chat.title': 'Rodavia Support',
       'chat.subtitle': 'Online · we reply shortly',
       'chat.prompt_name': 'To get started, enter your full name.',
@@ -473,6 +475,7 @@
       'cookie.prefs_text':
         'Su elecci\u00f3n se guarda en el navegador (localStorage). Puede cambiarla borrando los datos del sitio.',
       'chat.open': 'Abrir atención',
+      'chat.fab_label': 'Reserve directo con nosotros',
       'chat.title': 'Atenci\u00f3n Rodavia',
       'chat.subtitle': 'En l\u00ednea \u00b7 respondemos pronto',
       'chat.prompt_name': 'Para comenzar, indique su nombre completo.',
