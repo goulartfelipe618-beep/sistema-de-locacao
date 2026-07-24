@@ -230,6 +230,62 @@ def _veiculo_db_error_response(request: Request, exc: SQLAlchemyError) -> HTMLRe
     )
 
 
+async def _prepare_veiculo_for_template(session: AsyncSession, veiculo) -> None:
+    """Evita lazy-load síncrono no Jinja (async SQLAlchemy → MissingGreenlet)."""
+    await session.refresh(veiculo)
+    _ = (
+        veiculo.placa,
+        veiculo.marca_id,
+        veiculo.modelo_id,
+        veiculo.combustivel_id,
+        veiculo.categoria_id,
+        veiculo.filial_id,
+        veiculo.propriedade,
+        veiculo.status,
+        veiculo.publicar_site,
+        veiculo.exige_aprovacao_fornecedor,
+        veiculo.contrato_fornecedor_id,
+        veiculo.fornecedor_id,
+    )
+
+
+async def _veiculo_form_context(
+    session: AsyncSession,
+    tenant_id: uuid.UUID,
+    *,
+    veiculo_id: uuid.UUID | None = None,
+    error: str | None = None,
+    foto_notice: str | None = None,
+    title: str,
+    action: str,
+) -> dict[str, Any]:
+    lookups = await _veiculo_lookups(session, tenant_id)
+    veiculo = None
+    tem_foto_capa = False
+    extras: dict[str, Any] = {}
+    foto_count = 0
+    if veiculo_id is not None:
+        veiculo = await VeiculoService(session).get(veiculo_id)
+        await _prepare_veiculo_for_template(session, veiculo)
+        tem_foto_capa = veiculo_tem_foto_capa(veiculo)
+        extras = await _veiculo_extras(session, veiculo_id)
+        foto_count = len(extras.get("fotos").items) if extras.get("fotos") else 0
+    return {
+        "veiculo": veiculo,
+        "error": error,
+        "foto_notice": foto_notice,
+        "tem_foto_capa": tem_foto_capa,
+        "max_fotos": MAX_VEICULO_FOTOS,
+        "foto_slots": max(0, MAX_VEICULO_FOTOS - foto_count)
+        if veiculo_id is not None
+        else MAX_VEICULO_FOTOS,
+        "title": title,
+        "action": action,
+        **lookups,
+        **extras,
+    }
+
+
 async def _process_veiculo_foto_uploads(
     session: AsyncSession,
     tenant_id: uuid.UUID,
@@ -338,22 +394,15 @@ async def veiculo_new_form(
         AuthenticatedUser, Depends(require_web_permission("frota.veiculo.criar"))
     ],
 ) -> HTMLResponse:
-    lookups = await _veiculo_lookups(session, current_user.tenant_id)
-    return render(
-        request,
-        "frota/veiculo_form.html",
-        {
-            "veiculo": None,
-            "error": None,
-            "foto_notice": None,
-            "tem_foto_capa": False,
-            "max_fotos": MAX_VEICULO_FOTOS,
-            "foto_slots": MAX_VEICULO_FOTOS,
-            "title": "Novo Veículo",
-            "action": "/frota/veiculos/novo",
-            **lookups,
-        },
+    ctx = await _veiculo_form_context(
+        session,
+        current_user.tenant_id,
+        error=None,
+        foto_notice=None,
+        title="Novo Veículo",
+        action="/frota/veiculos/novo",
     )
+    return render(request, "frota/veiculo_form.html", ctx)
 
 
 @router.post("/frota/veiculos/novo", response_class=HTMLResponse)
@@ -390,18 +439,14 @@ async def veiculo_create(
     fotos: Annotated[list[UploadFile], File()] = [],
     foto_capa: Annotated[UploadFile | None, File()] = None,
 ) -> HTMLResponse:
-    lookups = await _veiculo_lookups(session, current_user.tenant_id)
-    ctx = {
-        "veiculo": None,
-        "error": None,
-        "foto_notice": None,
-        "tem_foto_capa": False,
-        "max_fotos": MAX_VEICULO_FOTOS,
-        "foto_slots": MAX_VEICULO_FOTOS,
-        "title": "Novo Veículo",
-        "action": "/frota/veiculos/novo",
-        **lookups,
-    }
+    ctx = await _veiculo_form_context(
+        session,
+        current_user.tenant_id,
+        error=None,
+        foto_notice=None,
+        title="Novo Veículo",
+        action="/frota/veiculos/novo",
+    )
     try:
         data = VeiculoCreate(
             placa=placa,
@@ -438,7 +483,14 @@ async def veiculo_create(
             ctx["foto_notice"] = "; ".join(capa_erros + foto_erros)
     except (AppError, ValueError) as exc:
         await session.rollback()
-        ctx["error"] = _app_error_message(exc)
+        ctx = await _veiculo_form_context(
+            session,
+            current_user.tenant_id,
+            error=_app_error_message(exc),
+            foto_notice=None,
+            title="Novo Veículo",
+            action="/frota/veiculos/novo",
+        )
         return render(request, "frota/veiculo_form.html", ctx, status_code=400)
     except SQLAlchemyError as exc:
         await session.rollback()
@@ -491,26 +543,16 @@ async def veiculo_edit_form(
         AuthenticatedUser, Depends(require_web_permission("frota.veiculo.editar"))
     ],
 ) -> HTMLResponse:
-    veiculo = await VeiculoService(session).get(veiculo_id)
-    lookups = await _veiculo_lookups(session, current_user.tenant_id)
-    extras = await _veiculo_extras(session, veiculo_id)
-    foto_count = len(extras.get("fotos").items) if extras.get("fotos") else 0
-    return render(
-        request,
-        "frota/veiculo_form.html",
-        {
-            "veiculo": veiculo,
-            "error": None,
-            "foto_notice": None,
-            "tem_foto_capa": veiculo_tem_foto_capa(veiculo),
-            "max_fotos": MAX_VEICULO_FOTOS,
-            "foto_slots": max(0, MAX_VEICULO_FOTOS - foto_count),
-            "title": "Editar Veículo",
-            "action": f"/frota/veiculos/{veiculo_id}/editar",
-            **lookups,
-            **extras,
-        },
+    ctx = await _veiculo_form_context(
+        session,
+        current_user.tenant_id,
+        veiculo_id=veiculo_id,
+        error=None,
+        foto_notice=None,
+        title="Editar Veículo",
+        action=f"/frota/veiculos/{veiculo_id}/editar",
     )
+    return render(request, "frota/veiculo_form.html", ctx)
 
 
 @router.post("/frota/veiculos/{veiculo_id}/editar", response_class=HTMLResponse)
@@ -550,16 +592,7 @@ async def veiculo_update(
     remover_fotos: Annotated[list[str], Form()] = [],
     remover_foto_capa: Annotated[str, Form()] = "",
 ) -> HTMLResponse:
-    lookups = await _veiculo_lookups(session, current_user.tenant_id)
     try:
-        extras = await _veiculo_extras(session, veiculo_id)
-        foto_count = len(extras.get("fotos").items) if extras.get("fotos") else 0
-        ctx_base = {
-            "max_fotos": MAX_VEICULO_FOTOS,
-            "foto_slots": max(0, MAX_VEICULO_FOTOS - foto_count),
-            **lookups,
-            **extras,
-        }
         data = VeiculoUpdate(
             placa=placa,
             renavam=renavam or None,
@@ -603,45 +636,28 @@ async def veiculo_update(
         )
         all_erros = capa_erros + foto_erros
         if all_erros:
-            veiculo = await VeiculoService(session).get(veiculo_id)
-            extras = await _veiculo_extras(session, veiculo_id)
-            foto_count = len(extras.get("fotos").items) if extras.get("fotos") else 0
-            return render(
-                request,
-                "frota/veiculo_form.html",
-                {
-                    "veiculo": veiculo,
-                    "error": None,
-                    "foto_notice": "; ".join(all_erros),
-                    "tem_foto_capa": veiculo_tem_foto_capa(veiculo),
-                    "max_fotos": MAX_VEICULO_FOTOS,
-                    "foto_slots": max(0, MAX_VEICULO_FOTOS - foto_count),
-                    "title": "Editar Veículo",
-                    "action": f"/frota/veiculos/{veiculo_id}/editar",
-                    **lookups,
-                    **extras,
-                },
-                status_code=400,
+            ctx = await _veiculo_form_context(
+                session,
+                current_user.tenant_id,
+                veiculo_id=veiculo_id,
+                error=None,
+                foto_notice="; ".join(all_erros),
+                title="Editar Veículo",
+                action=f"/frota/veiculos/{veiculo_id}/editar",
             )
+            return render(request, "frota/veiculo_form.html", ctx, status_code=400)
     except (AppError, ValueError) as exc:
         await session.rollback()
-        veiculo = await VeiculoService(session).get(veiculo_id)
-        return render(
-            request,
-            "frota/veiculo_form.html",
-            {
-                "veiculo": veiculo,
-                "error": _app_error_message(exc),
-                "foto_notice": None,
-                "tem_foto_capa": veiculo_tem_foto_capa(veiculo),
-                "max_fotos": MAX_VEICULO_FOTOS,
-                "foto_slots": max(0, MAX_VEICULO_FOTOS - foto_count),
-                "title": "Editar Veículo",
-                "action": f"/frota/veiculos/{veiculo_id}/editar",
-                **ctx_base,
-            },
-            status_code=400,
+        ctx = await _veiculo_form_context(
+            session,
+            current_user.tenant_id,
+            veiculo_id=veiculo_id,
+            error=_app_error_message(exc),
+            foto_notice=None,
+            title="Editar Veículo",
+            action=f"/frota/veiculos/{veiculo_id}/editar",
         )
+        return render(request, "frota/veiculo_form.html", ctx, status_code=400)
     except SQLAlchemyError as exc:
         await session.rollback()
         return _veiculo_db_error_response(request, exc)
