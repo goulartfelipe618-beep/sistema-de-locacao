@@ -39,6 +39,22 @@
     return document.body.getAttribute(name) || '';
   }
 
+  function buildLangButtonsHtml() {
+    return (
+      '<div class="topbar__locale topbar__locale--flags" id="locale-selector" role="group" data-i18n-aria="locale.choose" aria-label="Escolher idioma">' +
+      '<button type="button" class="topbar__lang-btn is-active" data-lang-option="pt-BR" aria-pressed="true" aria-label="Português (Brasil)" title="Português (Brasil)">' +
+      '<img src="assets/flags/br.svg" alt="" class="topbar__flag-img" width="28" height="20" />' +
+      '</button>' +
+      '<button type="button" class="topbar__lang-btn" data-lang-option="en-US" aria-pressed="false" aria-label="English (USA)" title="English (USA)">' +
+      '<img src="assets/flags/us.svg" alt="" class="topbar__flag-img" width="28" height="20" />' +
+      '</button>' +
+      '<button type="button" class="topbar__lang-btn" data-lang-option="es-ES" aria-pressed="false" aria-label="Español (ESP)" title="Español (ESP)">' +
+      '<img src="assets/flags/es.svg" alt="" class="topbar__flag-img" width="28" height="20" />' +
+      '</button>' +
+      '</div>'
+    );
+  }
+
   function buildTopbarHtml(activeTopbar) {
     var tabs = Object.keys(TOPBAR_TABS)
       .map(function (key) {
@@ -63,18 +79,7 @@
       '<nav class="topbar__tabs" data-i18n-aria="topbar.business" aria-label="Negócios Rodavia">' +
       tabs +
       '</nav>' +
-      '<div class="topbar__locale" id="locale-selector">' +
-      '<button type="button" class="topbar__country" id="country-selector" aria-expanded="false" aria-haspopup="listbox" data-i18n-aria="locale.choose">' +
-      '<span class="topbar__flag" data-locale-flag aria-hidden="true">🇧🇷</span>' +
-      '<span data-locale-label>Brasil</span>' +
-      '<span class="topbar__caret" aria-hidden="true">▾</span>' +
-      '</button>' +
-      '<ul class="topbar__locale-menu" id="locale-menu" role="listbox" hidden>' +
-      '<li role="presentation"><button type="button" class="topbar__locale-option" data-lang-option="pt-BR" role="option">🇧🇷 Português (Brasil)</button></li>' +
-      '<li role="presentation"><button type="button" class="topbar__locale-option" data-lang-option="en-US" role="option">🇺🇸 English (USA)</button></li>' +
-      '<li role="presentation"><button type="button" class="topbar__locale-option" data-lang-option="es-ES" role="option">🇪🇸 Español (ESP)</button></li>' +
-      '</ul>' +
-      '</div>' +
+      buildLangButtonsHtml() +
       '</div>'
     );
   }

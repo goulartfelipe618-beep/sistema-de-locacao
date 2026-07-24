@@ -9,7 +9,7 @@
     />
     <title>LOCADORA RODAVIA | Aluguel de carros</title>
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="css/styles.css?v=30" />
+    <link rel="stylesheet" href="css/styles.css?v=31" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
@@ -30,36 +30,16 @@
           <a href="assinatura.html" class="topbar__tab" data-i18n="topbar.subscription">Carro por assinatura</a>
           <a href="app-motoristas.html" class="topbar__tab" data-i18n="topbar.app">Carro para app</a>
         </nav>
-        <div class="topbar__locale" id="locale-selector">
-          <button
-            type="button"
-            class="topbar__country"
-            id="country-selector"
-            aria-expanded="false"
-            aria-haspopup="listbox"
-            data-i18n-aria="locale.choose"
-          >
-            <span class="topbar__flag" data-locale-flag aria-hidden="true">🇧🇷</span>
-            <span data-locale-label>Brasil</span>
-            <span class="topbar__caret" aria-hidden="true">▾</span>
+        <div class="topbar__locale topbar__locale--flags" id="locale-selector" role="group" data-i18n-aria="locale.choose" aria-label="Escolher idioma">
+          <button type="button" class="topbar__lang-btn is-active" data-lang-option="pt-BR" aria-pressed="true" aria-label="Português (Brasil)" title="Português (Brasil)">
+            <img src="assets/flags/br.svg" alt="" class="topbar__flag-img" width="28" height="20" />
           </button>
-          <ul class="topbar__locale-menu" id="locale-menu" role="listbox" hidden>
-            <li role="presentation">
-              <button type="button" class="topbar__locale-option" data-lang-option="pt-BR" role="option">
-                🇧🇷 Português (Brasil)
-              </button>
-            </li>
-            <li role="presentation">
-              <button type="button" class="topbar__locale-option" data-lang-option="en-US" role="option">
-                🇺🇸 English (USA)
-              </button>
-            </li>
-            <li role="presentation">
-              <button type="button" class="topbar__locale-option" data-lang-option="es-ES" role="option">
-                🇪🇸 Español (ESP)
-              </button>
-            </li>
-          </ul>
+          <button type="button" class="topbar__lang-btn" data-lang-option="en-US" aria-pressed="false" aria-label="English (USA)" title="English (USA)">
+            <img src="assets/flags/us.svg" alt="" class="topbar__flag-img" width="28" height="20" />
+          </button>
+          <button type="button" class="topbar__lang-btn" data-lang-option="es-ES" aria-pressed="false" aria-label="Español (ESP)" title="Español (ESP)">
+            <img src="assets/flags/es.svg" alt="" class="topbar__flag-img" width="28" height="20" />
+          </button>
         </div>
       </div>
 
@@ -217,6 +197,34 @@
         </div>
       </section>
 
+      <section class="section section--groups-promo" aria-labelledby="groups-promo-title">
+        <div class="container">
+          <div class="groups-promo">
+            <figure class="groups-promo__media">
+              <img
+                src="assets/groups-promo.svg"
+                alt=""
+                class="groups-promo__img"
+                width="560"
+                height="420"
+                loading="lazy"
+              />
+            </figure>
+            <div class="groups-promo__content">
+              <h2 class="groups-promo__title" id="groups-promo-title" data-i18n="home.groups_promo.title">Grupos de Carros</h2>
+              <h3 class="groups-promo__subtitle" data-i18n="home.groups_promo.subtitle">
+                Do compacto ao SUV: a categoria certa para cada viagem
+              </h3>
+              <p class="groups-promo__text" data-i18n="home.groups_promo.text">
+                Conheça nossos grupos tarifários de A a G, compare capacidade, bagagem e conforto, e escolha o veículo
+                ideal para sua próxima locação.
+              </p>
+              <a href="grupos.html" class="btn btn--primary groups-promo__cta" data-i18n="home.groups_promo.cta">Explorar grupos</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section class="section" aria-labelledby="services-title">
         <div class="container">
           <div class="service-cards">
@@ -320,10 +328,10 @@
       </div>
     </div>
 
-    <script src="js/site-i18n.js?v=20"></script>
+    <script src="js/site-i18n.js?v=21"></script>
     <script src="js/site-i18n-pages.js?v=18"></script>
-    <script src="js/site-chat.js?v=21"></script>
-    <script src="js/site-chrome.js?v=20"></script>
+    <script src="js/site-chat.js?v=22"></script>
+    <script src="js/site-chrome.js?v=21"></script>
     <script src="js/pages.js?v=18"></script>
     <script type="module" src="js/main.js?v=30"></script>
   </body>

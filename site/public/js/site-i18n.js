@@ -9,9 +9,21 @@
   var DEFAULT_LANG = 'pt-BR';
 
   var LOCALES = {
-    'pt-BR': { flag: '\uD83C\uDDE7\uD83C\uDDF7', label: 'Brasil', menu: 'Portugu\u00eas (Brasil)' },
-    'en-US': { flag: '\uD83C\uDDFA\uD83C\uDDF8', label: 'USA', menu: 'English (USA)' },
-    'es-ES': { flag: '\uD83C\uDDEA\uD83C\uDDF8', label: 'ESP', menu: 'Espa\u00f1ol (ESP)' },
+    'pt-BR': {
+      flagSrc: 'assets/flags/br.svg',
+      label: 'Brasil',
+      menu: 'Portugu\u00eas (Brasil)',
+    },
+    'en-US': {
+      flagSrc: 'assets/flags/us.svg',
+      label: 'USA',
+      menu: 'English (USA)',
+    },
+    'es-ES': {
+      flagSrc: 'assets/flags/es.svg',
+      label: 'ESP',
+      menu: 'Espa\u00f1ol (ESP)',
+    },
   };
 
   var MESSAGES = {
@@ -30,6 +42,9 @@
       'topbar.subscription': 'Carro por assinatura',
       'topbar.app': 'Carro para app',
       'locale.choose': 'Escolher idioma',
+      'locale.pt': 'Portugu\u00eas (Brasil)',
+      'locale.en': 'English (USA)',
+      'locale.es': 'Espa\u00f1ol (ESP)',
       'nav.home_page': 'P\u00e1gina inicial {name}',
       'nav.toggle': 'Abrir menu',
       'nav.groups': 'Grupos de carros',
@@ -61,6 +76,11 @@
       'fleet.empty':
         'Fa\u00e7a uma busca no topo para ver os grupos dispon\u00edveis no per\u00edodo escolhido.',
       'fleet.all_groups': 'Confira todos os grupos',
+      'home.groups_promo.title': 'Grupos de Carros',
+      'home.groups_promo.subtitle': 'Do compacto ao SUV: a categoria certa para cada viagem',
+      'home.groups_promo.text':
+        'Conhe\u00e7a nossos grupos tarif\u00e1rios de A a G, compare capacidade, bagagem e conforto, e escolha o ve\u00edculo ideal para sua pr\u00f3xima loca\u00e7\u00e3o.',
+      'home.groups_promo.cta': 'Explorar grupos',
       'service.fast_title': 'Fast Retirada Digital',
       'service.fast_text':
         'Retire seu carro em at\u00e9 5 minutos com check-in digital, contrato eletr\u00f4nico e chaves liberadas na hora \u2014 menos fila, mais viagem.',
@@ -213,6 +233,9 @@
       'topbar.subscription': 'Car subscription',
       'topbar.app': 'Rideshare cars',
       'locale.choose': 'Choose language',
+      'locale.pt': 'Portuguese (Brazil)',
+      'locale.en': 'English (USA)',
+      'locale.es': 'Spanish (Spain)',
       'nav.home_page': 'Home page {name}',
       'nav.toggle': 'Open menu',
       'nav.groups': 'Car groups',
@@ -243,6 +266,11 @@
       'fleet.next': 'Next group',
       'fleet.empty': 'Search at the top to see available groups for your selected dates.',
       'fleet.all_groups': 'See all groups',
+      'home.groups_promo.title': 'Car Groups',
+      'home.groups_promo.subtitle': 'From compact to SUV: the right category for every trip',
+      'home.groups_promo.text':
+        'Explore our tariff groups from A to G, compare capacity, luggage space and comfort, and pick the ideal vehicle for your next rental.',
+      'home.groups_promo.cta': 'Explore groups',
       'service.fast_title': 'Fast Digital Pickup',
       'service.fast_text':
         'Pick up your car in up to 5 minutes with digital check-in, electronic contract and keys ready on the spot — less waiting, more travel.',
@@ -394,6 +422,9 @@
       'topbar.subscription': 'Coche por suscripci\u00f3n',
       'topbar.app': 'Coche para app',
       'locale.choose': 'Elegir idioma',
+      'locale.pt': 'Portugu\u00eas (Brasil)',
+      'locale.en': 'English (USA)',
+      'locale.es': 'Espa\u00f1ol (ESP)',
       'nav.home_page': 'P\u00e1gina inicial {name}',
       'nav.toggle': 'Abrir men\u00fa',
       'nav.groups': 'Grupos de coches',
@@ -425,6 +456,11 @@
       'fleet.empty':
         'Realice una b\u00fasqueda arriba para ver los grupos disponibles en el per\u00edodo elegido.',
       'fleet.all_groups': 'Ver todos los grupos',
+      'home.groups_promo.title': 'Grupos de Coches',
+      'home.groups_promo.subtitle': 'Del compacto al SUV: la categor\u00eda ideal para cada viaje',
+      'home.groups_promo.text':
+        'Conozca nuestros grupos tarifarios de la A a la G, compare capacidad, equipaje y confort, y elija el veh\u00edculo ideal para su pr\u00f3ximo alquiler.',
+      'home.groups_promo.cta': 'Explorar grupos',
       'service.fast_title': 'Retirada Digital R\u00e1pida',
       'service.fast_text':
         'Recoja su coche en hasta 5 minutos con check-in digital, contrato electr\u00f3nico y llaves listas al instante — menos fila, m\u00e1s viaje.',
@@ -649,62 +685,34 @@
   }
 
   function updateLangSelectorUI() {
-    var info = LOCALES[currentLang] || LOCALES[DEFAULT_LANG];
-    var flagEl = document.querySelector('[data-locale-flag]');
-    var labelEl = document.querySelector('[data-locale-label]');
-    if (flagEl) flagEl.textContent = info.flag;
-    if (labelEl) labelEl.textContent = info.label;
-
     document.querySelectorAll('[data-lang-option]').forEach(function (btn) {
       var lang = btn.getAttribute('data-lang-option');
+      var info = LOCALES[lang];
+      if (!info) return;
       var active = lang === currentLang;
       btn.classList.toggle('is-active', active);
-      btn.setAttribute('aria-selected', active ? 'true' : 'false');
+      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+      btn.setAttribute('aria-label', info.menu);
+      btn.setAttribute('title', info.menu);
+      var img = btn.querySelector('.topbar__flag-img');
+      if (img && img.getAttribute('src') !== info.flagSrc) {
+        img.setAttribute('src', info.flagSrc);
+      }
     });
-  }
-
-  function closeLangMenu() {
-    var menu = document.getElementById('locale-menu');
-    var btn = document.getElementById('country-selector');
-    if (menu) menu.hidden = true;
-    if (btn) btn.setAttribute('aria-expanded', 'false');
-  }
-
-  function openLangMenu() {
-    var menu = document.getElementById('locale-menu');
-    var btn = document.getElementById('country-selector');
-    if (menu) menu.hidden = false;
-    if (btn) btn.setAttribute('aria-expanded', 'true');
   }
 
   function initLangSelector() {
     var wrap = document.getElementById('locale-selector');
-    var btn = document.getElementById('country-selector');
-    var menu = document.getElementById('locale-menu');
-    if (!wrap || !btn || !menu) return;
+    if (!wrap) return;
 
-    btn.addEventListener('click', function (e) {
-      e.stopPropagation();
-      var open = btn.getAttribute('aria-expanded') === 'true';
-      if (open) closeLangMenu();
-      else openLangMenu();
-    });
-
-    menu.querySelectorAll('[data-lang-option]').forEach(function (optionBtn) {
+    wrap.querySelectorAll('[data-lang-option]').forEach(function (optionBtn) {
+      if (optionBtn.dataset.langBound === '1') return;
+      optionBtn.dataset.langBound = '1';
       optionBtn.addEventListener('click', function (e) {
         e.preventDefault();
         var lang = optionBtn.getAttribute('data-lang-option');
         if (lang && LOCALES[lang]) setLang(lang);
-        closeLangMenu();
       });
-    });
-
-    document.addEventListener('click', function (e) {
-      if (!wrap.contains(e.target)) closeLangMenu();
-    });
-
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') closeLangMenu();
     });
   }
 

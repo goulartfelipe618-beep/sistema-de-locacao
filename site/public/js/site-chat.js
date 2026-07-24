@@ -243,15 +243,22 @@
   }
 
   function lockPageScroll() {
-    lockedScrollY = window.scrollY || window.pageYOffset || 0;
+    if (document.body.classList.contains('chat-scroll-locked')) return;
+    lockedScrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
+    document.documentElement.classList.add('chat-scroll-locked');
     document.body.classList.add('chat-scroll-locked');
     document.body.style.top = '-' + lockedScrollY + 'px';
   }
 
   function unlockPageScroll() {
+    if (!document.body.classList.contains('chat-scroll-locked')) return;
+    var y = lockedScrollY;
+    document.documentElement.classList.remove('chat-scroll-locked');
     document.body.classList.remove('chat-scroll-locked');
     document.body.style.top = '';
-    window.scrollTo(0, lockedScrollY);
+    requestAnimationFrame(function () {
+      window.scrollTo(0, y);
+    });
   }
 
   function setFabOpen(open) {
@@ -282,12 +289,12 @@
 
   function closeDrawer() {
     var drawer = $('#chat-drawer');
-    drawer?.classList.remove('is-open');
-    drawer?.setAttribute('aria-hidden', 'true');
+    if (!drawer || !drawer.classList.contains('is-open')) return;
+    drawer.classList.remove('is-open');
+    drawer.setAttribute('aria-hidden', 'true');
     document.body.classList.remove('chat-drawer-open');
     unlockPageScroll();
     setFabOpen(false);
-    resetWizard();
   }
 
   function toggleDrawer() {
@@ -382,7 +389,11 @@
     drawer.dataset.bound = '1';
 
     drawer.querySelectorAll('[data-chat-close]').forEach(function (btn) {
-      btn.addEventListener('click', closeDrawer);
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeDrawer();
+      });
     });
 
     document.addEventListener('keydown', function (e) {
