@@ -122,6 +122,11 @@ async def bff_filiais() -> Any:
 def _normalize_grupo_imagem_url(imagem_url: str | None) -> str | None:
     if not imagem_url:
         return None
+    cat_prefix = "/api/v1/public/categorias/"
+    if imagem_url.startswith(cat_prefix) and imagem_url.endswith("/imagem"):
+        categoria_id = imagem_url[len(cat_prefix) : -len("/imagem")]
+        if categoria_id:
+            return f"/bff/grupos/{categoria_id}/imagem"
     prefix = "/api/v1/public/veiculos/"
     if imagem_url.startswith(prefix) and imagem_url.endswith("/capa/imagem"):
         veiculo_id = imagem_url[len(prefix) : -len("/capa/imagem")]
@@ -148,6 +153,29 @@ async def bff_grupos(request: Request) -> Any:
     params = dict(request.query_params)
     payload = await _erp_request("GET", "/api/v1/public/grupos", params=params or None)
     return _normalize_grupos_payload(payload)
+
+
+@app.get("/bff/grupos/{categoria_id}/imagem")
+async def bff_grupo_capa_imagem(categoria_id: str) -> Response:
+    url = f"{settings.erp_api_base}/api/v1/public/categorias/{categoria_id}/imagem"
+    headers = _erp_headers("catalogo:read")
+    headers["Accept"] = "*/*"
+    try:
+        async with httpx.AsyncClient(timeout=settings.bff_request_timeout_seconds) as client:
+            response = await client.get(url, headers=headers)
+    except httpx.TimeoutException as exc:
+        raise HTTPException(status_code=504, detail="ERP demorou para responder.") from exc
+    except httpx.RequestError as exc:
+        raise HTTPException(status_code=502, detail="Não foi possível contactar o ERP.") from exc
+
+    if response.status_code >= 400:
+        raise HTTPException(status_code=response.status_code, detail="Imagem indisponível")
+
+    return Response(
+        content=response.content,
+        media_type=response.headers.get("content-type", "image/jpeg"),
+        headers={"Cache-Control": "public, max-age=604800, stale-while-revalidate=86400"},
+    )
 
 
 def _normalize_slides_payload(payload: Any) -> list[dict[str, Any]]:

@@ -61,15 +61,17 @@ from app.shared.repository import BaseRepository
 ModelT = TypeVar("ModelT", bound=TenantBaseModel)
 
 # ------------------------------------------------------------------ Defaults
-DEFAULT_CATEGORIAS: tuple[tuple[str, int], ...] = (
-    ("Economico", 10),
-    ("Compacto", 20),
-    ("Sedan", 30),
-    ("SUV", 40),
-    ("Executivo", 50),
-    ("Utilitario", 60),
-    ("Blindado", 70),
+DEFAULT_CATEGORIAS: tuple[tuple[str, int, str, str], ...] = (
+    ("Sedan", 10, "A", "Veículos sedan confortáveis, ideais para viagens urbanas e estrada."),
+    ("Compacto", 20, "B", "Carros compactos, econômicos e fáceis de estacionar."),
+    ("Economico", 30, "C", "Categoria econômica com excelente custo-benefício para o dia a dia."),
+    ("SUV", 40, "D", "SUVs espaçosos para família, viagens e terrenos variados."),
+    ("Executivo", 50, "E", "Veículos executivos com acabamento superior e mais conforto."),
+    ("Utilitario", 60, "F", "Utilitários e vans para carga leve ou transporte de equipes."),
+    ("Blindado", 70, "G", "Veículos blindados para máxima segurança."),
 )
+
+DEFAULT_CATEGORIA_GRUPO: dict[str, str] = {nome: letra for nome, _, letra, _ in DEFAULT_CATEGORIAS}
 
 DEFAULT_COMBUSTIVEIS: tuple[tuple[str, CombustivelUnidade, Decimal], ...] = (
     ("Gasolina", CombustivelUnidade.LITRO, Decimal("5.89")),
@@ -151,10 +153,10 @@ class _NamedRepo(BaseRepository[ModelT], Generic[ModelT]):
 
 async def ensure_frota_defaults(session: AsyncSession, tenant_id: uuid.UUID) -> None:
     """Garante categorias, combustíveis e marcas padrão (idempotente)."""
-    for nome, ordem in DEFAULT_CATEGORIAS:
-        exists = (
+    for nome, ordem, grupo, descricao in DEFAULT_CATEGORIAS:
+        row = (
             await session.execute(
-                select(FrotaCategoria.id)
+                select(FrotaCategoria)
                 .where(
                     FrotaCategoria.tenant_id == tenant_id,
                     FrotaCategoria.nome == nome,
@@ -163,15 +165,22 @@ async def ensure_frota_defaults(session: AsyncSession, tenant_id: uuid.UUID) -> 
                 .limit(1)
             )
         ).scalar_one_or_none()
-        if exists is None:
+        if row is None:
             session.add(
                 FrotaCategoria(
                     tenant_id=tenant_id,
                     nome=nome,
                     ordem=ordem,
+                    grupo_tarifario=grupo,
+                    descricao=descricao,
                     status=CadastroStatus.ACTIVE,
                 )
             )
+        else:
+            if not row.grupo_tarifario:
+                row.grupo_tarifario = grupo
+            if not row.descricao:
+                row.descricao = descricao
 
     for nome, unidade, preco in DEFAULT_COMBUSTIVEIS:
         exists = (

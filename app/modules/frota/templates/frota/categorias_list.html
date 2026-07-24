@@ -13,9 +13,11 @@
     {% endif %}
   </div>
   {% if page_result.items %}
-  <table class="table"><thead><tr><th>Nome</th><th>Ordem</th><th>Passageiros</th><th>Status</th><th></th></tr></thead>
+  <table class="table"><thead><tr><th>Grupo</th><th>Nome</th><th>Ordem</th><th>Passageiros</th><th>Status</th><th></th></tr></thead>
   <tbody>{% for c in page_result.items %}
-  <tr><td><strong>{{ c.nome }}</strong></td><td>{{ c.ordem }}</td><td>{{ c.capacidade_passageiros }}</td>
+  <tr><td>{% if c.grupo_tarifario %}<strong>{{ c.grupo_tarifario }}</strong>{% else %}—{% endif %}</td>
+  <td><strong>{{ c.nome }}</strong>{% if c.descricao %}<br><small class="text-muted">{{ c.descricao[:80] }}{% if c.descricao|length > 80 %}…{% endif %}</small>{% endif %}</td>
+  <td>{{ c.ordem }}</td><td>{{ c.capacidade_passageiros }}</td>
   <td><span class="badge {% if c.status.value == 'active' %}badge-success{% else %}badge-muted{% endif %}">{{ c.status.value }}</span></td>
   <td>{% if current_user.is_superuser or 'frota.categoria.editar' in current_user.permissions %}<a class="btn btn-sm" href="/frota/categorias/{{ c.id }}/editar">Editar</a>{% endif %}</td></tr>
   {% endfor %}</tbody></table>

@@ -20,6 +20,7 @@ from app.core.logging import get_logger
 from app.core.pagination import PageParams
 from app.core.templating import render
 from app.modules.frota.dossier_veiculo import build_veiculo_dossier
+from app.modules.frota.categoria_capa import CategoriaCapaService, categoria_tem_capa
 from app.modules.frota.veiculo_fotos import (
     MAX_VEICULO_FOTOS,
     VeiculoCapaService,
@@ -400,6 +401,36 @@ async def _process_veiculo_capa(
             await capa_svc.upload_capa(
                 tenant_id,
                 veiculo_id,
+                file_bytes=data,
+                filename=filename,
+                content_type=content_type,
+            )
+        except (AppError, ValueError) as exc:
+            erros.append(_app_error_message(exc))
+    return erros
+
+
+async def _process_categoria_capa(
+    session: AsyncSession,
+    tenant_id: uuid.UUID,
+    categoria_id: uuid.UUID,
+    upload: UploadFile | None,
+    remover: bool,
+) -> list[str]:
+    erros: list[str] = []
+    capa_svc = CategoriaCapaService(session)
+    if remover:
+        try:
+            await capa_svc.remove_capa(categoria_id)
+        except (AppError, ValueError) as exc:
+            erros.append(_app_error_message(exc))
+    parsed = await _read_nonempty_upload(upload)
+    if parsed is not None:
+        data, filename, content_type = parsed
+        try:
+            await capa_svc.upload_capa(
+                tenant_id,
+                categoria_id,
                 file_bytes=data,
                 filename=filename,
                 content_type=content_type,
@@ -919,10 +950,11 @@ async def categoria_create(
     ordem: Annotated[int, Form()] = 0,
     grupo_tarifario: Annotated[str, Form()] = "",
     status: Annotated[str, Form()] = "active",
+    capa: UploadFile | None = File(None),
 ) -> HTMLResponse:
     ctx = {"item": None, "error": None, "title": "Nova Categoria", "action": "/frota/categorias/novo"}
     try:
-        await CategoriasService(session).create(
+        item = await CategoriasService(session).create(
             current_user.tenant_id,
             CategoriaCreate(
                 nome=nome,
@@ -936,6 +968,13 @@ async def categoria_create(
                 status=CadastroStatus(status),
             ),
         )
+        capa_erros = await _process_categoria_capa(
+            session, current_user.tenant_id, item.id, capa, False
+        )
+        if capa_erros:
+            ctx["error"] = "; ".join(capa_erros)
+            ctx["item"] = item
+            return render(request, "frota/categoria_form.html", ctx, status_code=400)
     except (AppError, ValueError) as exc:
         await session.rollback()
         ctx["error"] = _app_error_message(exc)
@@ -962,6 +1001,7 @@ async def categoria_edit_form(
             "error": None,
             "title": "Editar Categoria",
             "action": f"/frota/categorias/{item_id}/editar",
+            "tem_capa": categoria_tem_capa(item),
         },
     )
 
@@ -971,7 +1011,7 @@ async def categoria_update(
     request: Request,
     session: SessionDep,
     item_id: uuid.UUID,
-    _user: Annotated[
+    current_user: Annotated[
         AuthenticatedUser, Depends(require_web_permission("frota.categoria.editar"))
     ],
     nome: Annotated[str, Form()],
@@ -983,6 +1023,8 @@ async def categoria_update(
     ordem: Annotated[int, Form()] = 0,
     grupo_tarifario: Annotated[str, Form()] = "",
     status: Annotated[str, Form()] = "active",
+    capa: UploadFile | None = File(None),
+    remover_capa: Annotated[str, Form()] = "",
 ) -> HTMLResponse:
     try:
         await CategoriasService(session).update(
@@ -999,6 +1041,27 @@ async def categoria_update(
                 status=CadastroStatus(status),
             ),
         )
+        capa_erros = await _process_categoria_capa(
+            session,
+            current_user.tenant_id,
+            item_id,
+            capa,
+            remover_capa == "1",
+        )
+        if capa_erros:
+            item = await CategoriasService(session).get(item_id)
+            return render(
+                request,
+                "frota/categoria_form.html",
+                {
+                    "item": item,
+                    "error": "; ".join(capa_erros),
+                    "title": "Editar Categoria",
+                    "action": f"/frota/categorias/{item_id}/editar",
+                    "tem_capa": categoria_tem_capa(item),
+                },
+                status_code=400,
+            )
     except (AppError, ValueError) as exc:
         await session.rollback()
         item = await CategoriasService(session).get(item_id)
@@ -1010,10 +1073,24 @@ async def categoria_update(
                 "error": _app_error_message(exc),
                 "title": "Editar Categoria",
                 "action": f"/frota/categorias/{item_id}/editar",
+                "tem_capa": categoria_tem_capa(item),
             },
             status_code=400,
         )
     return RedirectResponse("/frota/categorias", status_code=303)
+
+
+@router.get("/frota/categorias/{item_id}/capa/imagem")
+async def categoria_capa_imagem(
+    session: SessionDep,
+    item_id: uuid.UUID,
+    _user: Annotated[
+        AuthenticatedUser, Depends(require_web_permission("frota.categoria.visualizar"))
+    ],
+) -> Response:
+    categoria = await CategoriasService(session).get(item_id)
+    data, content_type = await CategoriaCapaService(session).resolve_capa_bytes(categoria)
+    return Response(content=data, media_type=content_type)
 
 
 # ================================================================== Marcas

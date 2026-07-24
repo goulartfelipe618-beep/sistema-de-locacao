@@ -6,7 +6,7 @@
 <div class="card erp-form-card" style="max-width:900px">
   {{ form_page_header(title, "frota.categoria") }}
   {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
-  <form method="post" action="{{ action }}" class="erp-form">
+  <form method="post" action="{{ action }}" class="erp-form" enctype="multipart/form-data">
     <fieldset class="form-fieldset">
       <legend>Identificação</legend>
       <div class="form-grid">
@@ -15,12 +15,15 @@
           <input class="form-input" id="nome" name="nome" required value="{{ item.nome if item else '' }}">
         </div>
         <div class="form-group">
-          {{ field_label('Ordem', false, 'ordem') }}
-          <input class="form-input" type="number" id="ordem" name="ordem" value="{{ item.ordem if item else 0 }}">
+          {{ field_label('Grupo no site (A–G)', false, 'grupo_tarifario') }}
+          <input class="form-input" id="grupo_tarifario" name="grupo_tarifario" maxlength="2"
+                 placeholder="Ex.: A para Sedan"
+                 value="{{ item.grupo_tarifario if item else '' }}">
+          <p class="form-hint">Letra exibida no site como &ldquo;Grupo A&rdquo;, &ldquo;Grupo B&rdquo;, etc.</p>
         </div>
         <div class="form-group">
-          {{ field_label('Grupo tarifário', false, 'grupo_tarifario') }}
-          <input class="form-input" id="grupo_tarifario" name="grupo_tarifario" value="{{ item.grupo_tarifario if item else '' }}">
+          {{ field_label('Ordem', false, 'ordem') }}
+          <input class="form-input" type="number" id="ordem" name="ordem" value="{{ item.ordem if item else 0 }}">
         </div>
         <div class="form-group">
           {{ field_label('Status', true, 'status') }}
@@ -29,6 +32,33 @@
             <option value="inactive" {% if item and item.status.value == 'inactive' %}selected{% endif %}>Inativo</option>
           </select>
         </div>
+      </div>
+    </fieldset>
+    <fieldset class="form-fieldset">
+      <legend>Site — capa e descrição</legend>
+      <p class="form-hint" style="margin-top:0">
+        A imagem e a descrição aparecem nos grupos do site. Veículos cadastrados entram automaticamente
+        na categoria definida pelo modelo.
+      </p>
+      {% if item and tem_capa %}
+      <figure class="veiculo-foto-capa-preview">
+        <img src="/frota/categorias/{{ item.id }}/capa/imagem" alt="Capa da categoria">
+        <label class="form-check">
+          <input type="checkbox" name="remover_capa" value="1">
+          <span>Remover capa</span>
+        </label>
+      </figure>
+      {% endif %}
+      <div class="form-group">
+        <label class="form-label" for="capa">
+          {% if item and tem_capa %}Substituir imagem de capa{% else %}Imagem de capa (site){% endif %}
+        </label>
+        <input class="form-input" type="file" id="capa" name="capa" accept="image/jpeg,image/png,image/webp">
+      </div>
+      <div class="form-group">
+        {{ field_label('Descrição para o site', false, 'descricao') }}
+        <textarea class="form-input" id="descricao" name="descricao" rows="4"
+                  placeholder="Explique como são os veículos desta categoria...">{{ item.descricao if item else '' }}</textarea>
       </div>
     </fieldset>
     <fieldset class="form-fieldset">
@@ -50,15 +80,12 @@
                  value="{{ item.capacidade_porta_malas if item else '' }}">
         </div>
         <div class="form-group">
-          {{ field_label('URL imagem', false, 'imagem_url') }}
+          {{ field_label('URL imagem externa (opcional)', false, 'imagem_url') }}
           <input class="form-input" id="imagem_url" name="imagem_url" type="url" value="{{ item.imagem_url if item else '' }}">
+          <p class="form-hint">Usada só se não houver upload de capa acima.</p>
         </div>
       </div>
     </fieldset>
-    <div class="form-group">
-      {{ field_label('Descrição', false, 'descricao') }}
-      <textarea class="form-input" id="descricao" name="descricao" rows="3">{{ item.descricao if item else '' }}</textarea>
-    </div>
     <div class="form-actions">
       <button class="btn btn-primary" type="submit">Salvar</button>
       <a class="btn" href="/frota/categorias">Cancelar</a>

@@ -14,6 +14,7 @@ from app.modules.cadastros.schemas import ClienteCreate
 from app.modules.cadastros.service import ClienteService
 from app.modules.frota.models import FrotaCategoria, FrotaModelo, FrotaVeiculo
 from app.modules.frota.veiculo_fotos import public_veiculo_capa_url, veiculo_tem_foto_capa
+from app.modules.frota.categoria_capa import categoria_tem_capa, public_categoria_capa_url
 from app.modules.frota.service import CategoriasService
 from app.modules.integracoes.public_schemas import (
     PublicClienteInput,
@@ -127,7 +128,13 @@ async def list_grupos_public(
         if not retirada_em and qtd == 0:
             continue
         livres = disp_map.get(cat.id, qtd) if disp_map else qtd
-        imagem_url = capa_por_categoria.get(cat.id) or cat.imagem_url
+        capa_veiculo = capa_por_categoria.get(cat.id)
+        if categoria_tem_capa(cat):
+            imagem_url = public_categoria_capa_url(cat.id)
+        elif cat.imagem_url:
+            imagem_url = cat.imagem_url
+        else:
+            imagem_url = capa_veiculo
         out.append(
             {
                 "id": str(cat.id),
@@ -139,6 +146,8 @@ async def list_grupos_public(
                 "capacidade_porta_malas": cat.capacidade_porta_malas,
                 "transmissao_tipica": cat.transmissao_tipica,
                 "grupo_tarifario": cat.grupo_tarifario,
+                "codigo": cat.grupo_tarifario,
+                "sigla": cat.grupo_tarifario,
                 "segmento": cat.grupo_tarifario,
                 "ordem": cat.ordem,
                 "veiculos_disponiveis": livres,

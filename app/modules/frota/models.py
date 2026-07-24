@@ -61,6 +61,9 @@ class FrotaCategoria(TenantBaseModel):
     capacidade_porta_malas: Mapped[str | None] = mapped_column(String(60), nullable=True)
     transmissao_tipica: Mapped[str | None] = mapped_column(String(40), nullable=True)
     imagem_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    capa_storage_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    capa_content_type: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    capa_inline_data: Mapped[str | None] = mapped_column(Text, nullable=True)
     ordem: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     grupo_tarifario: Mapped[str | None] = mapped_column(String(60), nullable=True)
     status: Mapped[CadastroStatus] = mapped_column(

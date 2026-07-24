@@ -112,6 +112,28 @@ async def public_grupos(
     )
 
 
+@public_router.get("/categorias/{categoria_id}/imagem")
+async def public_categoria_capa_imagem(
+    categoria_id: uuid.UUID,
+    session: PublicSessionDep,
+    key: Annotated[IntApiKey, Depends(require_api_key_scope("catalogo:read"))],
+) -> Response:
+    """Capa da categoria (grupo no site)."""
+    from app.core.exceptions import NotFoundError
+    from app.modules.frota.categoria_capa import CategoriaCapaService
+    from app.modules.frota.service import CategoriasService
+
+    categoria = await CategoriasService(session).get(categoria_id)
+    if categoria.tenant_id != key.tenant_id:
+        raise NotFoundError("Categoria não encontrada.")
+    data, content_type = await CategoriaCapaService(session).resolve_capa_bytes(categoria)
+    return Response(
+        content=data,
+        media_type=content_type,
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
+
+
 @public_router.post("/cotacao", response_model=PublicCotacaoSiteRead)
 async def public_cotacao(
     session: PublicSessionDep,
