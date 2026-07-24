@@ -271,18 +271,6 @@
   }
 
   function refreshHeroSlideImages(slides) {
-    if (!global.RodaviaCache || typeof global.RodaviaCache.getSlideImageUrl !== 'function') return;
-    slides.forEach(function (slide) {
-      var id = slideId(slide);
-      if (!id) return;
-      var cachedUrl = global.RodaviaCache.getSlideImageUrl(id, '');
-      if (!cachedUrl || cachedUrl.indexOf('blob:') !== 0) return;
-      document
-        .querySelectorAll('.hero__slide--erp[data-slide-id="' + id + '"] .hero__slide-img')
-        .forEach(function (img) {
-          img.setAttribute('src', cachedUrl);
-        });
-    });
     var track = document.querySelector('[data-hero-track]');
     if (!track) return;
     var reals = track.querySelectorAll('.hero__slide:not(.hero__slide--clone)');
@@ -293,6 +281,7 @@
       var toImg = toSlide && toSlide.querySelector('.hero__slide-img');
       if (fromImg && toImg && fromImg.getAttribute('src')) {
         toImg.setAttribute('src', fromImg.getAttribute('src'));
+        toImg.setAttribute('alt', fromImg.getAttribute('alt') || '');
       }
     }
     copyImg(reals[reals.length - 1], clones[0]);

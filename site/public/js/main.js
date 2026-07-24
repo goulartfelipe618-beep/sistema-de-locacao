@@ -78,7 +78,9 @@ function initCarousels() {
 }
 
 let heroCarouselTimer = null;
+let heroTransitionFallbackTimer = null;
 const HERO_AUTOPLAY_MS = 7000;
+const HERO_TRANSITION_MS = 550;
 
 function resetHeroAutoplay(advance) {
   if (heroCarouselTimer) clearInterval(heroCarouselTimer);
@@ -178,12 +180,32 @@ function initHeroCarousel() {
   dotsContainer?.removeAttribute('hidden');
 
   let trackIdx = hasInfinite ? infinite.startIndex : 0;
+  let isTransitioning = false;
+  let pendingDelta = 0;
 
   const realIndex = () => {
     if (!hasInfinite) return trackIdx;
     if (trackIdx === 0) return realCount - 1;
     if (trackIdx === realCount + 1) return 0;
     return trackIdx - 1;
+  };
+
+  const clearTransitionFallback = () => {
+    if (heroTransitionFallbackTimer) {
+      clearTimeout(heroTransitionFallbackTimer);
+      heroTransitionFallbackTimer = null;
+    }
+  };
+
+  const finishTransition = () => {
+    isTransitioning = false;
+    clearTransitionFallback();
+    snapIfClone();
+    if (pendingDelta !== 0) {
+      const delta = pendingDelta > 0 ? 1 : -1;
+      pendingDelta -= delta;
+      advance(delta, false);
+    }
   };
 
   const moveTrack = (index, animate) => {
@@ -207,86 +229,128 @@ function initHeroCarousel() {
   };
 
   const snapIfClone = () => {
-    if (!hasInfinite) return;
+    if (!hasInfinite) return false;
     if (trackIdx === 0) {
       trackIdx = realCount;
       moveTrack(trackIdx, false);
+      syncHeroCloneImages(track);
       updateUi();
-    } else if (trackIdx === realCount + 1) {
+      return true;
+    }
+    if (trackIdx === realCount + 1) {
       trackIdx = 1;
       moveTrack(trackIdx, false);
+      syncHeroCloneImages(track);
       updateUi();
+      return true;
     }
+    return false;
   };
 
   const showTrack = (index, animate) => {
     trackIdx = index;
+    if (animate !== false) {
+      isTransitioning = true;
+      clearTransitionFallback();
+      heroTransitionFallbackTimer = setTimeout(finishTransition, HERO_TRANSITION_MS + 80);
+    }
     moveTrack(trackIdx, animate);
     updateUi();
+    if (animate === false) {
+      finishTransition();
+    }
   };
 
-  const showNext = (userAction) => {
-    showTrack(trackIdx + 1, true);
-    if (userAction) resetHeroAutoplay(() => showNext(false));
+  const advance = (delta, userAction) => {
+    if (isTransitioning) {
+      pendingDelta += delta;
+      if (userAction) resetHeroAutoplay(() => advance(1, false));
+      return;
+    }
+    if (hasInfinite && (trackIdx === 0 || trackIdx === realCount + 1)) {
+      snapIfClone();
+    }
+    showTrack(trackIdx + delta, true);
+    if (userAction) resetHeroAutoplay(() => advance(1, false));
   };
 
-  const showPrev = (userAction) => {
-    showTrack(trackIdx - 1, true);
-    if (userAction) resetHeroAutoplay(() => showNext(false));
-  };
+  const showNext = (userAction) => advance(1, userAction);
+  const showPrev = (userAction) => advance(-1, userAction);
 
   const showDot = (dotIndex) => {
+    if (isTransitioning) return;
+    if (hasInfinite && (trackIdx === 0 || trackIdx === realCount + 1)) {
+      snapIfClone();
+    }
     showTrack(hasInfinite ? dotIndex + 1 : dotIndex, true);
-    resetHeroAutoplay(() => showNext(false));
+    resetHeroAutoplay(() => advance(1, false));
   };
 
   if (track) {
     track.addEventListener('transitionend', (e) => {
       if (e.target !== track || e.propertyName !== 'transform') return;
-      snapIfClone();
+      finishTransition();
     });
   }
 
   moveTrack(trackIdx, false);
   updateUi();
+  syncHeroCloneImages(track);
 
   dots.forEach((d, i) => d.addEventListener('click', () => showDot(i)));
   prev?.addEventListener('click', () => showPrev(true));
   next?.addEventListener('click', () => showNext(true));
-  resetHeroAutoplay(() => showNext(false));
+  resetHeroAutoplay(() => advance(1, false));
 }
 
 function initStickySearch() {
   const bridge = $('.search-bridge');
   const heroBlock = $('.hero-block');
-  if (!bridge || !heroBlock) return;
+  if (!bridge || !heroBlock || !document.body.classList.contains('page-home')) return;
 
-  let placeholder = $('#search-bridge-placeholder');
-  if (!placeholder) {
-    placeholder = document.createElement('div');
-    placeholder.id = 'search-bridge-placeholder';
-    placeholder.hidden = true;
-    placeholder.setAttribute('aria-hidden', 'true');
-    bridge.after(placeholder);
-  }
+  $('#search-bridge-placeholder')?.remove();
 
-  const update = () => {
-    const heroRect = heroBlock.getBoundingClientRect();
+  let isSticky = false;
+  let stickAt = 0;
+  let rafId = 0;
+  const HYSTERESIS_PX = 24;
+
+  const measure = () => {
     const bridgeHeight = bridge.offsetHeight;
-    const shouldStick = heroRect.bottom <= bridgeHeight + 8;
-    bridge.classList.toggle('is-sticky', shouldStick);
-    if (shouldStick) {
-      placeholder.hidden = false;
-      placeholder.style.height = `${bridgeHeight}px`;
-    } else {
-      placeholder.hidden = true;
-      placeholder.style.height = '';
+    document.documentElement.style.setProperty('--sticky-search-height', `${bridgeHeight}px`);
+    const heroTop = heroBlock.getBoundingClientRect().top + window.scrollY;
+    stickAt = heroTop + heroBlock.offsetHeight - bridgeHeight - 8;
+  };
+
+  const applySticky = (next) => {
+    if (next === isSticky) return;
+    isSticky = next;
+    bridge.classList.toggle('is-sticky', next);
+    document.body.classList.toggle('is-search-sticky', next);
+  };
+
+  const tick = () => {
+    rafId = 0;
+    const scrollY = window.scrollY;
+    if (!isSticky && scrollY >= stickAt) {
+      applySticky(true);
+    } else if (isSticky && scrollY < stickAt - HYSTERESIS_PX) {
+      applySticky(false);
     }
   };
 
-  window.addEventListener('scroll', update, { passive: true });
-  window.addEventListener('resize', update, { passive: true });
-  update();
+  const schedule = () => {
+    if (rafId) return;
+    rafId = requestAnimationFrame(tick);
+  };
+
+  measure();
+  window.addEventListener('scroll', schedule, { passive: true });
+  window.addEventListener('resize', () => {
+    measure();
+    schedule();
+  }, { passive: true });
+  tick();
 }
 
 async function tryAutoFleetSearch() {
@@ -383,11 +447,14 @@ function fleetCardHtml(group) {
   const media = imgUrl
     ? `<img class="fleet-showcase__img" src="${escapeHtml(imgUrl)}" alt="" loading="lazy" />`
     : `<div class="fleet-showcase__img fleet-showcase__img--placeholder" role="img" aria-label="${escapeHtml(i18n('fleet.vehicle_alt', { title }))}"></div>`;
+  const plate = imgUrl
+    ? ''
+    : '<span class="fleet-showcase__plate" aria-hidden="true"></span>';
 
   return `
     <article class="fleet-showcase__card" data-categoria-id="${escapeHtml(group.categoria_id)}" data-index-card>
       <div class="fleet-showcase__figure">
-        <span class="fleet-showcase__plate" aria-hidden="true"></span>
+        ${plate}
         ${media}
       </div>
       <h3 class="fleet-showcase__group-title">${title}</h3>

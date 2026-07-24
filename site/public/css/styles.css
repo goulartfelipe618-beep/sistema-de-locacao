@@ -627,7 +627,7 @@ body:not(.page-home) .site-header--brand {
 .hero {
   position: relative;
   width: 100%;
-  background: var(--color-bg-muted);
+  background: #101010;
   overflow: hidden;
 }
 
@@ -653,10 +653,13 @@ body:not(.page-home) .site-header--brand {
   transition: none;
 }
 
-.hero__slides--erp .hero__slide--erp {
+.hero__slides--erp .hero__slide--erp,
+.hero__slides--erp .hero__slide--erp.hero__slide--clone,
+.hero__slides--erp .hero__track .hero__slide {
   flex: 0 0 100%;
   width: 100%;
   position: relative;
+  inset: auto;
   height: auto;
   min-height: var(--hero-min-h);
   margin: 0;
@@ -666,18 +669,20 @@ body:not(.page-home) .site-header--brand {
   pointer-events: auto;
   background: #101010;
   filter: none;
+  transition: none;
+}
+
+.hero__slides--erp .hero__track .hero__slide.is-active {
+  position: relative;
+}
+
+.hero__slides--erp .hero__slide--erp::after,
+.hero__slides--erp .hero__slide--clone::after {
+  content: none;
 }
 
 .hero__slides--erp .hero__track {
   min-height: var(--hero-min-h);
-}
-
-.hero__slides--erp .hero__slide--erp.is-active {
-  position: relative;
-}
-
-.hero__slides--erp .hero__slide--erp::after {
-  content: none;
 }
 
 .hero__slides--erp .hero__slide-img {
@@ -986,6 +991,11 @@ body:not(.page-home) .site-header--brand {
   backdrop-filter: blur(10px);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
   pointer-events: auto;
+  will-change: transform;
+}
+
+.page-home.is-search-sticky .section--after-hero {
+  scroll-margin-top: var(--sticky-search-height, 72px);
 }
 
 .page-home .search-bridge.is-sticky .search-widget {
@@ -993,8 +1003,7 @@ body:not(.page-home) .site-header--brand {
 }
 
 #search-bridge-placeholder {
-  width: 100%;
-  flex-shrink: 0;
+  display: none !important;
 }
 
 .section--after-hero {
@@ -1535,7 +1544,7 @@ body:not(.page-home) .site-header--brand {
 
 .fleet-showcase__plate {
   position: absolute;
-  bottom: 28%;
+  bottom: 18%;
   left: 50%;
   transform: translateX(-50%);
   width: 28px;
@@ -1544,6 +1553,10 @@ body:not(.page-home) .site-header--brand {
   border-radius: 2px;
   z-index: 1;
   opacity: 0.85;
+}
+
+.fleet-showcase__figure:has(.fleet-showcase__img:not(.fleet-showcase__img--placeholder)) .fleet-showcase__plate {
+  display: none;
 }
 
 .fleet-showcase__card.is-center .fleet-showcase__figure {

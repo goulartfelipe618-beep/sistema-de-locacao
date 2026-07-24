@@ -148,25 +148,14 @@
   function storeSlideImage(slideId, blob) {
     if (!slideId || !blob) return;
     var oldUrl = slideBlobUrls[slideId];
-    slideBlobUrls[slideId] = URL.createObjectURL(blob);
-    if (typeof document !== 'undefined' && oldUrl) {
-      document.querySelectorAll('.hero__slide-img').forEach(function (img) {
-        if (img.getAttribute('src') === oldUrl) {
-          img.setAttribute('src', slideBlobUrls[slideId]);
-        }
-      });
-      try {
-        URL.revokeObjectURL(oldUrl);
-      } catch (_) {
-        /* ignore */
-      }
-    } else if (oldUrl) {
+    if (oldUrl) {
       try {
         URL.revokeObjectURL(oldUrl);
       } catch (_) {
         /* ignore */
       }
     }
+    slideBlobUrls[slideId] = URL.createObjectURL(blob);
     openImageDb()
       .then(function (db) {
         var tx = db.transaction(IMG_STORE, 'readwrite');
