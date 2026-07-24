@@ -233,8 +233,13 @@
     var panel = $('#groups-filters');
     if (!panel) return;
 
-    panel.addEventListener('change', function () {
-      document.dispatchEvent(new CustomEvent('groups:filter-change'));
+    panel.addEventListener('change', function (e) {
+      var target = e.target;
+      if (!target || !target.name) return;
+      var source = target.name === 'tarifa' ? 'tariff' : 'attribute';
+      document.dispatchEvent(
+        new CustomEvent('groups:filter-change', { detail: { source: source } })
+      );
     });
   }
 

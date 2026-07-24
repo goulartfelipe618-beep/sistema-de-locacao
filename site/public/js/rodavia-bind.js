@@ -481,6 +481,13 @@
           grupo_tarifario: g.grupo_tarifario,
           cambio: g.transmissao_tipica || g.cambio,
           transmissao_tipica: g.transmissao_tipica,
+          combustivel: g.combustivel || 'flex',
+          malas_grandes:
+            g.malas_grandes != null
+              ? g.malas_grandes
+              : g.capacidade_porta_malas != null
+                ? (g.capacidade_porta_malas >= 2 ? 2 : 1)
+                : 1,
         };
       })
       .filter(function (g) {
@@ -618,6 +625,9 @@
     },
     grupos: function (params) {
       return api().grupos(params);
+    },
+    veiculos: function (params) {
+      return api().veiculos(params);
     },
     cotacao: function (body) {
       return api().cotacao(body);

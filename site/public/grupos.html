@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
     <script src="js/rodavia-theme-boot.js?v=23"></script>
     <link rel="stylesheet" href="css/pages.css?v=18" />
-    <link rel="stylesheet" href="css/grupos.css" />
+    <link rel="stylesheet" href="css/grupos.css?v=2" />
   </head>
   <body class="page-grupos has-cookie-banner" data-site-chrome="footer" data-topbar="rental" data-nav="groups">
     <a href="#main-content" class="skip-link" data-i18n="skip.main">Ir para conteúdo principal</a>
@@ -126,12 +126,21 @@
       <div class="groups-layout-with-filters">
         <aside class="filters-panel" id="groups-filters" aria-label="Filtros">
           <h2 class="filters-panel__title" data-i18n="page.grupos.filters">Filtros</h2>
-          <div class="filters-panel__group">
-            <h3 data-i18n="page.grupos.filter_category">Categoria</h3>
-            <label><input type="checkbox" name="cat" value="hatch" checked /> Hatch</label>
-            <label><input type="checkbox" name="cat" value="sedan" checked /> Sedan</label>
-            <label><input type="checkbox" name="cat" value="suv" checked /> SUV</label>
-            <label><input type="checkbox" name="cat" value="luxo" checked /> Luxo</label>
+          <div class="filters-panel__group filters-panel__group--tariff">
+            <h3 data-i18n="page.grupos.filter_tariff">Grupo tarifário</h3>
+            <label class="filters-panel__radio filters-panel__radio--all">
+              <input type="radio" name="tarifa" value="all" checked />
+              <span data-i18n="page.grupos.filter_all_categories">Todas categorias</span>
+            </label>
+            <div class="filters-panel__tariff-grid" role="radiogroup" data-i18n-aria="page.grupos.filter_tariff" aria-label="Grupo tarifário">
+              <label class="filters-panel__tariff"><input type="radio" name="tarifa" value="A" /><span>A</span></label>
+              <label class="filters-panel__tariff"><input type="radio" name="tarifa" value="B" /><span>B</span></label>
+              <label class="filters-panel__tariff"><input type="radio" name="tarifa" value="C" /><span>C</span></label>
+              <label class="filters-panel__tariff"><input type="radio" name="tarifa" value="D" /><span>D</span></label>
+              <label class="filters-panel__tariff"><input type="radio" name="tarifa" value="E" /><span>E</span></label>
+              <label class="filters-panel__tariff"><input type="radio" name="tarifa" value="F" /><span>F</span></label>
+              <label class="filters-panel__tariff"><input type="radio" name="tarifa" value="G" /><span>G</span></label>
+            </div>
           </div>
           <div class="filters-panel__group">
             <h3 data-i18n="page.grupos.filter_transmission">Câmbio</h3>
@@ -185,6 +194,7 @@
         <h2 class="modal__title" id="reserve-title" data-i18n="reserve.title">Confirmar reserva</h2>
         <form id="reserve-form">
           <input type="hidden" id="reserve-categoria-id" name="categoria_id" />
+          <input type="hidden" id="reserve-veiculo-id" name="veiculo_id" />
           <div class="form-field">
             <label for="reserve-nome" data-i18n="reserve.name">Nome completo</label>
             <input type="text" id="reserve-nome" name="nome" required autocomplete="name" />
@@ -209,14 +219,14 @@
     </div>
 
     <script src="js/site-i18n.js?v=21"></script>
-    <script src="js/site-i18n-pages.js?v=18"></script>
+    <script src="js/site-i18n-pages.js?v=19"></script>
     <script src="js/rodavia-cache.js?v=26"></script>
     <script src="js/rodavia-config.js?v=20"></script>
-    <script src="js/rodavia-api.js?v=20"></script>
-    <script src="js/rodavia-bind.js?v=26"></script>
+    <script src="js/rodavia-api.js?v=21"></script>
+    <script src="js/rodavia-bind.js?v=27"></script>
     <script src="js/site-chat.js?v=22"></script>
     <script src="js/site-chrome.js?v=21"></script>
-    <script src="js/pages.js?v=18"></script>
-    <script type="module" src="js/grupos.js?v=20"></script>
+    <script src="js/pages.js?v=19"></script>
+    <script type="module" src="js/grupos.js?v=21"></script>
   </body>
 </html>

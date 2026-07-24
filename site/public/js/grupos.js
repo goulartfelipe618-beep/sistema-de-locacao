@@ -23,13 +23,19 @@ const bind = () => {
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
+const ATTRIBUTE_FILTER_NAMES = ['cambio', 'pax', 'bags', 'fuel'];
+
 function i18n(key, vars) {
   return window.SiteI18n?.t(key, vars) ?? key;
 }
 
 let lastSearch = null;
 let pendingCategoriaId = null;
+let pendingVeiculoId = null;
 let lastGroups = [];
+let lastVehicles = [];
+let lastVehiclesPromise = null;
+let categoryLookup = new Map();
 
 function escapeHtml(str) {
   return String(str ?? '')
@@ -132,32 +138,26 @@ function formatDailyPrice(group) {
   return `R$ ${Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/dia`;
 }
 
-function normalizeCategory(group) {
-  const seg = String(
-    group.segmento || group.categoria_segmento || group.nome || ''
-  ).toLowerCase();
-  if (/lux|premium|execut|black/.test(seg)) return 'luxo';
-  if (/suv|utilit|pickup|van|4x4/.test(seg)) return 'suv';
-  if (/sedan|sedã/.test(seg)) return 'sedan';
-  if (/hatch|compact|econom|popular/.test(seg)) return 'hatch';
-  return 'hatch';
-}
-
-function normalizeCambio(group) {
-  const c = String(group.cambio || '').toLowerCase();
+function normalizeCambio(item) {
+  const c = String(item.cambio || item.transmissao_tipica || '').toLowerCase();
   if (/auto|cvt|tiptronic|automático|automatico/.test(c)) return 'automatico';
   return 'manual';
 }
 
-function normalizePax(group) {
-  const p = Number(group.passageiros ?? group.capacidade_passageiros ?? 5);
+function normalizePax(item) {
+  const p = Number(item.passageiros ?? item.capacidade_passageiros ?? 5);
   return p >= 5 ? '5' : '4';
 }
 
-function normalizeFuel(group) {
-  const f = String(group.combustivel || group.fuel || 'flex').toLowerCase();
+function normalizeFuel(item) {
+  const f = String(item.combustivel || item.fuel || 'flex').toLowerCase();
   if (/diesel/.test(f)) return 'diesel';
   return 'flex';
+}
+
+function normalizeBags(item) {
+  const bg = Number(item.malas_grandes ?? item.capacidade_porta_malas ?? 1);
+  return bg >= 2 ? 'large' : 'small';
 }
 
 function readFilterState() {
@@ -165,8 +165,9 @@ function readFilterState() {
   if (!panel) return null;
   const checked = (name) =>
     [...panel.querySelectorAll(`input[name="${name}"]:checked`)].map((i) => i.value);
+  const tarifaInput = panel.querySelector('input[name="tarifa"]:checked');
   return {
-    cat: checked('cat'),
+    tarifa: tarifaInput?.value || 'all',
     cambio: checked('cambio'),
     pax: checked('pax'),
     fuel: checked('fuel'),
@@ -174,20 +175,64 @@ function readFilterState() {
   };
 }
 
-function normalizeBags(group) {
-  const bg = Number(group.malas_grandes ?? 1);
-  return bg >= 2 ? 'large' : 'small';
+function isAttributeFiltersDefault() {
+  const panel = $('#groups-filters');
+  if (!panel) return true;
+  for (const name of ATTRIBUTE_FILTER_NAMES) {
+    const inputs = [...panel.querySelectorAll(`input[name="${name}"]`)];
+    const checkedCount = inputs.filter((i) => i.checked).length;
+    if (checkedCount !== inputs.length) return false;
+  }
+  return true;
 }
 
-function applyFilters(groups) {
+function resetTariffToAll() {
+  const allRadio = $('#groups-filters input[name="tarifa"][value="all"]');
+  if (allRadio && !allRadio.checked) allRadio.checked = true;
+}
+
+function resolveViewMode() {
   const filters = readFilterState();
-  if (!filters) return groups;
-  return groups.filter((group) => {
-    if (filters.cat.length && !filters.cat.includes(normalizeCategory(group))) return false;
-    if (filters.cambio.length && !filters.cambio.includes(normalizeCambio(group))) return false;
-    if (filters.pax.length && !filters.pax.includes(normalizePax(group))) return false;
-    if (filters.bags.length && !filters.bags.includes(normalizeBags(group))) return false;
-    if (filters.fuel.length && !filters.fuel.includes(normalizeFuel(group))) return false;
+  if (!filters) return 'groups';
+  if (filters.tarifa !== 'all') return 'vehicles';
+  if (!isAttributeFiltersDefault()) return 'vehicles';
+  return 'groups';
+}
+
+function rebuildCategoryLookup() {
+  categoryLookup = new Map();
+  lastGroups.forEach((g) => {
+    if (g.categoria_id) categoryLookup.set(g.categoria_id, g);
+  });
+}
+
+function enrichVehicle(vehicle) {
+  const cat = categoryLookup.get(vehicle.categoria_id);
+  if (!cat) return { ...vehicle };
+  return {
+    ...cat,
+    ...vehicle,
+    categoria_id: vehicle.categoria_id,
+    id: vehicle.id,
+    modelo_nome: vehicle.modelo_nome,
+    ano_modelo: vehicle.ano_modelo,
+    cor: vehicle.cor,
+    imagem_url: vehicle.imagem_url || cat.imagem_url,
+    categoria_nome: vehicle.categoria_nome || cat.nome,
+  };
+}
+
+function applyVehicleFilters(vehicles) {
+  const filters = readFilterState();
+  if (!filters) return vehicles.map(enrichVehicle);
+  return vehicles.map(enrichVehicle).filter((item) => {
+    if (filters.tarifa !== 'all' && fleetGroupLetter(item) !== filters.tarifa) return false;
+    if (!isAttributeFiltersDefault()) {
+      if (filters.cambio.length && !filters.cambio.includes(normalizeCambio(item))) return false;
+      if (filters.pax.length && !filters.pax.includes(normalizePax(item))) return false;
+      if (filters.bags.length && !filters.bags.includes(normalizeBags(item))) return false;
+      if (filters.fuel.length && !filters.fuel.includes(normalizeFuel(item))) return false;
+    }
     return true;
   });
 }
@@ -195,7 +240,7 @@ function applyFilters(groups) {
 function specTagsHtml(group) {
   const p = group.passageiros ?? group.capacidade_passageiros ?? 5;
   const doors = group.portas ?? 4;
-  const cambio = group.cambio || i18n('groups.tag_manual');
+  const cambio = group.cambio || group.transmissao_tipica || i18n('groups.tag_manual');
   const ar = group.ar_condicionado !== false ? i18n('feature.ac') : i18n('feature.no_ac');
   const steer = group.direcao || i18n('groups.tag_electric_steer');
   return `
@@ -213,7 +258,7 @@ function featureRow(group) {
   const p = group.passageiros ?? group.capacidade_passageiros ?? '—';
   const bg = group.malas_grandes ?? 1;
   const bp = group.malas_pequenas ?? 1;
-  const cambio = group.cambio || '—';
+  const cambio = group.cambio || group.transmissao_tipica || '—';
   const ar = group.ar_condicionado !== false ? i18n('feature.ac') : i18n('feature.no_ac');
   return `
     <li><span aria-hidden="true">👤</span> ${escapeHtml(p)}</li>
@@ -252,30 +297,91 @@ function groupCardHtml(group) {
   `;
 }
 
-function renderGroupsGrid(groups) {
-  const filtered = applyFilters(groups);
-  const host = $('#groups-sections');
-  const rail = $('#groups-rail');
-  const empty = $('#groups-empty');
-  if (!host) return;
+function vehicleCardHtml(vehicle) {
+  const letter = fleetGroupLetter(vehicle);
+  const title = escapeHtml(vehicle.modelo_nome || vehicle.categoria_nome || 'Veículo');
+  const metaParts = [];
+  if (vehicle.categoria_nome && vehicle.modelo_nome) metaParts.push(vehicle.categoria_nome);
+  if (vehicle.ano_modelo) metaParts.push(String(vehicle.ano_modelo));
+  if (vehicle.cor) metaParts.push(vehicle.cor);
+  const subtitle = escapeHtml(metaParts.join(' · ') || fleetGroupSubtitle(vehicle));
+  const daily = formatDailyPrice(vehicle);
+  const imgUrl = vehicle.imagem_url;
+  const media = imgUrl
+    ? `<img class="vehicle-card__img" src="${escapeHtml(imgUrl)}" alt="" loading="lazy" />`
+    : `<div class="vehicle-card__placeholder" role="img" aria-label="${title}"></div>`;
 
-  if (!filtered.length) {
-    host.innerHTML = '';
-    if (empty) {
-      empty.hidden = false;
-      const emptyText = $('#groups-empty .groups-empty__text');
-      if (emptyText && groups.length) {
+  return `
+    <article
+      class="vehicle-card"
+      id="veiculo-${escapeHtml(vehicle.id)}"
+      data-categoria-id="${escapeHtml(vehicle.categoria_id)}"
+      data-veiculo-id="${escapeHtml(vehicle.id)}"
+    >
+      <div class="vehicle-card__head">
+        <span class="vehicle-card__badge">${escapeHtml(letter)}</span>
+        <p class="vehicle-card__category">${escapeHtml(vehicle.categoria_nome || fleetGroupTag(vehicle))}</p>
+      </div>
+      <h2 class="vehicle-card__title">${title}</h2>
+      <p class="vehicle-card__subtitle">${subtitle}</p>
+      <div class="vehicle-card__media">${media}</div>
+      ${specTagsHtml(vehicle)}
+      <ul class="vehicle-card__features">${featureRow(vehicle)}</ul>
+      ${
+        daily
+          ? `<p class="vehicle-card__price"><span class="vehicle-card__price-label">${escapeHtml(i18n('groups.daily_from'))}</span> <strong>${escapeHtml(daily)}</strong></p>`
+          : ''
+      }
+      <button type="button" class="vehicle-card__cta btn btn--primary" data-rent>${escapeHtml(i18n('groups.continue_reserve'))}</button>
+    </article>
+  `;
+}
+
+function bindRentButtons(root) {
+  $$('.group-card__cta[data-rent], .vehicle-card__cta[data-rent]', root).forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const card = btn.closest('.group-card, .vehicle-card');
+      const categoriaId = card?.getAttribute('data-categoria-id');
+      const veiculoId = card?.getAttribute('data-veiculo-id') || null;
+      if (categoriaId) openReserveModal(categoriaId, veiculoId);
+    });
+  });
+}
+
+function showEmptyState({ hasData, vehicleMode }) {
+  const empty = $('#groups-empty');
+  if (!empty) return;
+  const emptyText = $('#groups-empty .groups-empty__text');
+  if (!hasData) {
+    empty.hidden = false;
+    if (emptyText) {
+      if (vehicleMode && lastVehicles.length) {
+        emptyText.textContent = i18n('groups.empty_vehicles_filtered');
+      } else if (!vehicleMode && lastGroups.length) {
         emptyText.textContent = i18n('groups.empty_filtered');
-      } else if (emptyText && !groups.length) {
+      } else {
         emptyText.textContent = i18n('groups.empty');
       }
     }
-    rail?.classList.remove('is-visible');
+    $('#groups-rail')?.classList.remove('is-visible');
+    return;
+  }
+  empty.hidden = true;
+}
+
+function renderGroupsGrid(groups) {
+  const host = $('#groups-sections');
+  const rail = $('#groups-rail');
+  if (!host) return;
+
+  if (!groups.length) {
+    host.innerHTML = '';
+    showEmptyState({ hasData: false, vehicleMode: false });
     return;
   }
 
-  if (empty) empty.hidden = true;
-  const segments = groupFleetBySegment(filtered);
+  showEmptyState({ hasData: true, vehicleMode: false });
+  const segments = groupFleetBySegment(groups);
   let html = '';
   segments.forEach((items, segmentTitle) => {
     const segId = segmentTitle.replace(/\W/g, '') || 'geral';
@@ -288,7 +394,7 @@ function renderGroupsGrid(groups) {
   });
   host.innerHTML = html;
 
-  const letters = [...new Map(filtered.map((g) => [fleetGroupLetter(g), g])).entries()];
+  const letters = [...new Map(groups.map((g) => [fleetGroupLetter(g), g])).entries()];
   if (rail) {
     rail.innerHTML = letters
       .map(
@@ -304,12 +410,121 @@ function renderGroupsGrid(groups) {
     });
   }
 
-  $$('.group-card__cta[data-rent]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const categoriaId = btn.closest('.group-card')?.getAttribute('data-categoria-id');
-      if (categoriaId) openReserveModal(categoriaId);
+  bindRentButtons(host);
+}
+
+function renderVehiclesGrid(vehicles) {
+  const host = $('#groups-sections');
+  const rail = $('#groups-rail');
+  if (!host) return;
+
+  const filtered = applyVehicleFilters(vehicles);
+  if (!filtered.length) {
+    host.innerHTML = '';
+    showEmptyState({ hasData: false, vehicleMode: true });
+    return;
+  }
+
+  showEmptyState({ hasData: true, vehicleMode: true });
+  const filters = readFilterState();
+  let html = '';
+
+  if (filters?.tarifa !== 'all') {
+    html += `
+      <section class="groups-section groups-section--vehicles" aria-labelledby="vehicles-tariff">
+        <h2 class="groups-section__title" id="vehicles-tariff">${escapeHtml(i18n('groups.vehicle_group_label', { letter: filters.tarifa }))}</h2>
+        <div class="vehicles-grid">${filtered.map((v) => vehicleCardHtml(v)).join('')}</div>
+      </section>
+    `;
+  } else {
+    const byLetter = new Map();
+    filtered.forEach((v) => {
+      const letter = fleetGroupLetter(v);
+      if (!byLetter.has(letter)) byLetter.set(letter, []);
+      byLetter.get(letter).push(v);
     });
-  });
+    const letters = [...byLetter.keys()].sort();
+    html = letters
+      .map((letter) => {
+        const items = byLetter.get(letter);
+        const segId = `veh-${letter}`;
+        return `
+          <section class="groups-section groups-section--vehicles" aria-labelledby="${segId}">
+            <h2 class="groups-section__title" id="${segId}">${escapeHtml(i18n('groups.vehicle_group_label', { letter }))}</h2>
+            <div class="vehicles-grid">${items.map((v) => vehicleCardHtml(v)).join('')}</div>
+          </section>
+        `;
+      })
+      .join('');
+  }
+
+  host.innerHTML = html;
+  rail?.classList.remove('is-visible');
+  bindRentButtons(host);
+}
+
+async function ensureVehiclesLoaded() {
+  if (lastVehicles.length) return lastVehicles;
+  if (!lastSearch) return [];
+  if (lastVehiclesPromise) return lastVehiclesPromise;
+
+  lastVehiclesPromise = bind()
+    .veiculos({
+      filial_id: lastSearch.filial_id,
+      retirada_em: lastSearch.retirada_em,
+      devolucao_em: lastSearch.devolucao_em,
+    })
+    .then((resp) => {
+      lastVehicles = normalizeList(resp);
+      return lastVehicles;
+    })
+    .finally(() => {
+      lastVehiclesPromise = null;
+    });
+
+  return lastVehiclesPromise;
+}
+
+async function renderResults() {
+  if (!lastGroups.length && !lastSearch) return;
+  const mode = resolveViewMode();
+  if (mode === 'groups') {
+    renderGroupsGrid(lastGroups);
+    updateResultsStatus('groups');
+    return;
+  }
+
+  const loading = $('#groups-loading');
+  if (loading) loading.hidden = false;
+  try {
+    const vehicles = await ensureVehiclesLoaded();
+    renderVehiclesGrid(vehicles);
+    updateResultsStatus('vehicles', vehicles);
+  } catch (err) {
+    renderVehiclesGrid([]);
+    const emptyText = $('#groups-empty .groups-empty__text');
+    if (emptyText) emptyText.textContent = err.message || i18n('search.error.load_groups');
+    $('#groups-empty').hidden = false;
+  } finally {
+    if (loading) loading.hidden = true;
+  }
+}
+
+function updateResultsStatus(mode, vehicles = []) {
+  const statusEl = $('#search-status');
+  if (!statusEl || !lastSearch) return;
+  if (mode === 'groups') {
+    statusEl.textContent = lastGroups.length
+      ? i18n('search.status.groups_page', { count: lastGroups.length })
+      : i18n('search.status.no_vehicles');
+    statusEl.classList.remove('is-error');
+    return;
+  }
+  const filtered = applyVehicleFilters(vehicles.length ? vehicles : lastVehicles);
+  statusEl.textContent = filtered.length
+    ? i18n('search.status.groups_page', { count: filtered.length })
+    : i18n('search.status.no_vehicles');
+  statusEl.classList.remove('is-error');
 }
 
 async function loadGroups(params) {
@@ -318,17 +533,18 @@ async function loadGroups(params) {
   if (statusEl) statusEl.textContent = i18n('groups.loading_groups');
   if (loading) loading.hidden = false;
 
+  lastVehicles = [];
+  lastVehiclesPromise = null;
+
   try {
     const resp = await bind().grupos(params);
     const groups = bind().mapGruposToFleet(resp);
     lastGroups = groups;
-    renderGroupsGrid(groups);
-    if (statusEl) {
-      statusEl.textContent = groups.length
-        ? i18n('search.status.groups_page', { count: groups.length })
-        : i18n('search.status.no_vehicles');
-    }
+    rebuildCategoryLookup();
+    await renderResults();
   } catch (err) {
+    lastGroups = [];
+    rebuildCategoryLookup();
     renderGroupsGrid([]);
     const emptyText = $('#groups-empty .groups-empty__text');
     if (emptyText) emptyText.textContent = err.message || i18n('search.error.load_groups');
@@ -363,11 +579,14 @@ async function loadCotacaoPreview(categoriaId) {
   }
 }
 
-function openReserveModal(categoriaId) {
+function openReserveModal(categoriaId, veiculoId = null) {
   if (!lastSearch) return;
   pendingCategoriaId = categoriaId;
+  pendingVeiculoId = veiculoId;
   $('#reserve-modal')?.classList.add('is-open');
   $('#reserve-categoria-id').value = categoriaId;
+  const veiculoField = $('#reserve-veiculo-id');
+  if (veiculoField) veiculoField.value = veiculoId || '';
   loadCotacaoPreview(categoriaId);
 }
 
@@ -377,7 +596,7 @@ async function submitReservation(e) {
   const msg = $('#reserve-message');
   msg.textContent = i18n('reserve.sending_short');
   try {
-    await bind().reservar({
+    const payload = {
       cliente: {
         nome: $('#reserve-nome')?.value?.trim(),
         email: $('#reserve-email')?.value?.trim(),
@@ -390,7 +609,9 @@ async function submitReservation(e) {
       retirada_em: lastSearch.retirada_em,
       devolucao_em: lastSearch.devolucao_em,
       observacoes: 'Site Rodavia',
-    });
+    };
+    if (pendingVeiculoId) payload.veiculo_id = pendingVeiculoId;
+    await bind().reservar(payload);
     msg.textContent = i18n('reserve.success_short');
     msg.classList.add('is-success');
   } catch (err) {
@@ -405,8 +626,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   initSearchWidget();
   $('#reserve-form')?.addEventListener('submit', submitReservation);
 
-  document.addEventListener('groups:filter-change', () => {
-    if (lastGroups.length) renderGroupsGrid(lastGroups);
+  document.addEventListener('groups:filter-change', async (e) => {
+    const source = e.detail?.source;
+    if (source === 'attribute' && !isAttributeFiltersDefault()) {
+      resetTariffToAll();
+    }
+    await renderResults();
   });
 
   await bind().boot();
@@ -436,10 +661,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   document.addEventListener('site:langchange', () => {
+    const empty = $('#groups-empty');
     const emptyText = $('#groups-empty .groups-empty__text');
-    if (emptyText && $('#groups-empty') && !$('#groups-empty').hidden) {
-      emptyText.textContent = i18n('groups.empty');
+    if (emptyText && empty && !empty.hidden) {
+      emptyText.textContent =
+        resolveViewMode() === 'vehicles'
+          ? i18n('groups.empty_vehicles_filtered')
+          : i18n('groups.empty');
     }
-    if (lastGroups.length) renderGroupsGrid(lastGroups);
+    if (lastGroups.length) renderResults();
   });
 });

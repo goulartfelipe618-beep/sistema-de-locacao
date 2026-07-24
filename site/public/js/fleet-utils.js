@@ -52,11 +52,18 @@ export function fleetGroupSubtitle(group) {
 }
 
 export function fleetGroupLetter(group) {
+  const tariff = group.grupo_tarifario || group.codigo || group.sigla;
+  if (tariff) {
+    const letter = String(tariff).trim().charAt(0).toUpperCase();
+    if (/[A-G]/.test(letter)) return letter;
+  }
   const title = fleetGroupTitle(group);
-  const match = title.match(/Grupo\s+([A-Za-z0-9]+)/i);
-  if (match) return match[1].charAt(0).toUpperCase();
+  const match = title.match(/Grupo\s+([A-G])/i);
+  if (match) return match[1].toUpperCase();
   return shortId(group.categoria_id).charAt(0);
 }
+
+export const TARIFF_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
 
 export function fleetGroupTag(group) {
   if (group.segmento || group.categoria_segmento) {

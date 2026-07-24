@@ -68,6 +68,9 @@
     grupos: function (query) {
       return request('GET', '/grupos', { query: query });
     },
+    veiculos: function (query) {
+      return request('GET', '/veiculos', { query: query });
+    },
     cotacao: function (body) {
       return request('POST', '/cotacao', { body: body });
     },
