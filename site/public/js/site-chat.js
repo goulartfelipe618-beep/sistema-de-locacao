@@ -7,7 +7,6 @@
 
   var TOTAL_STEPS = 4;
   var currentStep = 1;
-  var lockedScrollY = 0;
 
   var MESSAGE_ICON =
     '<svg class="chat-fab__icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
@@ -243,22 +242,16 @@
   }
 
   function lockPageScroll() {
-    if (document.body.classList.contains('chat-scroll-locked')) return;
-    lockedScrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
+    if (document.documentElement.classList.contains('chat-scroll-locked')) return;
     document.documentElement.classList.add('chat-scroll-locked');
     document.body.classList.add('chat-scroll-locked');
-    document.body.style.top = '-' + lockedScrollY + 'px';
   }
 
   function unlockPageScroll() {
-    if (!document.body.classList.contains('chat-scroll-locked')) return;
-    var y = lockedScrollY;
+    if (!document.documentElement.classList.contains('chat-scroll-locked')) return;
     document.documentElement.classList.remove('chat-scroll-locked');
     document.body.classList.remove('chat-scroll-locked');
     document.body.style.top = '';
-    requestAnimationFrame(function () {
-      window.scrollTo(0, y);
-    });
   }
 
   function setFabOpen(open) {
@@ -393,6 +386,9 @@
         e.preventDefault();
         e.stopPropagation();
         closeDrawer();
+      });
+      btn.addEventListener('mousedown', function (e) {
+        e.preventDefault();
       });
     });
 

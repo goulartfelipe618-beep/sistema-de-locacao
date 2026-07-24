@@ -248,6 +248,8 @@
     var mode = document.body.getAttribute('data-site-chrome') || '';
     if (mode === 'footer') {
       global.SiteChrome.injectFooter();
+      global.SiteChrome.ensureGlobalWidgets();
+      global.SiteChrome.initBackToTop();
       if (global.SiteI18n && typeof global.SiteI18n.apply === 'function') {
         global.SiteI18n.apply();
       }

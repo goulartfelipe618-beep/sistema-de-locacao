@@ -376,6 +376,7 @@ function getCookieConsent() {
 function setCookieConsent(value) {
   try {
     localStorage.setItem(SITE_CONFIG.cookieConsentKey, value);
+    document.documentElement.classList.add('cookie-consent-set');
   } catch {
     /* ignore */
   }
@@ -386,22 +387,28 @@ function initCookieBanner() {
   const consent = getCookieConsent();
   if (consent) {
     banner?.classList.add('is-hidden');
+    banner?.setAttribute('hidden', '');
     banner?.setAttribute('aria-hidden', 'true');
     document.body.classList.remove('has-cookie-banner');
+    document.documentElement.classList.add('cookie-consent-set');
     return;
   }
   banner?.classList.remove('is-hidden');
+  banner?.removeAttribute('hidden');
   banner?.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('has-cookie-banner');
 
   $('#cookie-accept')?.addEventListener('click', () => {
     setCookieConsent('accepted');
     banner.classList.add('is-hidden');
+    banner.setAttribute('hidden', '');
     banner.setAttribute('aria-hidden', 'true');
     document.body.classList.remove('has-cookie-banner');
   });
   $('#cookie-reject')?.addEventListener('click', () => {
     setCookieConsent('rejected');
     banner.classList.add('is-hidden');
+    banner.setAttribute('hidden', '');
     banner.setAttribute('aria-hidden', 'true');
     document.body.classList.remove('has-cookie-banner');
   });
@@ -413,9 +420,17 @@ function initCookieBanner() {
     setCookieConsent('accepted');
     $('#cookie-prefs-modal')?.classList.remove('is-open');
     banner?.classList.add('is-hidden');
+    banner?.setAttribute('hidden', '');
     banner?.setAttribute('aria-hidden', 'true');
     document.body.classList.remove('has-cookie-banner');
   });
+}
+
+function initGlobalWidgets() {
+  if (window.SiteChrome) {
+    window.SiteChrome.ensureGlobalWidgets?.();
+    window.SiteChrome.initBackToTop?.();
+  }
 }
 
 function initModals() {
@@ -717,6 +732,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initTopBarCountry();
     initMobileNav();
     initCarousels();
+    initGlobalWidgets();
     initCookieBanner();
     initModals();
     initSearchWidget();

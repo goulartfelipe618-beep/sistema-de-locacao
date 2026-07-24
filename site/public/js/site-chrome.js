@@ -287,7 +287,7 @@
     tpl.innerHTML = buildWidgetsHtml();
     document.body.appendChild(tpl.content);
 
-    if (!document.body.classList.contains('has-cookie-banner')) {
+    if (!document.body.classList.contains('has-cookie-banner') && !getCookieConsent()) {
       document.body.classList.add('has-cookie-banner');
     }
   }
@@ -341,6 +341,7 @@
   function setCookieConsent(value) {
     try {
       localStorage.setItem(COOKIE_CONSENT_KEY, value);
+      document.documentElement.classList.add('cookie-consent-set');
     } catch (e) {
       /* ignore */
     }
@@ -353,17 +354,22 @@
     var consent = getCookieConsent();
     if (consent) {
       banner.classList.add('is-hidden');
+      banner.setAttribute('hidden', '');
       banner.setAttribute('aria-hidden', 'true');
       document.body.classList.remove('has-cookie-banner');
+      document.documentElement.classList.add('cookie-consent-set');
       return;
     }
 
     banner.classList.remove('is-hidden');
+    banner.removeAttribute('hidden');
     banner.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('has-cookie-banner');
 
     $('#cookie-accept')?.addEventListener('click', function () {
       setCookieConsent('accepted');
       banner.classList.add('is-hidden');
+      banner.setAttribute('hidden', '');
       banner.setAttribute('aria-hidden', 'true');
       document.body.classList.remove('has-cookie-banner');
     });
@@ -371,6 +377,7 @@
     $('#cookie-reject')?.addEventListener('click', function () {
       setCookieConsent('rejected');
       banner.classList.add('is-hidden');
+      banner.setAttribute('hidden', '');
       banner.setAttribute('aria-hidden', 'true');
       document.body.classList.remove('has-cookie-banner');
     });
@@ -384,6 +391,7 @@
       setCookieConsent('accepted');
       $('#cookie-prefs-modal')?.classList.remove('is-open');
       banner.classList.add('is-hidden');
+      banner.setAttribute('hidden', '');
       banner.setAttribute('aria-hidden', 'true');
       document.body.classList.remove('has-cookie-banner');
     });
@@ -457,8 +465,10 @@
     injectShell: injectShell,
     injectFooter: injectFooter,
     injectWidgets: injectWidgets,
+    ensureGlobalWidgets: ensureGlobalWidgets,
     initMobileNav: initMobileNav,
     initCookieBanner: initCookieBanner,
+    initBackToTop: initBackToTop,
     initModals: initModals,
   };
 })(window);

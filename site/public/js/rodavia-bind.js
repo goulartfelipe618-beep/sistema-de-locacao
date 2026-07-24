@@ -184,19 +184,17 @@
     section.hidden = !anyVisible;
   }
 
-  function applyPageTransition(transicao) {
+  function syncPageTransition(transicao) {
     var overlay = $('#site-page-transition');
     if (!overlay) return;
-    var img = $('#site-page-transition-logo');
     if (!transicao || !transicao.ativo) {
       overlay.hidden = true;
       overlay.setAttribute('aria-hidden', 'true');
+      overlay.classList.remove('is-hiding');
       return;
     }
-    overlay.hidden = false;
-    overlay.setAttribute('aria-hidden', 'false');
-    overlay.classList.remove('is-hiding');
     overlay.style.backgroundColor = transicao.fundo || 'var(--color-bg)';
+    var img = $('#site-page-transition-logo');
     if (img) {
       var size = Number(transicao.tamanho_px) || 120;
       img.style.width = size + 'px';
@@ -213,17 +211,17 @@
         img.hidden = true;
       }
     }
+    overlay.hidden = true;
+    overlay.setAttribute('aria-hidden', 'true');
+    overlay.classList.remove('is-hiding');
   }
 
   function hidePageTransition() {
     var overlay = $('#site-page-transition');
-    if (!overlay || overlay.hidden) return;
-    overlay.classList.add('is-hiding');
-    window.setTimeout(function () {
-      overlay.hidden = true;
-      overlay.setAttribute('aria-hidden', 'true');
-      overlay.classList.remove('is-hiding');
-    }, 360);
+    if (!overlay) return;
+    overlay.hidden = true;
+    overlay.setAttribute('aria-hidden', 'true');
+    overlay.classList.remove('is-hiding');
   }
 
   function applySiteTheme(tema) {
@@ -236,7 +234,7 @@
       }
     });
     root.classList.add('erp-theme-ready');
-    if (tema.transicao) applyPageTransition(tema.transicao);
+    if (tema.transicao) syncPageTransition(tema.transicao);
     if (tema.vitrine) applyHomeShowcase(tema.vitrine);
     if (global.RodaviaCache && typeof global.RodaviaCache.persistThemeCss === 'function') {
       global.RodaviaCache.persistThemeCss(tema.css, tema.transicao);
@@ -695,6 +693,13 @@
       w.RodaviaBind.applyCatalog(cached);
       document.documentElement.classList.add('erp-ready');
       document.documentElement.classList.remove('erp-loading');
+      document.documentElement.classList.remove('erp-boot-fallback');
+      var overlay = document.getElementById('site-page-transition');
+      if (overlay) {
+        overlay.hidden = true;
+        overlay.setAttribute('aria-hidden', 'true');
+        overlay.classList.remove('is-hiding');
+      }
     }
   }
 

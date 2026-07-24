@@ -108,6 +108,15 @@ body.has-cookie-banner {
   padding-bottom: var(--cookie-h);
 }
 
+html.cookie-consent-set .cookie-banner {
+  display: none !important;
+}
+
+html.cookie-consent-set body.has-cookie-banner {
+  --cookie-h: 0px;
+  padding-bottom: 0;
+}
+
 img {
   max-width: 100%;
   height: auto;
@@ -2111,16 +2120,13 @@ body.chat-drawer-open .chat-fab,
 }
 
 body.chat-scroll-locked {
-  position: fixed;
-  left: 0;
-  right: 0;
-  width: 100%;
   overflow: hidden;
   touch-action: none;
 }
 
 html.chat-scroll-locked {
   overflow: hidden;
+  height: 100%;
 }
 
 body.chat-drawer-open {
