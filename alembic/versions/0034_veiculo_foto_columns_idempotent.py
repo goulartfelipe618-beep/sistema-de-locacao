@@ -1,6 +1,6 @@
 """Garante colunas de foto de veículo (idempotente para deploys parciais).
 
-Revision ID: 0034_veiculo_foto_columns_idempotent
+Revision ID: 0034_veiculo_foto_fix
 Revises: 0033_veiculo_foto_capa
 Create Date: 2026-07-23
 """
@@ -11,7 +11,7 @@ from collections.abc import Sequence
 
 from alembic import op
 
-revision: str = "0034_veiculo_foto_columns_idempotent"
+revision: str = "0034_veiculo_foto_fix"
 down_revision: str | None = "0033_veiculo_foto_capa"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
