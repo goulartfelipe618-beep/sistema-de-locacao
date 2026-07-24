@@ -188,6 +188,28 @@
       </div>
     </fieldset>
 
+    <fieldset style="border:none;padding:0;margin:0 0 24px">
+      <legend style="font-weight:700;font-size:15px;margin-bottom:12px">Vitrine da home (3 imagens)</legend>
+      <p class="form-help">
+        Três imagens exibidas abaixo dos cards de serviços na página inicial.
+        Proporção recomendada: <strong>1080 × 1350 px</strong> (retrato).
+      </p>
+      {% for slot in [1, 2, 3] %}
+      <div class="form-group" style="margin-bottom:16px">
+        {{ field_label('Imagem ' ~ slot ~ ' (PNG/JPG/WebP/SVG)', false, 'site_showcase_image_' ~ slot) }}
+        <input class="form-input" type="file" id="site_showcase_image_{{ slot }}" name="showcase_image_{{ slot }}"
+               accept="image/png,image/jpeg,image/webp,image/svg+xml">
+        {% if showcase_flags.get(slot) %}
+        <p class="form-help">Imagem {{ slot }} configurada. Envie outra para substituir.</p>
+        <label class="form-label" style="margin-top:8px">
+          <input type="checkbox" name="remove_showcase_image_{{ slot }}" value="on">
+          Remover imagem {{ slot }}
+        </label>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </fieldset>
+
     <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:16px">
       <button class="btn btn-primary" type="submit">Salvar tema</button>
       <button class="btn btn-secondary" type="submit" name="reset_defaults" value="on"

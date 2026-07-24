@@ -23,6 +23,7 @@ from app.modules.tenants.models import Filial, Tenant
 from app.modules.tenants.repository import FilialRepository, TenantRepository
 from app.modules.tenants.schemas import FilialCreate, FilialUpdate, SiteThemeUpdate, TenantSystemUpdate, TenantUpdate
 from app.modules.tenants.site_theme import SITE_THEME_COLOR_FIELDS, resolved_site_colors, site_theme_payload
+from app.modules.tenants.site_showcase import SHOWCASE_SLOTS
 from app.modules.tenants.setup import setup_missing_fields
 from app.shared.enums import AuditAction
 
@@ -147,6 +148,10 @@ class TenantService:
             tenant.site_transition_image_storage_key = None
             tenant.site_transition_image_content_type = None
             tenant.site_transition_image_url = None
+            for slot in SHOWCASE_SLOTS:
+                setattr(tenant, f"site_showcase_{slot}_storage_key", None)
+                setattr(tenant, f"site_showcase_{slot}_content_type", None)
+                setattr(tenant, f"site_showcase_{slot}_url", None)
         else:
             for field in SITE_THEME_COLOR_FIELDS:
                 setattr(tenant, field, getattr(data, field))
@@ -158,6 +163,11 @@ class TenantService:
                 tenant.site_transition_image_storage_key = None
                 tenant.site_transition_image_content_type = None
                 tenant.site_transition_image_url = None
+            for slot in SHOWCASE_SLOTS:
+                if getattr(data, f"remove_showcase_image_{slot}"):
+                    setattr(tenant, f"site_showcase_{slot}_storage_key", None)
+                    setattr(tenant, f"site_showcase_{slot}_content_type", None)
+                    setattr(tenant, f"site_showcase_{slot}_url", None)
         await audit_service.record(
             AuditAction.UPDATE,
             entity="tenant",
@@ -202,6 +212,48 @@ class TenantService:
             entity="tenant",
             entity_id=tenant.id,
             description="Imagem da transição de carregamento do site atualizada",
+        )
+        return tenant
+
+    async def upload_site_showcase_image(
+        self,
+        tenant_id: uuid.UUID,
+        slot: int,
+        file_bytes: bytes,
+        filename: str,
+        content_type: str,
+    ) -> Tenant:
+        if slot not in SHOWCASE_SLOTS:
+            raise ValidationError("Slot de vitrine inválido.")
+        if not file_bytes:
+            raise ValidationError("Arquivo de imagem vazio.")
+        tenant = await self.get_tenant(tenant_id)
+        safe_type = content_type or "image/png"
+        uploaded = False
+        if storage_service.is_configured():
+            try:
+                key = storage_service.build_key(
+                    tenant_id, "tenants", f"site-showcase-{slot}", filename or f"showcase-{slot}.png"
+                )
+                storage_service.upload_bytes(key, file_bytes, safe_type)
+                setattr(tenant, f"site_showcase_{slot}_storage_key", key)
+                setattr(tenant, f"site_showcase_{slot}_content_type", safe_type)
+                setattr(tenant, f"site_showcase_{slot}_url", None)
+                uploaded = True
+            except Exception as exc:
+                logger.warning(
+                    "Falha ao enviar imagem %s da vitrine ao R2, usando inline: %s", slot, exc
+                )
+        if not uploaded:
+            encoded = base64.b64encode(file_bytes).decode("ascii")
+            setattr(tenant, f"site_showcase_{slot}_url", f"data:{safe_type};base64,{encoded}")
+            setattr(tenant, f"site_showcase_{slot}_storage_key", None)
+            setattr(tenant, f"site_showcase_{slot}_content_type", safe_type)
+        await audit_service.record(
+            AuditAction.UPDATE,
+            entity="tenant",
+            entity_id=tenant.id,
+            description=f"Imagem {slot} da vitrine da home atualizada",
         )
         return tenant
 

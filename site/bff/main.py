@@ -119,6 +119,25 @@ def _normalize_tema_payload(tema: Any) -> Any:
         if row.get("imagem_url") == "/api/v1/public/transicao/imagem":
             row["imagem_url"] = "/bff/transicao/imagem"
         normalized["transicao"] = row
+    vitrine = normalized.get("vitrine")
+    if isinstance(vitrine, dict):
+        row = dict(vitrine)
+        imagens = row.get("imagens")
+        if isinstance(imagens, list):
+            normalized_imagens: list[dict[str, Any]] = []
+            for item in imagens:
+                if not isinstance(item, dict):
+                    continue
+                img_row = dict(item)
+                url = img_row.get("imagem_url")
+                prefix = "/api/v1/public/vitrine/imagem/"
+                if isinstance(url, str) and url.startswith(prefix):
+                    slot = url[len(prefix) :].strip("/")
+                    if slot:
+                        img_row["imagem_url"] = f"/bff/vitrine/imagem/{slot}"
+                normalized_imagens.append(img_row)
+            row["imagens"] = normalized_imagens
+        normalized["vitrine"] = row
     return normalized
 
 
@@ -241,6 +260,31 @@ async def bff_catalog() -> JSONResponse:
 @app.get("/bff/transicao/imagem")
 async def bff_transicao_imagem() -> Response:
     url = f"{settings.erp_api_base}/api/v1/public/transicao/imagem"
+    headers = _erp_headers("catalogo:read")
+    headers["Accept"] = "*/*"
+    try:
+        async with httpx.AsyncClient(timeout=settings.bff_request_timeout_seconds) as client:
+            response = await client.get(url, headers=headers)
+    except httpx.TimeoutException as exc:
+        raise HTTPException(status_code=504, detail="ERP demorou para responder.") from exc
+    except httpx.RequestError as exc:
+        raise HTTPException(status_code=502, detail="Não foi possível contactar o ERP.") from exc
+
+    if response.status_code >= 400:
+        raise HTTPException(status_code=response.status_code, detail="Imagem indisponível")
+
+    return Response(
+        content=response.content,
+        media_type=response.headers.get("content-type", "image/png"),
+        headers={"Cache-Control": "public, max-age=3600, stale-while-revalidate=86400"},
+    )
+
+
+@app.get("/bff/vitrine/imagem/{slot}")
+async def bff_vitrine_imagem(slot: int) -> Response:
+    if slot not in (1, 2, 3):
+        raise HTTPException(status_code=404, detail="Imagem indisponível")
+    url = f"{settings.erp_api_base}/api/v1/public/vitrine/imagem/{slot}"
     headers = _erp_headers("catalogo:read")
     headers["Accept"] = "*/*"
     try:

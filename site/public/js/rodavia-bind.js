@@ -12,7 +12,8 @@
     fleetTrack: '#fleet-track',
     fleetShowcase: '#fleet-showcase',
     fleetEmpty: '#fleet-empty',
-    fleetAllGroupsLink: '#fleet-all-groups-link',
+    homeShowcaseSection: '#home-showcase-section',
+    homeShowcase: '#home-showcase',
     reserveModal: '#reserve-modal',
     reserveForm: '#reserve-form',
     reserveCategoriaId: '#reserve-categoria-id',
@@ -99,6 +100,43 @@
     return nome;
   }
 
+  function normalizeShowcaseUrl(url) {
+    if (!url) return null;
+    if (url.indexOf('/api/v1/public/vitrine/imagem/') >= 0) {
+      return url.replace('/api/v1/public/vitrine/imagem/', '/bff/vitrine/imagem/');
+    }
+    return url;
+  }
+
+  function applyHomeShowcase(vitrine) {
+    var section = $(SELECTORS.homeShowcaseSection);
+    var root = $(SELECTORS.homeShowcase);
+    if (!section || !root) return;
+    var rows = vitrine && Array.isArray(vitrine.imagens) ? vitrine.imagens : [];
+    var anyVisible = false;
+    [1, 2, 3].forEach(function (slot) {
+      var fig = root.querySelector('[data-showcase-slot="' + slot + '"]');
+      if (!fig) return;
+      var row = rows.find(function (item) {
+        return Number(item && item.slot) === slot;
+      });
+      var url = normalizeShowcaseUrl(row && row.imagem_url);
+      if (!url) {
+        fig.hidden = true;
+        return;
+      }
+      var img = fig.querySelector('img');
+      if (img) {
+        img.src = url;
+        img.width = Number(row.largura_px) || 1080;
+        img.height = Number(row.altura_px) || 1350;
+      }
+      fig.hidden = false;
+      anyVisible = true;
+    });
+    section.hidden = !anyVisible;
+  }
+
   function applyPageTransition(transicao) {
     var overlay = $('#site-page-transition');
     if (!overlay) return;
@@ -152,6 +190,7 @@
     });
     root.classList.add('erp-theme-ready');
     if (tema.transicao) applyPageTransition(tema.transicao);
+    if (tema.vitrine) applyHomeShowcase(tema.vitrine);
     if (global.RodaviaCache && typeof global.RodaviaCache.persistThemeCss === 'function') {
       global.RodaviaCache.persistThemeCss(tema.css, tema.transicao);
     } else {

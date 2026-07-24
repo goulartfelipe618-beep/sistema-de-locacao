@@ -95,6 +95,33 @@ def test_site_transition_custom() -> None:
     assert payload["transicao"]["imagem_url"] == "data:image/png;base64,abc"
 
 
+def test_site_showcase_defaults_empty() -> None:
+    tenant = Tenant(slug="matriz", legal_name="Teste", plan="standard")
+    from app.modules.tenants.site_showcase import site_showcase_payload
+
+    payload = site_showcase_payload(tenant)
+    assert len(payload["imagens"]) == 3
+    assert all(row["imagem_url"] is None for row in payload["imagens"])
+    assert payload["imagens"][0]["largura_px"] == 1080
+    assert payload["imagens"][0]["altura_px"] == 1350
+
+
+def test_site_showcase_custom() -> None:
+    tenant = Tenant(
+        slug="matriz",
+        legal_name="Teste",
+        plan="standard",
+        site_showcase_1_url="data:image/jpeg;base64,abc",
+        site_showcase_2_url="data:image/jpeg;base64,def",
+    )
+    from app.modules.tenants.site_showcase import site_showcase_payload
+
+    payload = site_theme_payload(tenant)
+    assert payload["vitrine"]["imagens"][0]["imagem_url"] == "data:image/jpeg;base64,abc"
+    assert payload["vitrine"]["imagens"][1]["imagem_url"] == "data:image/jpeg;base64,def"
+    assert payload["vitrine"]["imagens"][2]["imagem_url"] is None
+
+
 def test_site_theme_topbar_tab_colors() -> None:
     tenant = Tenant(
         slug="matriz",

@@ -31,6 +31,7 @@ from app.modules.integracoes.public_site_service import (
 from app.modules.integracoes.site_atendimento import SiteAtendimentoService, build_atendimento_webhook_url
 from app.modules.integracoes.outbound import notify_outbound_event
 from app.modules.integracoes.site_slides import SiteSlideService, decode_slide_image_bytes
+from app.modules.tenants.site_showcase import resolve_showcase_image_bytes
 from app.modules.tenants.site_transition import resolve_transition_image_bytes
 from app.modules.locacoes.service import ContratoService
 from app.modules.reservas.schemas import ReservaCreate
@@ -110,6 +111,31 @@ async def public_transicao_imagem(
     resolved = resolve_transition_image_bytes(tenant)
     if resolved is None:
         raise NotFoundError("Imagem da transição indisponível.")
+    data, content_type = resolved
+    return Response(
+        content=data,
+        media_type=content_type,
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
+
+
+@public_router.get("/vitrine/imagem/{slot}")
+async def public_vitrine_imagem(
+    slot: int,
+    session: PublicSessionDep,
+    key: Annotated[IntApiKey, Depends(require_api_key_scope("catalogo:read"))],
+) -> Response:
+    """Imagem da vitrine da home (1, 2 ou 3 — configurável no ERP)."""
+    from app.core.exceptions import NotFoundError
+
+    if slot not in (1, 2, 3):
+        raise NotFoundError("Imagem da vitrine indisponível.")
+    tenant = await session.get(Tenant, key.tenant_id)
+    if tenant is None:
+        raise NotFoundError("Imagem da vitrine indisponível.")
+    resolved = resolve_showcase_image_bytes(tenant, slot)
+    if resolved is None:
+        raise NotFoundError("Imagem da vitrine indisponível.")
     data, content_type = resolved
     return Response(
         content=data,

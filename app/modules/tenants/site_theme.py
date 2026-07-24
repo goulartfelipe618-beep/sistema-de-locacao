@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from app.modules.tenants.models import Tenant
+from app.modules.tenants.site_showcase import site_showcase_payload
 from app.modules.tenants.site_transition import site_transition_payload
 
 DEFAULT_SITE_PRIMARY = "#111111"
@@ -206,4 +207,5 @@ def site_theme_payload(tenant: Tenant) -> dict[str, Any]:
         "css": css,
         "customizado": site_theme_is_customized(tenant),
         "transicao": site_transition_payload(tenant),
+        "vitrine": site_showcase_payload(tenant),
     }

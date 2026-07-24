@@ -108,6 +108,9 @@ class SiteThemeUpdate(BaseModel):
     site_transition_bg_color: str | None = Field(default=None, max_length=7)
     site_transition_image_size_px: int | None = Field(default=None, ge=48, le=400)
     remove_transition_image: bool = False
+    remove_showcase_image_1: bool = False
+    remove_showcase_image_2: bool = False
+    remove_showcase_image_3: bool = False
     reset_defaults: bool = False
 
     @field_validator(

@@ -43,6 +43,7 @@ from app.modules.integracoes.service import (
 from app.modules.integracoes.site_slides import SiteSlideService, resolve_slide_image_url
 from app.modules.tenants.schemas import SiteThemeUpdate
 from app.modules.tenants.service import FilialService, TenantService
+from app.modules.tenants.site_showcase import tenant_showcase_flags
 from app.modules.tenants.site_transition import site_transition_payload, tenant_has_transition_image
 from app.shared.enums import IntegracaoTipo
 
@@ -488,6 +489,7 @@ async def site_cores_list(
     )
     colors = resolved_site_colors(tenant)
     transition = site_transition_payload(tenant)
+    showcase_flags = tenant_showcase_flags(tenant)
     return render(
         request,
         "integracoes/site_cores.html",
@@ -498,6 +500,7 @@ async def site_cores_list(
             "tema": site_theme_payload(tenant),
             "transition": transition,
             "has_transition_image": tenant_has_transition_image(tenant),
+            "showcase_flags": showcase_flags,
             "can_edit": can_edit,
         },
     )
@@ -511,6 +514,9 @@ async def site_cores_salvar(
         AuthenticatedUser, Depends(require_web_permission("integracoes.site.editar"))
     ],
     transition_image: UploadFile | None = File(None),
+    showcase_image_1: UploadFile | None = File(None),
+    showcase_image_2: UploadFile | None = File(None),
+    showcase_image_3: UploadFile | None = File(None),
 ) -> HTMLResponse:
     svc = TenantService(session)
     form = await request.form()
@@ -540,6 +546,9 @@ async def site_cores_salvar(
             site_transition_bg_color=(form.get("site_transition_bg_color") or "").strip() or None,
             site_transition_image_size_px=size_px,
             remove_transition_image=form.get("remove_transition_image") == "on",
+            remove_showcase_image_1=form.get("remove_showcase_image_1") == "on",
+            remove_showcase_image_2=form.get("remove_showcase_image_2") == "on",
+            remove_showcase_image_3=form.get("remove_showcase_image_3") == "on",
             reset_defaults=form.get("reset_defaults") == "on",
         )
         await svc.update_site_theme(current_user.tenant_id, data)
@@ -552,6 +561,21 @@ async def site_cores_salvar(
                     transition_image.filename,
                     transition_image.content_type or "image/png",
                 )
+        for slot, upload in (
+            (1, showcase_image_1),
+            (2, showcase_image_2),
+            (3, showcase_image_3),
+        ):
+            if upload and upload.filename:
+                image_bytes = await upload.read()
+                if image_bytes:
+                    await svc.upload_site_showcase_image(
+                        current_user.tenant_id,
+                        slot,
+                        image_bytes,
+                        upload.filename,
+                        upload.content_type or "image/png",
+                    )
         await session.commit()
         request.session["_flash"] = {
             "type": "success",
@@ -563,6 +587,7 @@ async def site_cores_salvar(
         tenant = await svc.get_tenant(current_user.tenant_id)
         colors = resolved_site_colors(tenant)
         transition = site_transition_payload(tenant)
+        showcase_flags = tenant_showcase_flags(tenant)
         message = exc.message if isinstance(exc, AppError) else str(exc.errors()[0].get("msg", exc))
         return render(
             request,
@@ -574,6 +599,7 @@ async def site_cores_salvar(
                 "tema": site_theme_payload(tenant),
                 "transition": transition,
                 "has_transition_image": tenant_has_transition_image(tenant),
+                "showcase_flags": showcase_flags,
                 "can_edit": True,
                 "error": message,
             },
