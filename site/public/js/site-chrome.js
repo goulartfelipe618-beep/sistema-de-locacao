@@ -178,8 +178,28 @@
     );
   }
 
+  function buildGlobalWidgetsHtml() {
+    return (
+      '<div class="site-page-transition" id="site-page-transition" hidden aria-hidden="true">' +
+      '<img class="site-page-transition__logo" id="site-page-transition-logo" alt="" decoding="async" />' +
+      '</div>' +
+      '<button type="button" class="back-to-top" id="back-to-top" hidden data-i18n-aria="scroll.top" aria-label="Voltar ao topo">' +
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">' +
+      '<path d="M12 19V5M5 12l7-7 7 7"/>' +
+      '</svg>' +
+      '</button>'
+    );
+  }
+
+  function ensureGlobalWidgets() {
+    if (!$('#site-page-transition')) {
+      document.body.insertAdjacentHTML('beforeend', buildGlobalWidgetsHtml());
+    }
+  }
+
   function buildWidgetsHtml() {
     return (
+      buildGlobalWidgetsHtml() +
       '<aside class="cookie-banner" id="cookie-banner" role="dialog" aria-labelledby="cookie-title" aria-describedby="cookie-desc">' +
       '<div class="cookie-banner__inner">' +
       '<p class="cookie-banner__text" id="cookie-desc">' +
@@ -364,6 +384,26 @@
     });
   }
 
+  function initBackToTop() {
+    var btn = $('#back-to-top');
+    if (!btn || btn.dataset.bound === '1') return;
+    btn.dataset.bound = '1';
+    var threshold = Math.max(320, window.innerHeight * 0.6);
+
+    function updateVisibility() {
+      var show = window.scrollY > threshold;
+      btn.hidden = !show;
+      btn.classList.toggle('is-visible', show);
+    }
+
+    btn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    window.addEventListener('scroll', updateVisibility, { passive: true });
+    updateVisibility();
+  }
+
   function initModals() {
     if (global.SiteChat && typeof global.SiteChat.init === 'function') {
       global.SiteChat.init();
@@ -396,10 +436,12 @@
   }
 
   function init() {
+    ensureGlobalWidgets();
     injectAutoChrome();
     initSkipLink();
     initMobileNav();
     initCookieBanner();
+    initBackToTop();
     initModals();
     applyI18n();
     return bootErp();

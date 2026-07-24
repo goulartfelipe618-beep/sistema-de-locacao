@@ -109,9 +109,32 @@ async def bff_ping() -> Any:
     return await _erp_request("GET", "/api/v1/public/ping")
 
 
+def _normalize_tema_payload(tema: Any) -> Any:
+    if not isinstance(tema, dict):
+        return tema
+    normalized = dict(tema)
+    transicao = normalized.get("transicao")
+    if isinstance(transicao, dict):
+        row = dict(transicao)
+        if row.get("imagem_url") == "/api/v1/public/transicao/imagem":
+            row["imagem_url"] = "/bff/transicao/imagem"
+        normalized["transicao"] = row
+    return normalized
+
+
+def _normalize_empresa_payload(payload: Any) -> Any:
+    if not isinstance(payload, dict):
+        return payload
+    row = dict(payload)
+    if "tema" in row:
+        row["tema"] = _normalize_tema_payload(row["tema"])
+    return row
+
+
 @app.get("/bff/empresa")
 async def bff_empresa() -> Any:
-    return await _erp_request("GET", "/api/v1/public/empresa")
+    payload = await _erp_request("GET", "/api/v1/public/empresa")
+    return _normalize_empresa_payload(payload)
 
 
 @app.get("/bff/filiais")
@@ -205,13 +228,36 @@ async def bff_catalog() -> JSONResponse:
         _erp_request("GET", "/api/v1/public/slides"),
     )
     payload = {
-        "empresa": empresa,
+        "empresa": _normalize_empresa_payload(empresa),
         "filiais": filiais,
         "slides": _normalize_slides_payload(slides_raw),
     }
     return JSONResponse(
         content=payload,
         headers={"Cache-Control": "public, max-age=60, stale-while-revalidate=120"},
+    )
+
+
+@app.get("/bff/transicao/imagem")
+async def bff_transicao_imagem() -> Response:
+    url = f"{settings.erp_api_base}/api/v1/public/transicao/imagem"
+    headers = _erp_headers("catalogo:read")
+    headers["Accept"] = "*/*"
+    try:
+        async with httpx.AsyncClient(timeout=settings.bff_request_timeout_seconds) as client:
+            response = await client.get(url, headers=headers)
+    except httpx.TimeoutException as exc:
+        raise HTTPException(status_code=504, detail="ERP demorou para responder.") from exc
+    except httpx.RequestError as exc:
+        raise HTTPException(status_code=502, detail="Não foi possível contactar o ERP.") from exc
+
+    if response.status_code >= 400:
+        raise HTTPException(status_code=response.status_code, detail="Imagem indisponível")
+
+    return Response(
+        content=response.content,
+        media_type=response.headers.get("content-type", "image/png"),
+        headers={"Cache-Control": "public, max-age=3600, stale-while-revalidate=86400"},
     )
 
 

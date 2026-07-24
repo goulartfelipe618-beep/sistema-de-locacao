@@ -66,6 +66,35 @@ def test_site_theme_extended_overrides() -> None:
     assert "--color-topbar-tab-active-bg" in payload["css"]
 
 
+def test_site_transition_defaults_disabled() -> None:
+    tenant = Tenant(slug="matriz", legal_name="Teste", plan="standard")
+    from app.modules.tenants.site_transition import site_transition_payload
+
+    payload = site_transition_payload(tenant)
+    assert payload["ativo"] is False
+    assert payload["tamanho_px"] == 120
+    assert payload["imagem_url"] is None
+
+
+def test_site_transition_custom() -> None:
+    tenant = Tenant(
+        slug="matriz",
+        legal_name="Teste",
+        plan="standard",
+        site_transition_enabled=True,
+        site_transition_bg_color="#ffeedd",
+        site_transition_image_size_px=180,
+        site_transition_image_url="data:image/png;base64,abc",
+    )
+    from app.modules.tenants.site_transition import site_transition_payload
+
+    payload = site_theme_payload(tenant)
+    assert payload["transicao"]["ativo"] is True
+    assert payload["transicao"]["fundo"] == "#ffeedd"
+    assert payload["transicao"]["tamanho_px"] == 180
+    assert payload["transicao"]["imagem_url"] == "data:image/png;base64,abc"
+
+
 def test_site_theme_topbar_tab_colors() -> None:
     tenant = Tenant(
         slug="matriz",

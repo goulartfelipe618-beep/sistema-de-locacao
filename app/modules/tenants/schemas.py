@@ -104,6 +104,10 @@ class SiteThemeUpdate(BaseModel):
     site_text_muted_color: str | None = Field(default=None, max_length=7)
     site_footer_bg_color: str | None = Field(default=None, max_length=7)
     site_footer_text_color: str | None = Field(default=None, max_length=7)
+    site_transition_enabled: bool = False
+    site_transition_bg_color: str | None = Field(default=None, max_length=7)
+    site_transition_image_size_px: int | None = Field(default=None, ge=48, le=400)
+    remove_transition_image: bool = False
     reset_defaults: bool = False
 
     @field_validator(
@@ -125,6 +129,7 @@ class SiteThemeUpdate(BaseModel):
         "site_text_muted_color",
         "site_footer_bg_color",
         "site_footer_text_color",
+        "site_transition_bg_color",
     )
     @classmethod
     def _validate_optional_color(cls, value: str | None) -> str | None:

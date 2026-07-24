@@ -69,6 +69,7 @@
       root.classList.add('erp-ready');
       root.classList.remove('erp-loading');
       root.classList.remove('erp-boot-fallback');
+      hidePageTransition();
     } else {
       root.classList.add('erp-loading');
       root.classList.remove('erp-ready');
@@ -98,6 +99,48 @@
     return nome;
   }
 
+  function applyPageTransition(transicao) {
+    var overlay = $('#site-page-transition');
+    if (!overlay) return;
+    var img = $('#site-page-transition-logo');
+    if (!transicao || !transicao.ativo) {
+      overlay.hidden = true;
+      overlay.setAttribute('aria-hidden', 'true');
+      return;
+    }
+    overlay.hidden = false;
+    overlay.setAttribute('aria-hidden', 'false');
+    overlay.classList.remove('is-hiding');
+    overlay.style.backgroundColor = transicao.fundo || 'var(--color-bg)';
+    if (img) {
+      var size = Number(transicao.tamanho_px) || 120;
+      img.style.width = size + 'px';
+      img.style.height = size + 'px';
+      var url = transicao.imagem_url || '';
+      if (url.indexOf('/api/v1/public/transicao/imagem') >= 0) {
+        url = '/bff/transicao/imagem';
+      }
+      if (url) {
+        img.src = url;
+        img.hidden = false;
+      } else {
+        img.removeAttribute('src');
+        img.hidden = true;
+      }
+    }
+  }
+
+  function hidePageTransition() {
+    var overlay = $('#site-page-transition');
+    if (!overlay || overlay.hidden) return;
+    overlay.classList.add('is-hiding');
+    window.setTimeout(function () {
+      overlay.hidden = true;
+      overlay.setAttribute('aria-hidden', 'true');
+      overlay.classList.remove('is-hiding');
+    }, 360);
+  }
+
   function applySiteTheme(tema) {
     if (!tema || !tema.css || typeof tema.css !== 'object') return;
     var root = document.documentElement;
@@ -108,11 +151,15 @@
       }
     });
     root.classList.add('erp-theme-ready');
+    if (tema.transicao) applyPageTransition(tema.transicao);
     if (global.RodaviaCache && typeof global.RodaviaCache.persistThemeCss === 'function') {
-      global.RodaviaCache.persistThemeCss(tema.css);
+      global.RodaviaCache.persistThemeCss(tema.css, tema.transicao);
     } else {
       try {
-        localStorage.setItem('rodavia_theme_v1', JSON.stringify(tema.css));
+        localStorage.setItem(
+          'rodavia_theme_v1',
+          JSON.stringify({ css: tema.css, transicao: tema.transicao || null })
+        );
       } catch (_) {
         /* ignore */
       }

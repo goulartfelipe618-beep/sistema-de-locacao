@@ -43,7 +43,7 @@ from app.modules.integracoes.service import (
 from app.modules.integracoes.site_slides import SiteSlideService, resolve_slide_image_url
 from app.modules.tenants.schemas import SiteThemeUpdate
 from app.modules.tenants.service import FilialService, TenantService
-from app.modules.tenants.site_theme import resolved_site_colors, site_theme_payload
+from app.modules.tenants.site_transition import site_transition_payload, tenant_has_transition_image
 from app.shared.enums import IntegracaoTipo
 
 router = APIRouter()
@@ -487,6 +487,7 @@ async def site_cores_list(
         current_user.permissions, "integracoes.site.editar", is_superuser=current_user.is_superuser
     )
     colors = resolved_site_colors(tenant)
+    transition = site_transition_payload(tenant)
     return render(
         request,
         "integracoes/site_cores.html",
@@ -495,6 +496,8 @@ async def site_cores_list(
             "tenant": tenant,
             "colors": colors,
             "tema": site_theme_payload(tenant),
+            "transition": transition,
+            "has_transition_image": tenant_has_transition_image(tenant),
             "can_edit": can_edit,
         },
     )
@@ -507,10 +510,13 @@ async def site_cores_salvar(
     current_user: Annotated[
         AuthenticatedUser, Depends(require_web_permission("integracoes.site.editar"))
     ],
+    transition_image: UploadFile | None = File(None),
 ) -> HTMLResponse:
     svc = TenantService(session)
     form = await request.form()
     try:
+        size_raw = (form.get("site_transition_image_size_px") or "").strip()
+        size_px = int(size_raw) if size_raw.isdigit() else None
         data = SiteThemeUpdate(
             site_primary_color=(form.get("site_primary_color") or "").strip() or None,
             site_background_color=(form.get("site_background_color") or "").strip() or None,
@@ -530,9 +536,22 @@ async def site_cores_salvar(
             site_text_muted_color=(form.get("site_text_muted_color") or "").strip() or None,
             site_footer_bg_color=(form.get("site_footer_bg_color") or "").strip() or None,
             site_footer_text_color=(form.get("site_footer_text_color") or "").strip() or None,
+            site_transition_enabled=form.get("site_transition_enabled") == "on",
+            site_transition_bg_color=(form.get("site_transition_bg_color") or "").strip() or None,
+            site_transition_image_size_px=size_px,
+            remove_transition_image=form.get("remove_transition_image") == "on",
             reset_defaults=form.get("reset_defaults") == "on",
         )
         await svc.update_site_theme(current_user.tenant_id, data)
+        if transition_image and transition_image.filename:
+            image_bytes = await transition_image.read()
+            if image_bytes:
+                await svc.upload_site_transition_image(
+                    current_user.tenant_id,
+                    image_bytes,
+                    transition_image.filename,
+                    transition_image.content_type or "image/png",
+                )
         await session.commit()
         request.session["_flash"] = {
             "type": "success",
@@ -543,6 +562,7 @@ async def site_cores_salvar(
         await session.rollback()
         tenant = await svc.get_tenant(current_user.tenant_id)
         colors = resolved_site_colors(tenant)
+        transition = site_transition_payload(tenant)
         message = exc.message if isinstance(exc, AppError) else str(exc.errors()[0].get("msg", exc))
         return render(
             request,
@@ -552,6 +572,8 @@ async def site_cores_salvar(
                 "tenant": tenant,
                 "colors": colors,
                 "tema": site_theme_payload(tenant),
+                "transition": transition,
+                "has_transition_image": tenant_has_transition_image(tenant),
                 "can_edit": True,
                 "error": message,
             },

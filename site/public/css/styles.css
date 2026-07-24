@@ -1007,7 +1007,7 @@ body:not(.page-home) .site-header--brand {
 }
 
 .section--after-hero {
-  padding-top: calc(var(--search-bridge-overlap) + clamp(4rem, 10vw, 6.5rem));
+  padding-top: calc(var(--search-bridge-overlap) + clamp(5.5rem, 12vw, 8.5rem));
   padding-left: clamp(1rem, 4vw, 2rem);
   padding-right: clamp(1rem, 4vw, 2rem);
 }
@@ -1158,7 +1158,7 @@ body:not(.page-home) .site-header--brand {
   }
 
   .section--after-hero {
-    padding-top: calc(var(--search-bridge-overlap) + 7.5rem);
+    padding-top: calc(var(--search-bridge-overlap) + 9rem);
   }
 
   .search-field select,
@@ -1417,7 +1417,7 @@ body:not(.page-home) .site-header--brand {
 .fleet-showcase__header {
   text-align: center;
   margin-bottom: clamp(1.75rem, 4vw, 2.75rem);
-  padding-top: clamp(0.5rem, 2vw, 1.25rem);
+  padding-top: clamp(1.5rem, 4vw, 2.5rem);
 }
 
 .fleet-showcase__title {
@@ -1889,8 +1889,28 @@ body:not(.page-home) .site-header--brand {
   display: none;
 }
 
+body.chat-drawer-open .chat-fab,
+.chat-fab.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: none;
+}
+
+body.chat-scroll-locked {
+  position: fixed;
+  left: 0;
+  right: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
 body.chat-drawer-open {
   overflow: hidden;
+}
+
+body.chat-drawer-open.has-cookie-banner {
+  padding-bottom: 0;
 }
 
 .chat-drawer {
@@ -1909,7 +1929,7 @@ body.chat-drawer-open {
 .chat-drawer__backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(15, 23, 42, 0.45);
+  background: var(--color-overlay, rgba(17, 17, 17, 0.45));
   opacity: 0;
   transition: opacity 0.28s ease;
   border: none;
@@ -2203,6 +2223,82 @@ body.chat-drawer-open {
     right: 1rem;
     bottom: calc(1rem + var(--cookie-h));
   }
+}
+
+/* ——— Voltar ao topo ——— */
+.back-to-top {
+  position: fixed;
+  left: 1.5rem;
+  right: auto;
+  bottom: calc(1.5rem + var(--cookie-h));
+  z-index: 230;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(8px);
+  transition: opacity var(--transition), transform var(--transition), visibility var(--transition);
+}
+
+.back-to-top.is-visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.back-to-top:hover {
+  background: var(--color-surface);
+}
+
+.back-to-top svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+body.chat-drawer-open .back-to-top {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* ——— Transição de carregamento (ERP) ——— */
+.site-page-transition {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg);
+  opacity: 1;
+  transition: opacity 0.35s ease, visibility 0.35s ease;
+}
+
+.site-page-transition[hidden] {
+  display: none !important;
+}
+
+.site-page-transition.is-hiding {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.site-page-transition__logo {
+  object-fit: contain;
+  display: block;
 }
 
 /* Modals */

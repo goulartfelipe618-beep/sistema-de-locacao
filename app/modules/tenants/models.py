@@ -79,6 +79,12 @@ class Tenant(BaseModel):
     site_text_muted_color: Mapped[str | None] = mapped_column(String(7), nullable=True)
     site_footer_bg_color: Mapped[str | None] = mapped_column(String(7), nullable=True)
     site_footer_text_color: Mapped[str | None] = mapped_column(String(7), nullable=True)
+    site_transition_enabled: Mapped[bool] = mapped_column(nullable=False, default=False, server_default="false")
+    site_transition_bg_color: Mapped[str | None] = mapped_column(String(7), nullable=True)
+    site_transition_image_storage_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    site_transition_image_content_type: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    site_transition_image_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    site_transition_image_size_px: Mapped[int] = mapped_column(nullable=False, default=120, server_default="120")
     site_atendimento_webhook_token: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     zip_code: Mapped[str | None] = mapped_column(String(8), nullable=True)

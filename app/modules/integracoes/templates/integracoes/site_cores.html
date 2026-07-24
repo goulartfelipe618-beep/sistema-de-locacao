@@ -46,7 +46,7 @@
   </div>
 
   {% if can_edit %}
-  <form method="post" action="/integracoes/site/cores" class="erp-form" id="site-cores-form">
+  <form method="post" action="/integracoes/site/cores" class="erp-form" id="site-cores-form" enctype="multipart/form-data">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
     <fieldset style="border:none;padding:0;margin:0 0 24px">
@@ -149,6 +149,42 @@
           {{ field_label('Texto do rodapé', true, 'site_footer_text_color') }}
           <input class="form-input" type="color" id="site_footer_text_color" name="site_footer_text_color" value="{{ colors.footer_text }}">
         </div>
+      </div>
+    </fieldset>
+
+    <fieldset style="border:none;padding:0;margin:0 0 24px">
+      <legend style="font-weight:700;font-size:15px;margin-bottom:12px">Transição de carregamento</legend>
+      <p class="form-help">Tela exibida ao abrir o site enquanto os dados carregam. Desativada por padrão.</p>
+      <div class="form-group">
+        <label class="form-label">
+          <input type="checkbox" name="site_transition_enabled" value="on"
+                 {% if transition.ativo %}checked{% endif %}>
+          Exibir transição de carregamento no site
+        </label>
+      </div>
+      <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+        <div class="form-group">
+          {{ field_label('Cor de fundo da transição', true, 'site_transition_bg_color') }}
+          <input class="form-input" type="color" id="site_transition_bg_color" name="site_transition_bg_color"
+                 value="{{ transition.fundo or colors.background }}">
+        </div>
+        <div class="form-group">
+          {{ field_label('Tamanho da imagem (px)', true, 'site_transition_image_size_px') }}
+          <input class="form-input" type="number" id="site_transition_image_size_px" name="site_transition_image_size_px"
+                 min="48" max="400" step="1" value="{{ transition.tamanho_px or 120 }}">
+        </div>
+      </div>
+      <div class="form-group">
+        {{ field_label('Imagem da transição (PNG/JPG/SVG)', false, 'site_transition_image') }}
+        <input class="form-input" type="file" id="site_transition_image" name="site_transition_image"
+               accept="image/png,image/jpeg,image/webp,image/svg+xml">
+        {% if has_transition_image %}
+        <p class="form-help">Imagem atual configurada. Envie outra para substituir.</p>
+        <label class="form-label" style="margin-top:8px">
+          <input type="checkbox" name="remove_transition_image" value="on">
+          Remover imagem atual
+        </label>
+        {% endif %}
       </div>
     </fieldset>
 

@@ -42,10 +42,13 @@
     }
   }
 
-  function persistThemeCss(css) {
+  function persistThemeCss(css, transicao) {
     if (!css || typeof css !== 'object') return;
     try {
-      localStorage.setItem(THEME_KEY, JSON.stringify(css));
+      localStorage.setItem(
+        THEME_KEY,
+        JSON.stringify({ css: css, transicao: transicao || null })
+      );
     } catch (_) {
       /* ignore quota */
     }
@@ -66,7 +69,8 @@
         })
       );
       var css = payload.empresa && payload.empresa.tema && payload.empresa.tema.css;
-      if (css) persistThemeCss(css);
+      var transicao = payload.empresa && payload.empresa.tema && payload.empresa.tema.transicao;
+      if (css) persistThemeCss(css, transicao);
     } catch (_) {
       /* ignore quota */
     }

@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from app.modules.tenants.models import Tenant
+from app.modules.tenants.site_transition import site_transition_payload
 
 DEFAULT_SITE_PRIMARY = "#111111"
 DEFAULT_SITE_BACKGROUND = "#ffffff"
@@ -30,6 +31,12 @@ SITE_THEME_COLOR_FIELDS: tuple[str, ...] = (
     "site_text_muted_color",
     "site_footer_bg_color",
     "site_footer_text_color",
+)
+
+SITE_TRANSITION_FIELDS: tuple[str, ...] = (
+    "site_transition_enabled",
+    "site_transition_bg_color",
+    "site_transition_image_size_px",
 )
 
 
@@ -198,4 +205,5 @@ def site_theme_payload(tenant: Tenant) -> dict[str, Any]:
         },
         "css": css,
         "customizado": site_theme_is_customized(tenant),
+        "transicao": site_transition_payload(tenant),
     }

@@ -31,9 +31,11 @@ from app.modules.integracoes.public_site_service import (
 from app.modules.integracoes.site_atendimento import SiteAtendimentoService, build_atendimento_webhook_url
 from app.modules.integracoes.outbound import notify_outbound_event
 from app.modules.integracoes.site_slides import SiteSlideService, decode_slide_image_bytes
+from app.modules.tenants.site_transition import resolve_transition_image_bytes
 from app.modules.locacoes.service import ContratoService
 from app.modules.reservas.schemas import ReservaCreate
 from app.modules.reservas.service import DisponibilidadeService, ReservaService
+from app.modules.tenants.models import Tenant
 from app.shared.enums import ReservaOrigem
 
 public_router = APIRouter(prefix="/public", tags=["API Pública"])
@@ -87,6 +89,28 @@ async def public_slide_imagem(
 
         raise NotFoundError("Slide não encontrado.")
     data, content_type = decode_slide_image_bytes(slide)
+    return Response(
+        content=data,
+        media_type=content_type,
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
+
+
+@public_router.get("/transicao/imagem")
+async def public_transicao_imagem(
+    session: PublicSessionDep,
+    key: Annotated[IntApiKey, Depends(require_api_key_scope("catalogo:read"))],
+) -> Response:
+    """Imagem da transição de carregamento do site (configurável no ERP)."""
+    from app.core.exceptions import NotFoundError
+
+    tenant = await session.get(Tenant, key.tenant_id)
+    if tenant is None or not tenant.site_transition_enabled:
+        raise NotFoundError("Transição não configurada.")
+    resolved = resolve_transition_image_bytes(tenant)
+    if resolved is None:
+        raise NotFoundError("Imagem da transição indisponível.")
+    data, content_type = resolved
     return Response(
         content=data,
         media_type=content_type,

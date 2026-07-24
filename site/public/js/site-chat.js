@@ -7,6 +7,7 @@
 
   var TOTAL_STEPS = 4;
   var currentStep = 1;
+  var lockedScrollY = 0;
 
   var MESSAGE_ICON =
     '<svg class="chat-fab__icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
@@ -241,15 +242,29 @@
     showStep(1);
   }
 
+  function lockPageScroll() {
+    lockedScrollY = window.scrollY || window.pageYOffset || 0;
+    document.body.classList.add('chat-scroll-locked');
+    document.body.style.top = '-' + lockedScrollY + 'px';
+  }
+
+  function unlockPageScroll() {
+    document.body.classList.remove('chat-scroll-locked');
+    document.body.style.top = '';
+    window.scrollTo(0, lockedScrollY);
+  }
+
   function setFabOpen(open) {
     var fab = $('#chat-fab');
     if (!fab) return;
-    fab.classList.toggle('is-open', open);
+    fab.classList.toggle('is-hidden', open);
     fab.setAttribute('aria-expanded', open ? 'true' : 'false');
-    fab.innerHTML = fabContent(open);
-    fab.setAttribute('aria-label', open ? t('modal.close') : t('chat.open'));
-    if (!open && global.SiteI18n && typeof global.SiteI18n.apply === 'function') {
-      global.SiteI18n.apply(fab);
+    if (!open) {
+      fab.innerHTML = fabContent(false);
+      fab.setAttribute('aria-label', t('chat.open'));
+      if (global.SiteI18n && typeof global.SiteI18n.apply === 'function') {
+        global.SiteI18n.apply(fab);
+      }
     }
   }
 
@@ -260,6 +275,7 @@
     drawer?.classList.add('is-open');
     drawer?.setAttribute('aria-hidden', 'false');
     document.body.classList.add('chat-drawer-open');
+    lockPageScroll();
     setFabOpen(true);
     drawer?.querySelector('.chat-drawer__panel')?.focus();
   }
@@ -269,6 +285,7 @@
     drawer?.classList.remove('is-open');
     drawer?.setAttribute('aria-hidden', 'true');
     document.body.classList.remove('chat-drawer-open');
+    unlockPageScroll();
     setFabOpen(false);
     resetWizard();
   }
