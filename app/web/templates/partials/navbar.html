@@ -10,9 +10,9 @@
     <a href="/notificacoes" class="navbar-notifications" id="navbar-notifications" aria-label="Notificações">
       <span class="navbar-notifications__icon" aria-hidden="true">🔔</span>
       {% if notificacoes_nao_lidas|default(0) > 0 %}
-      <span class="nav-badge nav-badge--navbar" id="navbar-badge-notificacoes">{{ notificacoes_nao_lidas }}</span>
+      <span class="nav-badge nav-badge--navbar js-notificacoes-badge">{{ notificacoes_nao_lidas }}</span>
       {% else %}
-      <span class="nav-badge nav-badge--navbar nav-badge--hidden" id="navbar-badge-notificacoes" hidden aria-hidden="true">0</span>
+      <span class="nav-badge nav-badge--navbar nav-badge--hidden js-notificacoes-badge" hidden aria-hidden="true">0</span>
       {% endif %}
     </a>
     {% endif %}
@@ -56,7 +56,7 @@
           {% endif %}
         </div>
         <button type="button" class="user-dropdown-item user-dropdown-btn"
-                @click="menu = false; profileOpen = true; var e=document.getElementById('profile-form-error'); if(e){e.style.display='none'; e.textContent='';}">Meu perfil</button>
+                @click="menu = false; profileOpen = true">Meu perfil</button>
         <a class="user-dropdown-item" href="/configuracoes/seguranca" @click="menu = false">Segurança (2FA)</a>
         <form method="post" action="/logout" class="user-dropdown-form" data-no-form-engine="true">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">

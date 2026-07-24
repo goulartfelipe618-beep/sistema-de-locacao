@@ -138,9 +138,8 @@
   });
 
   function refreshNotificationBadge() {
-    var sidebarBadge = document.getElementById("nav-badge-notificacoes");
-    var navbarBadge = document.getElementById("navbar-badge-notificacoes");
-    if (!sidebarBadge && !navbarBadge) return;
+    var badges = document.querySelectorAll(".js-notificacoes-badge");
+    if (!badges.length) return;
     fetch("/notificacoes/badge-count", { credentials: "same-origin", headers: { Accept: "application/json" } })
       .then(function (response) {
         if (!response.ok) return null;
@@ -149,7 +148,7 @@
       .then(function (data) {
         if (!data) return;
         var total = Number(data.total) || 0;
-        [sidebarBadge, navbarBadge].forEach(function (el) {
+        badges.forEach(function (el) {
           if (!el) return;
           if (total > 0) {
             el.textContent = String(total);

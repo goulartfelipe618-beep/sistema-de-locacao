@@ -19,7 +19,7 @@
             {% set ns.active = true %}
           {% endif %}
         {% endfor %}
-        <div class="nav-group" data-nav-group x-data="{ open: {{ 'true' if ns.active else 'false' }} }">
+        <div class="nav-group" data-nav-group x-data="{ open: false }"{% if ns.active %} x-init="open = true"{% endif %}>
           <button type="button" class="nav-group-toggle"
                   @click="open = !open"
                   :aria-expanded="open ? 'true' : 'false'">
@@ -35,9 +35,9 @@
                      class="nav-sub-link {% if item.url == active_menu_url %}is-active{% endif %}">
                     {{ item.label }}
                     {% if item.url == '/notificacoes' and notificacoes_nao_lidas|default(0) > 0 %}
-                    <span class="nav-badge" id="nav-badge-notificacoes" aria-label="{{ notificacoes_nao_lidas }} não lidas">{{ notificacoes_nao_lidas }}</span>
+                    <span class="nav-badge js-notificacoes-badge" aria-label="{{ notificacoes_nao_lidas }} não lidas">{{ notificacoes_nao_lidas }}</span>
                     {% elif item.url == '/notificacoes' %}
-                    <span class="nav-badge nav-badge--hidden" id="nav-badge-notificacoes" hidden aria-hidden="true">0</span>
+                    <span class="nav-badge nav-badge--hidden js-notificacoes-badge" hidden aria-hidden="true">0</span>
                     {% endif %}
                   </a>
                 {% else %}

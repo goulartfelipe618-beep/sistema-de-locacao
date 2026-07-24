@@ -58,11 +58,14 @@ async def get_optional_web_user(
         "notificacoes.inbox.visualizar",
         is_superuser=authenticated.is_superuser,
     ):
-        from app.modules.notificacoes.service import NotificationService
+        try:
+            from app.modules.notificacoes.service import NotificationService
 
-        request.state.notificacoes_nao_lidas = await NotificationService(session).count_nao_lidas(
-            authenticated.id
-        )
+            request.state.notificacoes_nao_lidas = await NotificationService(session).count_nao_lidas(
+                authenticated.id
+            )
+        except Exception:
+            request.state.notificacoes_nao_lidas = 0
     else:
         request.state.notificacoes_nao_lidas = 0
     return authenticated
