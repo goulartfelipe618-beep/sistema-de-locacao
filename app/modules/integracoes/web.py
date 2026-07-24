@@ -44,6 +44,7 @@ from app.modules.integracoes.site_slides import SiteSlideService, resolve_slide_
 from app.modules.tenants.schemas import SiteThemeUpdate
 from app.modules.tenants.service import FilialService, TenantService
 from app.modules.tenants.site_showcase import tenant_showcase_flags
+from app.modules.tenants.site_theme import resolved_site_colors, site_theme_payload
 from app.modules.tenants.site_transition import site_transition_payload, tenant_has_transition_image
 from app.shared.enums import IntegracaoTipo
 
