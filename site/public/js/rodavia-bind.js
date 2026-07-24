@@ -115,23 +115,70 @@
     var rows = vitrine && Array.isArray(vitrine.imagens) ? vitrine.imagens : [];
     var anyVisible = false;
     [1, 2, 3].forEach(function (slot) {
-      var fig = root.querySelector('[data-showcase-slot="' + slot + '"]');
-      if (!fig) return;
-      var row = rows.find(function (item) {
-        return Number(item && item.slot) === slot;
+      var item = root.querySelector('[data-showcase-slot="' + slot + '"]');
+      if (!item) return;
+      var row = rows.find(function (entry) {
+        return Number(entry && entry.slot) === slot;
       });
       var url = normalizeShowcaseUrl(row && row.imagem_url);
       if (!url) {
-        fig.hidden = true;
+        item.hidden = true;
         return;
       }
-      var img = fig.querySelector('img');
+      var img = item.querySelector('.home-showcase__img');
       if (img) {
         img.src = url;
         img.width = Number(row.largura_px) || 1080;
         img.height = Number(row.altura_px) || 1350;
+        var altText = (row.titulo || '').trim();
+        img.alt = altText;
       }
-      fig.hidden = false;
+
+      var titleEl = item.querySelector('.home-showcase__title');
+      var descEl = item.querySelector('.home-showcase__desc');
+      var ctaEl = item.querySelector('.home-showcase__cta');
+      var titulo = (row.titulo || '').trim();
+      var descricao = (row.descricao || '').trim();
+      var ctaTexto = (row.cta_texto || '').trim();
+      var ctaUrl = (row.cta_url || '').trim();
+      var ctaTarget = row.cta_target === '_blank' ? '_blank' : '_self';
+
+      if (titleEl) {
+        if (titulo) {
+          titleEl.textContent = titulo;
+          titleEl.hidden = false;
+        } else {
+          titleEl.textContent = '';
+          titleEl.hidden = true;
+        }
+      }
+      if (descEl) {
+        if (descricao) {
+          descEl.textContent = descricao;
+          descEl.hidden = false;
+        } else {
+          descEl.textContent = '';
+          descEl.hidden = true;
+        }
+      }
+      if (ctaEl) {
+        if (ctaUrl) {
+          ctaEl.href = ctaUrl;
+          ctaEl.textContent = ctaTexto || 'Saiba mais';
+          ctaEl.target = ctaTarget;
+          if (ctaTarget === '_blank') {
+            ctaEl.rel = 'noopener noreferrer';
+          } else {
+            ctaEl.removeAttribute('rel');
+          }
+          ctaEl.hidden = false;
+        } else {
+          ctaEl.hidden = true;
+          ctaEl.removeAttribute('href');
+        }
+      }
+
+      item.hidden = false;
       anyVisible = true;
     });
     section.hidden = !anyVisible;

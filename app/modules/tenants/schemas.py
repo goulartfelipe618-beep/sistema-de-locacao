@@ -111,6 +111,21 @@ class SiteThemeUpdate(BaseModel):
     remove_showcase_image_1: bool = False
     remove_showcase_image_2: bool = False
     remove_showcase_image_3: bool = False
+    showcase_1_titulo: str | None = Field(default=None, max_length=200)
+    showcase_1_descricao: str | None = Field(default=None, max_length=2000)
+    showcase_1_cta_texto: str | None = Field(default=None, max_length=120)
+    showcase_1_cta_url: str | None = Field(default=None, max_length=500)
+    showcase_1_cta_target: str | None = Field(default="_self", max_length=10)
+    showcase_2_titulo: str | None = Field(default=None, max_length=200)
+    showcase_2_descricao: str | None = Field(default=None, max_length=2000)
+    showcase_2_cta_texto: str | None = Field(default=None, max_length=120)
+    showcase_2_cta_url: str | None = Field(default=None, max_length=500)
+    showcase_2_cta_target: str | None = Field(default="_self", max_length=10)
+    showcase_3_titulo: str | None = Field(default=None, max_length=200)
+    showcase_3_descricao: str | None = Field(default=None, max_length=2000)
+    showcase_3_cta_texto: str | None = Field(default=None, max_length=120)
+    showcase_3_cta_url: str | None = Field(default=None, max_length=500)
+    showcase_3_cta_target: str | None = Field(default="_self", max_length=10)
     reset_defaults: bool = False
 
     @field_validator(
@@ -137,6 +152,17 @@ class SiteThemeUpdate(BaseModel):
     @classmethod
     def _validate_optional_color(cls, value: str | None) -> str | None:
         return _optional_hex_color(value)
+
+    @field_validator(
+        "showcase_1_cta_target",
+        "showcase_2_cta_target",
+        "showcase_3_cta_target",
+    )
+    @classmethod
+    def _validate_showcase_cta_target(cls, value: str | None) -> str:
+        if not value or value not in ("_self", "_blank"):
+            return "_self"
+        return value
 
 
 class TenantSystemUpdate(BaseModel):

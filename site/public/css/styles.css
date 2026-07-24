@@ -1482,7 +1482,53 @@ body:not(.page-home) .site-header--brand {
   border-radius: var(--radius-md);
   overflow: hidden;
   box-shadow: var(--shadow-md);
+  background: var(--color-bg);
+  display: flex;
+  flex-direction: column;
+}
+
+.home-showcase__media {
+  overflow: hidden;
   background: var(--color-bg-muted);
+}
+
+.home-showcase__body {
+  padding: 0.85rem 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.45rem;
+  flex: 1 1 auto;
+}
+
+.home-showcase__title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--color-text);
+}
+
+.home-showcase__title[hidden],
+.home-showcase__desc[hidden],
+.home-showcase__cta[hidden] {
+  display: none !important;
+}
+
+.home-showcase__desc {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--color-text-soft);
+}
+
+.home-showcase__cta {
+  align-self: flex-start;
+  margin-top: auto;
+  text-decoration: none;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 
 .home-showcase__item[hidden] {

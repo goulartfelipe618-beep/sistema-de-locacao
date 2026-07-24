@@ -88,12 +88,33 @@ class Tenant(BaseModel):
     site_showcase_1_storage_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
     site_showcase_1_content_type: Mapped[str | None] = mapped_column(String(120), nullable=True)
     site_showcase_1_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    site_showcase_1_titulo: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    site_showcase_1_descricao: Mapped[str | None] = mapped_column(Text, nullable=True)
+    site_showcase_1_cta_texto: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    site_showcase_1_cta_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    site_showcase_1_cta_target: Mapped[str] = mapped_column(
+        String(10), nullable=False, default="_self", server_default="_self"
+    )
     site_showcase_2_storage_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
     site_showcase_2_content_type: Mapped[str | None] = mapped_column(String(120), nullable=True)
     site_showcase_2_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    site_showcase_2_titulo: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    site_showcase_2_descricao: Mapped[str | None] = mapped_column(Text, nullable=True)
+    site_showcase_2_cta_texto: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    site_showcase_2_cta_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    site_showcase_2_cta_target: Mapped[str] = mapped_column(
+        String(10), nullable=False, default="_self", server_default="_self"
+    )
     site_showcase_3_storage_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
     site_showcase_3_content_type: Mapped[str | None] = mapped_column(String(120), nullable=True)
     site_showcase_3_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    site_showcase_3_titulo: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    site_showcase_3_descricao: Mapped[str | None] = mapped_column(Text, nullable=True)
+    site_showcase_3_cta_texto: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    site_showcase_3_cta_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    site_showcase_3_cta_target: Mapped[str] = mapped_column(
+        String(10), nullable=False, default="_self", server_default="_self"
+    )
     site_atendimento_webhook_token: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     zip_code: Mapped[str | None] = mapped_column(String(8), nullable=True)

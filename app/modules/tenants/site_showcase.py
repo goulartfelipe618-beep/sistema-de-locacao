@@ -11,6 +11,8 @@ from app.modules.tenants.models import Tenant
 SHOWCASE_WIDTH_PX = 1080
 SHOWCASE_HEIGHT_PX = 1350
 SHOWCASE_SLOTS = (1, 2, 3)
+SHOWCASE_META_SUFFIXES = ("titulo", "descricao", "cta_texto", "cta_url", "cta_target")
+SHOWCASE_CTA_TARGETS = ("_self", "_blank")
 PUBLIC_SHOWCASE_IMAGE_PATH = "/api/v1/public/vitrine/imagem/{slot}"
 
 
@@ -56,6 +58,24 @@ def _showcase_image_url(tenant: Tenant, slot: int) -> str | None:
     return PUBLIC_SHOWCASE_IMAGE_PATH.format(slot=slot)
 
 
+def _showcase_meta(tenant: Tenant, slot: int) -> dict[str, Any]:
+    titulo = (_tenant_field(tenant, slot, "titulo") or "").strip() or None
+    descricao = (_tenant_field(tenant, slot, "descricao") or "").strip() or None
+    cta_texto = (_tenant_field(tenant, slot, "cta_texto") or "").strip() or None
+    cta_url = (_tenant_field(tenant, slot, "cta_url") or "").strip() or None
+    cta_target = (_tenant_field(tenant, slot, "cta_target") or "_self").strip()
+    if cta_target not in SHOWCASE_CTA_TARGETS:
+        cta_target = "_self"
+    return {
+        "titulo": titulo,
+        "descricao": descricao,
+        "cta_texto": cta_texto,
+        "cta_url": cta_url,
+        "cta_target": cta_target,
+        "cta_nova_aba": cta_target == "_blank",
+    }
+
+
 def site_showcase_payload(tenant: Tenant) -> dict[str, Any]:
     imagens: list[dict[str, Any]] = []
     for slot in SHOWCASE_SLOTS:
@@ -65,6 +85,7 @@ def site_showcase_payload(tenant: Tenant) -> dict[str, Any]:
                 "imagem_url": _showcase_image_url(tenant, slot),
                 "largura_px": SHOWCASE_WIDTH_PX,
                 "altura_px": SHOWCASE_HEIGHT_PX,
+                **_showcase_meta(tenant, slot),
             }
         )
     return {"imagens": imagens}

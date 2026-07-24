@@ -23,7 +23,7 @@ from app.modules.tenants.models import Filial, Tenant
 from app.modules.tenants.repository import FilialRepository, TenantRepository
 from app.modules.tenants.schemas import FilialCreate, FilialUpdate, SiteThemeUpdate, TenantSystemUpdate, TenantUpdate
 from app.modules.tenants.site_theme import SITE_THEME_COLOR_FIELDS, resolved_site_colors, site_theme_payload
-from app.modules.tenants.site_showcase import SHOWCASE_SLOTS
+from app.modules.tenants.site_showcase import SHOWCASE_META_SUFFIXES, SHOWCASE_SLOTS
 from app.modules.tenants.setup import setup_missing_fields
 from app.shared.enums import AuditAction
 
@@ -152,6 +152,11 @@ class TenantService:
                 setattr(tenant, f"site_showcase_{slot}_storage_key", None)
                 setattr(tenant, f"site_showcase_{slot}_content_type", None)
                 setattr(tenant, f"site_showcase_{slot}_url", None)
+                for suffix in SHOWCASE_META_SUFFIXES:
+                    if suffix == "cta_target":
+                        setattr(tenant, f"site_showcase_{slot}_{suffix}", "_self")
+                    else:
+                        setattr(tenant, f"site_showcase_{slot}_{suffix}", None)
         else:
             for field in SITE_THEME_COLOR_FIELDS:
                 setattr(tenant, field, getattr(data, field))
@@ -168,6 +173,16 @@ class TenantService:
                     setattr(tenant, f"site_showcase_{slot}_storage_key", None)
                     setattr(tenant, f"site_showcase_{slot}_content_type", None)
                     setattr(tenant, f"site_showcase_{slot}_url", None)
+                for suffix in SHOWCASE_META_SUFFIXES:
+                    schema_field = f"showcase_{slot}_{suffix}"
+                    model_field = f"site_showcase_{slot}_{suffix}"
+                    raw = getattr(data, schema_field, None)
+                    if isinstance(raw, str):
+                        raw = raw.strip() or None
+                    if suffix == "cta_target":
+                        setattr(tenant, model_field, raw or "_self")
+                    else:
+                        setattr(tenant, model_field, raw)
         await audit_service.record(
             AuditAction.UPDATE,
             entity="tenant",

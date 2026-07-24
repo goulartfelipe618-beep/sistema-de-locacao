@@ -195,8 +195,9 @@
         Proporção recomendada: <strong>1080 × 1350 px</strong> (retrato).
       </p>
       {% for slot in [1, 2, 3] %}
-      <div class="form-group" style="margin-bottom:16px">
-        {{ field_label('Imagem ' ~ slot ~ ' (PNG/JPG/WebP/SVG)', false, 'site_showcase_image_' ~ slot) }}
+      <div class="form-group" style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border-color,#eee)">
+        <p style="font-weight:600;margin:0 0 12px">Imagem {{ slot }}</p>
+        {{ field_label('Arquivo (PNG/JPG/WebP/SVG)', false, 'site_showcase_image_' ~ slot) }}
         <input class="form-input" type="file" id="site_showcase_image_{{ slot }}" name="showcase_image_{{ slot }}"
                accept="image/png,image/jpeg,image/webp,image/svg+xml">
         {% if showcase_flags.get(slot) %}
@@ -206,6 +207,36 @@
           Remover imagem {{ slot }}
         </label>
         {% endif %}
+        <div class="form-group" style="margin-top:12px">
+          {{ field_label('Título', false, 'showcase_' ~ slot ~ '_titulo') }}
+          <input class="form-input" type="text" id="showcase_{{ slot }}_titulo" name="showcase_{{ slot }}_titulo"
+                 maxlength="200" value="{{ showcase_items[slot].titulo or '' }}"
+                 placeholder="Ex.: Encontre a agência mais próxima">
+        </div>
+        <div class="form-group">
+          {{ field_label('Descrição', false, 'showcase_' ~ slot ~ '_descricao') }}
+          <textarea class="form-input" id="showcase_{{ slot }}_descricao" name="showcase_{{ slot }}_descricao"
+                    rows="2" maxlength="2000" placeholder="Texto curto abaixo da imagem">{{ showcase_items[slot].descricao or '' }}</textarea>
+        </div>
+        <div class="form-group">
+          {{ field_label('Texto do botão (CTA)', false, 'showcase_' ~ slot ~ '_cta_texto') }}
+          <input class="form-input" type="text" id="showcase_{{ slot }}_cta_texto" name="showcase_{{ slot }}_cta_texto"
+                 maxlength="120" value="{{ showcase_items[slot].cta_texto or '' }}"
+                 placeholder="Ex.: Saiba mais">
+        </div>
+        <div class="form-group">
+          {{ field_label('Link do CTA', false, 'showcase_' ~ slot ~ '_cta_url') }}
+          <input class="form-input" type="url" id="showcase_{{ slot }}_cta_url" name="showcase_{{ slot }}_cta_url"
+                 maxlength="500" value="{{ showcase_items[slot].cta_url or '' }}"
+                 placeholder="https://… ou agencias.html">
+        </div>
+        <div class="form-group">
+          {{ field_label('Abrir link', false, 'showcase_' ~ slot ~ '_cta_target') }}
+          <select class="form-input" id="showcase_{{ slot }}_cta_target" name="showcase_{{ slot }}_cta_target">
+            <option value="_self" {% if (showcase_items[slot].cta_target or '_self') == '_self' %}selected{% endif %}>Mesma página</option>
+            <option value="_blank" {% if showcase_items[slot].cta_target == '_blank' %}selected{% endif %}>Nova aba</option>
+          </select>
+        </div>
       </div>
       {% endfor %}
     </fieldset>

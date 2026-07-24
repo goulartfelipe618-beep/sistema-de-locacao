@@ -113,6 +113,11 @@ def test_site_showcase_custom() -> None:
         plan="standard",
         site_showcase_1_url="data:image/jpeg;base64,abc",
         site_showcase_2_url="data:image/jpeg;base64,def",
+        site_showcase_1_titulo="Agências",
+        site_showcase_1_descricao="Encontre a unidade mais próxima.",
+        site_showcase_1_cta_texto="Ver agências",
+        site_showcase_1_cta_url="https://example.com/agencias",
+        site_showcase_1_cta_target="_blank",
     )
     from app.modules.tenants.site_showcase import site_showcase_payload
 
@@ -120,6 +125,14 @@ def test_site_showcase_custom() -> None:
     assert payload["vitrine"]["imagens"][0]["imagem_url"] == "data:image/jpeg;base64,abc"
     assert payload["vitrine"]["imagens"][1]["imagem_url"] == "data:image/jpeg;base64,def"
     assert payload["vitrine"]["imagens"][2]["imagem_url"] is None
+    assert payload["vitrine"]["imagens"][0]["titulo"] == "Agências"
+    assert payload["vitrine"]["imagens"][0]["descricao"] == "Encontre a unidade mais próxima."
+    assert payload["vitrine"]["imagens"][0]["cta_texto"] == "Ver agências"
+    assert payload["vitrine"]["imagens"][0]["cta_url"] == "https://example.com/agencias"
+    assert payload["vitrine"]["imagens"][0]["cta_target"] == "_blank"
+    assert payload["vitrine"]["imagens"][0]["cta_nova_aba"] is True
+    showcase = site_showcase_payload(tenant)
+    assert showcase["imagens"][0]["cta_target"] == "_blank"
 
 
 def test_site_theme_topbar_tab_colors() -> None:

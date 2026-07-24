@@ -43,7 +43,7 @@ from app.modules.integracoes.service import (
 from app.modules.integracoes.site_slides import SiteSlideService, resolve_slide_image_url
 from app.modules.tenants.schemas import SiteThemeUpdate
 from app.modules.tenants.service import FilialService, TenantService
-from app.modules.tenants.site_showcase import tenant_showcase_flags
+from app.modules.tenants.site_showcase import site_showcase_payload, tenant_showcase_flags
 from app.modules.tenants.site_theme import resolved_site_colors, site_theme_payload
 from app.modules.tenants.site_transition import site_transition_payload, tenant_has_transition_image
 from app.shared.enums import IntegracaoTipo
@@ -491,6 +491,7 @@ async def site_cores_list(
     colors = resolved_site_colors(tenant)
     transition = site_transition_payload(tenant)
     showcase_flags = tenant_showcase_flags(tenant)
+    showcase_items = {row["slot"]: row for row in site_showcase_payload(tenant)["imagens"]}
     return render(
         request,
         "integracoes/site_cores.html",
@@ -502,6 +503,7 @@ async def site_cores_list(
             "transition": transition,
             "has_transition_image": tenant_has_transition_image(tenant),
             "showcase_flags": showcase_flags,
+            "showcase_items": showcase_items,
             "can_edit": can_edit,
         },
     )
@@ -524,6 +526,23 @@ async def site_cores_salvar(
     try:
         size_raw = (form.get("site_transition_image_size_px") or "").strip()
         size_px = int(size_raw) if size_raw.isdigit() else None
+        showcase_fields: dict[str, str | None] = {}
+        for slot in (1, 2, 3):
+            showcase_fields[f"showcase_{slot}_titulo"] = (
+                form.get(f"showcase_{slot}_titulo") or ""
+            ).strip() or None
+            showcase_fields[f"showcase_{slot}_descricao"] = (
+                form.get(f"showcase_{slot}_descricao") or ""
+            ).strip() or None
+            showcase_fields[f"showcase_{slot}_cta_texto"] = (
+                form.get(f"showcase_{slot}_cta_texto") or ""
+            ).strip() or None
+            showcase_fields[f"showcase_{slot}_cta_url"] = (
+                form.get(f"showcase_{slot}_cta_url") or ""
+            ).strip() or None
+            showcase_fields[f"showcase_{slot}_cta_target"] = (
+                form.get(f"showcase_{slot}_cta_target") or "_self"
+            ).strip() or "_self"
         data = SiteThemeUpdate(
             site_primary_color=(form.get("site_primary_color") or "").strip() or None,
             site_background_color=(form.get("site_background_color") or "").strip() or None,
@@ -551,6 +570,7 @@ async def site_cores_salvar(
             remove_showcase_image_2=form.get("remove_showcase_image_2") == "on",
             remove_showcase_image_3=form.get("remove_showcase_image_3") == "on",
             reset_defaults=form.get("reset_defaults") == "on",
+            **showcase_fields,
         )
         await svc.update_site_theme(current_user.tenant_id, data)
         if transition_image and transition_image.filename:
@@ -589,6 +609,7 @@ async def site_cores_salvar(
         colors = resolved_site_colors(tenant)
         transition = site_transition_payload(tenant)
         showcase_flags = tenant_showcase_flags(tenant)
+        showcase_items = {row["slot"]: row for row in site_showcase_payload(tenant)["imagens"]}
         message = exc.message if isinstance(exc, AppError) else str(exc.errors()[0].get("msg", exc))
         return render(
             request,
@@ -601,6 +622,7 @@ async def site_cores_salvar(
                 "transition": transition,
                 "has_transition_image": tenant_has_transition_image(tenant),
                 "showcase_flags": showcase_flags,
+                "showcase_items": showcase_items,
                 "can_edit": True,
                 "error": message,
             },
