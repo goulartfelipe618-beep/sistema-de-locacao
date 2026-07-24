@@ -1,7 +1,7 @@
 """Capa de categoria (imagem do grupo no site).
 
 Revision ID: 0035_categoria_capa
-Revises: 0034_veiculo_foto_columns_idempotent
+Revises: 0034_veiculo_foto_fix
 Create Date: 2026-07-23
 """
 
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0035_categoria_capa"
-down_revision: str | None = "0034_veiculo_foto_columns_idempotent"
+down_revision: str | None = "0034_veiculo_foto_fix"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
